@@ -48,6 +48,12 @@ To preview the WSL command for a future CP2K job without running it:
 python .\scripts\build_job_dry_run.py --config .\examples\winqstep.config.json --input D:\Library\自制品\winqstep\outputs\water.inp
 ```
 
+To render a conservative QuickStep input from JSON:
+
+```powershell
+python .\scripts\render_quickstep_input.py --input-json .\examples\quickstep_energy.json
+```
+
 ## License
 
 WinQStep is licensed under `GPL-3.0-or-later`. See `LICENSE`.

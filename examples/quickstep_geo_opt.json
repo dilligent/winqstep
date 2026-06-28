@@ -1,0 +1,32 @@
+{
+  "project_name": "water_geo_opt",
+  "run_type": "GEO_OPT",
+  "dft": {
+    "basis_set_file_name": "BASIS_MOLOPT",
+    "potential_file_name": "GTH_POTENTIALS",
+    "xc_functional": "PBE",
+    "cutoff": 400,
+    "rel_cutoff": 40
+  },
+  "geo_opt": {
+    "optimizer": "BFGS",
+    "max_iter": 200
+  },
+  "structure": {
+    "cell": {
+      "periodic": "XYZ",
+      "a": [10.0, 0.0, 0.0],
+      "b": [0.0, 10.0, 0.0],
+      "c": [0.0, 0.0, 10.0]
+    },
+    "atoms": [
+      {"element": "O", "xyz": [5.0, 5.0, 5.0]},
+      {"element": "H", "xyz": [5.0, 5.757, 5.586]},
+      {"element": "H", "xyz": [5.0, 4.243, 5.586]}
+    ],
+    "kinds": [
+      {"element": "O", "basis_set": "DZVP-MOLOPT-SR-GTH", "potential": "GTH-PBE-q6"},
+      {"element": "H", "basis_set": "DZVP-MOLOPT-SR-GTH", "potential": "GTH-PBE-q1"}
+    ]
+  }
+}

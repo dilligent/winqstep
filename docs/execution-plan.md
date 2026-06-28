@@ -11,7 +11,7 @@ Each round should end with a focused commit.
 - Current code: standard-library Python environment probe plus unit tests.
 - Current docs: product scope, architecture, WSL execution rules, and CP2K input
   model.
-- Next active round: Round 3, QuickStep input generator.
+- Next active round: Round 4, structure import sidecar.
 - Known local facts:
   - WSL2 is available.
   - Default distro is `Ubuntu`.
@@ -83,7 +83,15 @@ Commit boundary:
 
 ## Round 3: QuickStep Input Generator
 
+Status: implemented.
+
 Goal: generate a small, stable CP2K input file from typed data.
+
+Local verification:
+
+- `examples/quickstep_energy.json` rendered to `outputs/water_energy.inp`.
+- `/home/teng/cp2k/exe/local/cp2k.ssmp` completed the generated `ENERGY` job
+  with zero CP2K warnings on 2026-06-29.
 
 Tasks:
 

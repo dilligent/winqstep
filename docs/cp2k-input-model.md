@@ -10,6 +10,16 @@ The preferred source of CP2K keyword truth is the user's local CP2K version and
 its matching input reference. Online manuals can guide development, but generated
 input should be validated against the local environment whenever possible.
 
+The current external reference is the CP2K trunk input manual:
+
+```text
+https://manual.cp2k.org/trunk/CP2K_INPUT.html
+```
+
+When the manual links to source code for details, prefer the local CP2K source
+checkout that matches the user's installed CP2K version. WinQStep's generator is
+limited to QuickStep; other CP2K methods are out of scope for this model.
+
 ## First Supported Area
 
 The first generator should target:
@@ -33,6 +43,24 @@ The first chemistry defaults should be conservative:
 - PBE/GTH-style defaults;
 - common MOLOPT basis selections;
 - explicit, editable SCF presets.
+
+## Implemented JSON Shape
+
+The first renderer consumes a JSON model like `examples/quickstep_energy.json`
+and renders CP2K input through `scripts/render_quickstep_input.py`.
+
+Top-level fields:
+
+- `project_name`
+- `run_type`: `ENERGY` or `GEO_OPT`
+- `dft`: basis/potential file names, PBE-style functional, charge,
+  multiplicity, MGRID cutoff, and SCF controls
+- `geo_opt`: optimizer and max iteration settings for `GEO_OPT`
+- `structure`: periodic cell, atoms, and per-element `KIND` definitions
+
+Unsupported `run_type` values such as `MD` are rejected for now even if CP2K
+supports them. That is intentional: the first generator covers only a small
+QuickStep subset with tests.
 
 ## Rendering Rules
 
