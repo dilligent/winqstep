@@ -8,7 +8,7 @@ Each round should end with a focused commit.
 - Repository name: `winqstep`.
 - Product name: WinQStep.
 - License: `GPL-3.0-or-later`.
-- Current code: standard-library Python environment probe plus unit tests.
+- Current code: standard-library Python core commands plus unit tests.
 - Current docs: product scope, architecture, WSL execution rules, and CP2K input
   model.
 - Next active round: Round 6, GUI prototype.
@@ -174,6 +174,34 @@ Commit boundary:
 
 - One commit for runner, smoke fixture, docs, and tests that do not require a
   long CP2K run by default.
+
+## Round 5.5: Structure-to-QuickStep Workflow
+
+Status: implemented.
+
+Goal: connect imported structures to calculation templates so the CLI can
+generate and run a QuickStep job without hand-writing full QuickStep JSON.
+
+Tasks:
+
+- Add a workflow layer that imports CIF, POSCAR, or XYZ structure files.
+- Merge imported structure facts with a calculation template and KIND library.
+- Support fallback cells for structure formats such as XYZ that do not carry a
+  usable periodic cell.
+- Add a CLI that can run the full workflow or prepare input and metadata only.
+- Keep the lower-level QuickStep renderer and runner as the execution path.
+
+Acceptance:
+
+- A workflow command can turn `water.xyz` plus a PBE energy template into a
+  rendered CP2K input.
+- Missing KIND definitions fail before CP2K is launched.
+- Metadata records the structure source, selected elements, atom count, and
+  resolved cell.
+
+Commit boundary:
+
+- One commit for workflow composition, CLI, templates, docs, and tests.
 
 ## Round 6: GUI Prototype
 

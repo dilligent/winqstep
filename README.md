@@ -60,6 +60,12 @@ To import a structure file as normalized JSON:
 python .\scripts\import_structure.py --input .\tests\fixtures\structures\water.xyz
 ```
 
+To combine a structure file with a calculation template and run CP2K:
+
+```powershell
+python .\scripts\run_workflow.py --config .\examples\winqstep.config.json --template .\examples\templates\energy_pbe.json --structure .\tests\fixtures\structures\water.xyz --job-dir .\outputs\workflow-energy
+```
+
 To render and run a minimal QuickStep job through WSL/CP2K:
 
 ```powershell
