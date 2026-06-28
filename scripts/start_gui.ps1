@@ -33,9 +33,11 @@ function Test-WinQStepGuiPrerequisites {
         "scripts\detect_environment.py",
         "scripts\import_structure.py",
         "scripts\run_workflow.py",
+        "scripts\run_existing_input.py",
         "examples\winqstep.config.json",
         "examples\templates\energy_pbe.json",
-        "tests\fixtures\structures\water.xyz"
+        "tests\fixtures\structures\water.xyz",
+        "tests\fixtures\quickstep_energy.inp"
     )
     $missing = @(
         foreach ($relativePath in $requiredFiles) {
@@ -145,26 +147,38 @@ function New-WinQStepWindow {
           <RowDefinition Height="Auto"/>
           <RowDefinition Height="Auto"/>
           <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0" Grid.Column="0" Text="Config"/>
-        <TextBox x:Name="ConfigPathBox" Grid.Row="0" Grid.Column="1"/>
-        <Button x:Name="BrowseConfigButton" Grid.Row="0" Grid.Column="2" Content="Browse"/>
+        <TextBlock Grid.Row="0" Grid.Column="0" Text="Mode"/>
+        <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Margin="6,4">
+          <RadioButton x:Name="WorkflowModeRadio" Content="Workflow" GroupName="JobMode" IsChecked="True" Margin="0,0,18,0"/>
+          <RadioButton x:Name="ExistingInputModeRadio" Content="Existing input" GroupName="JobMode"/>
+        </StackPanel>
 
-        <TextBlock Grid.Row="1" Grid.Column="0" Text="Template"/>
-        <TextBox x:Name="TemplatePathBox" Grid.Row="1" Grid.Column="1"/>
-        <Button x:Name="BrowseTemplateButton" Grid.Row="1" Grid.Column="2" Content="Browse"/>
+        <TextBlock Grid.Row="1" Grid.Column="0" Text="Config"/>
+        <TextBox x:Name="ConfigPathBox" Grid.Row="1" Grid.Column="1"/>
+        <Button x:Name="BrowseConfigButton" Grid.Row="1" Grid.Column="2" Content="Browse"/>
 
-        <TextBlock Grid.Row="2" Grid.Column="0" Text="Structure"/>
-        <TextBox x:Name="StructurePathBox" Grid.Row="2" Grid.Column="1"/>
-        <Button x:Name="BrowseStructureButton" Grid.Row="2" Grid.Column="2" Content="Browse"/>
+        <TextBlock Grid.Row="2" Grid.Column="0" Text="Template"/>
+        <TextBox x:Name="TemplatePathBox" Grid.Row="2" Grid.Column="1"/>
+        <Button x:Name="BrowseTemplateButton" Grid.Row="2" Grid.Column="2" Content="Browse"/>
 
-        <TextBlock Grid.Row="3" Grid.Column="0" Text="Job Folder"/>
-        <TextBox x:Name="JobDirBox" Grid.Row="3" Grid.Column="1"/>
-        <Button x:Name="BrowseJobDirButton" Grid.Row="3" Grid.Column="2" Content="Browse"/>
+        <TextBlock Grid.Row="3" Grid.Column="0" Text="Structure"/>
+        <TextBox x:Name="StructurePathBox" Grid.Row="3" Grid.Column="1"/>
+        <Button x:Name="BrowseStructureButton" Grid.Row="3" Grid.Column="2" Content="Browse"/>
 
-        <TextBlock Grid.Row="4" Grid.Column="0" Text="Project"/>
-        <TextBox x:Name="ProjectNameBox" Grid.Row="4" Grid.Column="1"/>
+        <TextBlock Grid.Row="4" Grid.Column="0" Text="Existing Input"/>
+        <TextBox x:Name="ExistingInputPathBox" Grid.Row="4" Grid.Column="1"/>
+        <Button x:Name="BrowseExistingInputButton" Grid.Row="4" Grid.Column="2" Content="Browse"/>
+
+        <TextBlock Grid.Row="5" Grid.Column="0" Text="Job Folder"/>
+        <TextBox x:Name="JobDirBox" Grid.Row="5" Grid.Column="1"/>
+        <Button x:Name="BrowseJobDirButton" Grid.Row="5" Grid.Column="2" Content="Browse"/>
+
+        <TextBlock Grid.Row="6" Grid.Column="0" Text="Project"/>
+        <TextBox x:Name="ProjectNameBox" Grid.Row="6" Grid.Column="1"/>
       </Grid>
     </GroupBox>
 
@@ -205,10 +219,13 @@ function New-WinQStepWindow {
 
     $controls = @{}
     $names = @(
-        "ConfigPathBox", "TemplatePathBox", "StructurePathBox", "JobDirBox", "ProjectNameBox",
+        "WorkflowModeRadio", "ExistingInputModeRadio",
+        "ConfigPathBox", "TemplatePathBox", "StructurePathBox", "ExistingInputPathBox",
+        "JobDirBox", "ProjectNameBox",
         "EnvironmentText", "StructureText", "PreviewText", "LogText", "StatusText",
         "DetectButton", "ImportButton", "PreviewButton", "RunButton", "ClearButton",
-        "BrowseConfigButton", "BrowseTemplateButton", "BrowseStructureButton", "BrowseJobDirButton"
+        "BrowseConfigButton", "BrowseTemplateButton", "BrowseStructureButton",
+        "BrowseExistingInputButton", "BrowseJobDirButton"
     )
     foreach ($name in $names) {
         $controls[$name] = $window.FindName($name)
@@ -217,26 +234,46 @@ function New-WinQStepWindow {
     $controls["ConfigPathBox"].Text = Resolve-WinQStepPath "examples\winqstep.config.json"
     $controls["TemplatePathBox"].Text = Resolve-WinQStepPath "examples\templates\energy_pbe.json"
     $controls["StructurePathBox"].Text = Resolve-WinQStepPath "tests\fixtures\structures\water.xyz"
+    $controls["ExistingInputPathBox"].Text = Resolve-WinQStepPath "tests\fixtures\quickstep_energy.inp"
     $controls["JobDirBox"].Text = Resolve-WinQStepPath "outputs\gui-preview"
     $controls["ProjectNameBox"].Text = "gui_preview"
 
     $actionButtons = @(
         $controls["DetectButton"], $controls["ImportButton"], $controls["PreviewButton"],
         $controls["RunButton"], $controls["ClearButton"], $controls["BrowseConfigButton"],
-        $controls["BrowseTemplateButton"], $controls["BrowseStructureButton"], $controls["BrowseJobDirButton"]
+        $controls["BrowseTemplateButton"], $controls["BrowseStructureButton"],
+        $controls["BrowseExistingInputButton"], $controls["BrowseJobDirButton"]
     )
 
-    function Set-Busy {
+    $TestIsExistingInputMode = {
+        return [bool]$controls["ExistingInputModeRadio"].IsChecked
+    }.GetNewClosure()
+
+    $UpdateModeControls = {
+        $isExistingInputMode = & $TestIsExistingInputMode
+        foreach ($name in @("TemplatePathBox", "BrowseTemplateButton", "StructurePathBox", "BrowseStructureButton", "ProjectNameBox")) {
+            $controls[$name].IsEnabled = -not $isExistingInputMode
+        }
+        foreach ($name in @("ExistingInputPathBox", "BrowseExistingInputButton")) {
+            $controls[$name].IsEnabled = $isExistingInputMode
+        }
+        $controls["ImportButton"].IsEnabled = -not $isExistingInputMode
+    }.GetNewClosure()
+
+    $SetBusy = {
         param([bool]$IsBusy, [string]$Status)
         $controls["StatusText"].Text = $Status
         foreach ($button in $actionButtons) {
             $button.IsEnabled = -not $IsBusy
         }
         $window.Cursor = if ($IsBusy) { [System.Windows.Input.Cursors]::Wait } else { $null }
+        if (-not $IsBusy) {
+            & $UpdateModeControls
+        }
         [System.Windows.Forms.Application]::DoEvents()
-    }
+    }.GetNewClosure()
 
-    function Append-Log {
+    $AppendLog = {
         param([string]$Text)
         if ([string]::IsNullOrWhiteSpace($controls["LogText"].Text)) {
             $controls["LogText"].Text = $Text
@@ -245,25 +282,25 @@ function New-WinQStepWindow {
             $controls["LogText"].AppendText("`r`n$Text")
         }
         $controls["LogText"].ScrollToEnd()
-    }
+    }.GetNewClosure()
 
-    function Invoke-GuiAction {
+    $InvokeGuiAction = {
         param([string]$Status, [scriptblock]$Action)
-        Set-Busy $true $Status
+        & $SetBusy $true $Status
         try {
             & $Action
         }
         catch {
             $message = $_.Exception.Message
-            Append-Log "ERROR: $message"
+            & $AppendLog "ERROR: $message"
             [System.Windows.MessageBox]::Show($window, $message, "WinQStep", "OK", "Error") | Out-Null
         }
         finally {
-            Set-Busy $false "Ready"
+            & $SetBusy $false "Ready"
         }
-    }
+    }.GetNewClosure()
 
-    function Select-FilePath {
+    $SelectFilePath = {
         param([Parameter(Mandatory = $true)]$TextBox, [Parameter(Mandatory = $true)][string]$Filter)
         $dialog = New-Object Microsoft.Win32.OpenFileDialog
         $dialog.Filter = $Filter
@@ -273,9 +310,9 @@ function New-WinQStepWindow {
         if ($dialog.ShowDialog($window)) {
             $TextBox.Text = $dialog.FileName
         }
-    }
+    }.GetNewClosure()
 
-    function Select-FolderPath {
+    $SelectFolderPath = {
         param([Parameter(Mandatory = $true)]$TextBox)
         $dialog = New-Object System.Windows.Forms.FolderBrowserDialog
         if ([System.IO.Directory]::Exists($TextBox.Text)) {
@@ -284,9 +321,9 @@ function New-WinQStepWindow {
         if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
             $TextBox.Text = $dialog.SelectedPath
         }
-    }
+    }.GetNewClosure()
 
-    function Get-WorkflowArguments {
+    $GetWorkflowArguments = {
         param([bool]$PrepareOnly)
         $arguments = @(
             "scripts\run_workflow.py",
@@ -300,34 +337,65 @@ function New-WinQStepWindow {
             $arguments += "--prepare-only"
         }
         return $arguments
-    }
+    }.GetNewClosure()
 
-    $controls["BrowseConfigButton"].Add_Click({ Select-FilePath $controls["ConfigPathBox"] "JSON files (*.json)|*.json|All files (*.*)|*.*" })
-    $controls["BrowseTemplateButton"].Add_Click({ Select-FilePath $controls["TemplatePathBox"] "JSON files (*.json)|*.json|All files (*.*)|*.*" })
-    $controls["BrowseStructureButton"].Add_Click({ Select-FilePath $controls["StructurePathBox"] "Structures (*.xyz;*.cif;POSCAR;CONTCAR)|*.xyz;*.cif;POSCAR;CONTCAR|All files (*.*)|*.*" })
-    $controls["BrowseJobDirButton"].Add_Click({ Select-FolderPath $controls["JobDirBox"] })
+    $GetExistingInputArguments = {
+        param([bool]$PrepareOnly)
+        $arguments = @(
+            "scripts\run_existing_input.py",
+            "--config", $controls["ConfigPathBox"].Text,
+            "--input", $controls["ExistingInputPathBox"].Text,
+            "--job-dir", $controls["JobDirBox"].Text
+        )
+        if ($PrepareOnly) {
+            $arguments += "--prepare-only"
+        }
+        return $arguments
+    }.GetNewClosure()
+
+    $GetActiveJobArguments = {
+        param([bool]$PrepareOnly)
+        if (& $TestIsExistingInputMode) {
+            return (& $GetExistingInputArguments $PrepareOnly)
+        }
+        return (& $GetWorkflowArguments $PrepareOnly)
+    }.GetNewClosure()
+
+    $GetActiveInputPreviewPath = {
+        param([Parameter(Mandatory = $true)]$Metadata)
+        return [string]$Metadata.files.input.path
+    }.GetNewClosure()
+
+    $controls["BrowseConfigButton"].Add_Click({ & $SelectFilePath $controls["ConfigPathBox"] "JSON files (*.json)|*.json|All files (*.*)|*.*" }.GetNewClosure())
+    $controls["BrowseTemplateButton"].Add_Click({ & $SelectFilePath $controls["TemplatePathBox"] "JSON files (*.json)|*.json|All files (*.*)|*.*" }.GetNewClosure())
+    $controls["BrowseStructureButton"].Add_Click({ & $SelectFilePath $controls["StructurePathBox"] "Structures (*.xyz;*.cif;POSCAR;CONTCAR)|*.xyz;*.cif;POSCAR;CONTCAR|All files (*.*)|*.*" }.GetNewClosure())
+    $controls["BrowseExistingInputButton"].Add_Click({ & $SelectFilePath $controls["ExistingInputPathBox"] "CP2K input files (*.inp)|*.inp|All files (*.*)|*.*" }.GetNewClosure())
+    $controls["BrowseJobDirButton"].Add_Click({ & $SelectFolderPath $controls["JobDirBox"] }.GetNewClosure())
+    $controls["WorkflowModeRadio"].Add_Checked({ & $UpdateModeControls }.GetNewClosure())
+    $controls["ExistingInputModeRadio"].Add_Checked({ & $UpdateModeControls }.GetNewClosure())
 
     $controls["DetectButton"].Add_Click({
-        Invoke-GuiAction "Detecting environment" {
+        & $InvokeGuiAction "Detecting environment" {
             $result = Invoke-WinQStepPython @("scripts\detect_environment.py", "--config", $controls["ConfigPathBox"].Text)
             $controls["EnvironmentText"].Text = $result.Output
-            Append-Log "detect_environment.py exited with code $($result.ExitCode)"
+            & $AppendLog "detect_environment.py exited with code $($result.ExitCode)"
         }
-    })
+    }.GetNewClosure())
 
     $controls["ImportButton"].Add_Click({
-        Invoke-GuiAction "Importing structure" {
+        & $InvokeGuiAction "Importing structure" {
             $result = Invoke-WinQStepPython @("scripts\import_structure.py", "--input", $controls["StructurePathBox"].Text)
             $controls["StructureText"].Text = $result.Output
-            Append-Log "import_structure.py exited with code $($result.ExitCode)"
+            & $AppendLog "import_structure.py exited with code $($result.ExitCode)"
         }
-    })
+    }.GetNewClosure())
 
     $controls["PreviewButton"].Add_Click({
-        Invoke-GuiAction "Preparing input preview" {
-            $result = Invoke-WinQStepPython (Get-WorkflowArguments $true)
+        $status = if (& $TestIsExistingInputMode) { "Preparing existing input preview" } else { "Preparing workflow input preview" }
+        & $InvokeGuiAction $status {
+            $result = Invoke-WinQStepPython (& $GetActiveJobArguments $true)
             $metadata = Get-JsonResult $result
-            $inputPath = $metadata.files.input.path
+            $inputPath = & $GetActiveInputPreviewPath $metadata
             if ([System.IO.File]::Exists($inputPath)) {
                 $controls["PreviewText"].Text = [System.IO.File]::ReadAllText($inputPath, [System.Text.Encoding]::UTF8)
             }
@@ -336,11 +404,11 @@ function New-WinQStepWindow {
             }
             $controls["LogText"].Text = $result.Output
         }
-    })
+    }.GetNewClosure())
 
     $controls["RunButton"].Add_Click({
-        Invoke-GuiAction "Running CP2K" {
-            $result = Invoke-WinQStepPython (Get-WorkflowArguments $false)
+        & $InvokeGuiAction "Running CP2K" {
+            $result = Invoke-WinQStepPython (& $GetActiveJobArguments $false)
             $metadata = Get-JsonResult $result
             $logText = $result.Output
             $outputPath = $metadata.files.output.path
@@ -350,15 +418,16 @@ function New-WinQStepWindow {
             }
             $controls["LogText"].Text = $logText
         }
-    })
+    }.GetNewClosure())
 
     $controls["ClearButton"].Add_Click({
         $controls["EnvironmentText"].Clear()
         $controls["StructureText"].Clear()
         $controls["PreviewText"].Clear()
         $controls["LogText"].Clear()
-    })
+    }.GetNewClosure())
 
+    & $UpdateModeControls
     return $window
 }
 
@@ -376,10 +445,25 @@ if ($SmokeTest) {
         "--compact"
     )
     $previewMetadata = Get-JsonResult $previewResult
+    $existingPreviewResult = Invoke-WinQStepPython @(
+        "scripts\run_existing_input.py",
+        "--config", (Resolve-WinQStepPath "examples\winqstep.config.json"),
+        "--input", (Resolve-WinQStepPath "tests\fixtures\quickstep_energy.inp"),
+        "--job-dir", (Resolve-WinQStepPath "outputs\gui-existing-smoke"),
+        "--prepare-only",
+        "--compact"
+    )
+    $existingPreviewMetadata = Get-JsonResult $existingPreviewResult
+    $window.FindName("ExistingInputModeRadio").IsChecked = $true
     $report["xaml_loaded"] = ($window -is [System.Windows.Window])
     $report["title"] = $window.Title
     $report["preview_exit_code"] = $previewResult.ExitCode
     $report["preview_input_exists"] = [System.IO.File]::Exists($previewMetadata.files.input.path)
+    $report["existing_preview_exit_code"] = $existingPreviewResult.ExitCode
+    $report["existing_preview_mode"] = $existingPreviewMetadata.job.mode
+    $report["existing_preview_input_exists"] = [System.IO.File]::Exists($existingPreviewMetadata.files.input.path)
+    $report["existing_mode_input_enabled"] = [bool]$window.FindName("ExistingInputPathBox").IsEnabled
+    $report["existing_mode_import_enabled"] = [bool]$window.FindName("ImportButton").IsEnabled
     $report | ConvertTo-Json -Depth 5
     exit 0
 }

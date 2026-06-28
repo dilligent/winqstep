@@ -11,7 +11,7 @@ Each round should end with a focused commit.
 - Current code: standard-library Python core commands plus unit tests.
 - Current docs: product scope, architecture, WSL execution rules, CP2K input
   model, workflow, GUI prototype, and existing-input jobs.
-- Next active round: Round 8, GUI existing-input integration.
+- Next active round: Round 9, output summary parsing.
 - Known local facts:
   - WSL2 is available.
   - Default distro is `Ubuntu`.
@@ -263,7 +263,14 @@ Commit boundary:
 
 ## Round 8: GUI Existing-Input Integration
 
+Status: implemented.
+
 Goal: expose the existing-input runner in the GUI prototype.
+
+Local verification:
+
+- `scripts/start_gui.ps1 -SmokeTest` validates both workflow prepare-only and
+  existing-input prepare-only paths without launching CP2K.
 
 Tasks:
 
@@ -279,6 +286,27 @@ Acceptance:
 Commit boundary:
 
 - One commit for GUI integration, smoke test updates, and docs.
+
+## Round 9: Output Summary Parsing
+
+Goal: extract a compact status summary from CP2K output files.
+
+Tasks:
+
+- Parse CP2K warning count, program end marker, and final status from `.out`
+  files.
+- Add the parsed summary to metadata after generated, workflow, and existing
+  input runs.
+- Surface the summary in CLI output and the GUI job log.
+
+Acceptance:
+
+- Successful smoke runs report return code, warning count, and output marker
+  without requiring users to inspect the full `.out` file.
+
+Commit boundary:
+
+- One commit for parser, tests, docs, and GUI display updates.
 
 ## Working Rules
 

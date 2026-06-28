@@ -72,6 +72,9 @@ To open the Windows GUI prototype:
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\start_gui.ps1
 ```
 
+The GUI can run either the structure/template workflow or an existing `.inp`
+file through the same command-line core.
+
 To render and run a minimal QuickStep job through WSL/CP2K:
 
 ```powershell
