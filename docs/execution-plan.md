@@ -11,16 +11,20 @@ Each round should end with a focused commit.
 - Current code: standard-library Python environment probe plus unit tests.
 - Current docs: product scope, architecture, WSL execution rules, and CP2K input
   model.
+- Next active round: Round 2, path conversion and job model.
 - Known local facts:
   - WSL2 is available.
   - Default distro is `Ubuntu`.
   - `mpirun` is available at `/usr/bin/mpirun`.
+  - The normal direct CP2K command in WSL2 is `cp2k.ssmp`.
   - CP2K is not currently found on WSL `PATH`.
   - `CP2K_DATA_DIR` is not exported in the selected distro.
   - A local CP2K 2026.1 data snapshot exists at
     `/mnt/d/Library/自制品/winqstep/cp2k-2026.1/data`.
 
 ## Round 1: Configuration File Support
+
+Status: implemented.
 
 Goal: make environment detection work from explicit project configuration, not
 only from auto-detection.
@@ -33,6 +37,8 @@ Tasks:
   `cp2k_data_dir`, and a default Windows workspace folder.
 - Keep CLI arguments as overrides over config values.
 - Add tests for config loading and override precedence.
+- Prefer `cp2k.ssmp` in the repo-local sample config because that matches the
+  current machine's normal CP2K workflow.
 
 Acceptance:
 

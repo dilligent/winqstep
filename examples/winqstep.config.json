@@ -1,0 +1,8 @@
+{
+  "distro": "Ubuntu",
+  "cp2k_command": "cp2k.ssmp",
+  "mpirun_command": "",
+  "cp2k_data_dir": "/mnt/d/Library/自制品/winqstep/cp2k-2026.1/data",
+  "default_windows_workspace": "D:\\Library\\自制品\\winqstep\\outputs",
+  "timeout": 20
+}

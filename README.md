@@ -36,6 +36,12 @@ python .\scripts\detect_environment.py --help
 
 Run it from Windows so it can call `wsl.exe`.
 
+For machine-specific settings, use the sample config:
+
+```powershell
+python .\scripts\detect_environment.py --config .\examples\winqstep.config.json
+```
+
 ## License
 
 WinQStep is licensed under `GPL-3.0-or-later`. See `LICENSE`.

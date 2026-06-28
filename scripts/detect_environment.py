@@ -12,7 +12,18 @@ import shutil
 import subprocess
 import sys
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
+
+
+CONFIG_KEYS = {
+    "distro",
+    "cp2k_command",
+    "mpirun_command",
+    "cp2k_data_dir",
+    "default_windows_workspace",
+    "timeout",
+}
 
 
 def decode_output(value: bytes | None) -> str:
@@ -115,12 +126,55 @@ def first_line(text: str) -> str:
     return ""
 
 
+def load_config(path: str | None) -> dict[str, Any]:
+    if not path:
+        return {}
+
+    config_path = Path(path)
+    with config_path.open("r", encoding="utf-8") as handle:
+        config = json.load(handle)
+
+    if not isinstance(config, dict):
+        raise ValueError("config file must contain a JSON object")
+
+    unknown_keys = sorted(set(config) - CONFIG_KEYS)
+    if unknown_keys:
+        raise ValueError("unknown config key(s): " + ", ".join(unknown_keys))
+
+    return config
+
+
+def config_value(config: dict[str, Any], key: str, default: Any = None) -> Any:
+    value = config.get(key, default)
+    if value == "":
+        return default
+    return value
+
+
+def apply_config(args: argparse.Namespace, config: dict[str, Any]) -> argparse.Namespace:
+    merged = argparse.Namespace(**vars(args))
+    for key in CONFIG_KEYS:
+        if not hasattr(merged, key):
+            continue
+        current = getattr(merged, key)
+        if current is None:
+            setattr(merged, key, config_value(config, key))
+
+    if merged.timeout is None:
+        merged.timeout = 20
+
+    return merged
+
+
 def probe_wsl(args: argparse.Namespace) -> dict[str, Any]:
     warnings: list[str] = []
     wsl_path = shutil.which("wsl.exe") or shutil.which("wsl")
 
     report: dict[str, Any] = {
         "generated_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        "config": {
+            "path": args.config,
+        },
         "host": {
             "system": platform.system(),
             "release": platform.release(),
@@ -141,6 +195,9 @@ def probe_wsl(args: argparse.Namespace) -> dict[str, Any]:
         },
         "mpi": {
             "command": args.mpirun_command,
+        },
+        "workspace": {
+            "default_windows_workspace": args.default_windows_workspace,
         },
         "commands": {},
         "warnings": warnings,
@@ -175,7 +232,7 @@ def probe_wsl(args: argparse.Namespace) -> dict[str, Any]:
     if not cp2k_command:
         find_cp2k = run_wsl(
             selected_distro,
-            "command -v cp2k.psmp || command -v cp2k || command -v cp2k.ssmp || true",
+            "command -v cp2k.ssmp || command -v cp2k.psmp || command -v cp2k || true",
             args.timeout,
         )
         report["commands"]["find_cp2k"] = find_cp2k
@@ -192,13 +249,13 @@ def probe_wsl(args: argparse.Namespace) -> dict[str, Any]:
         quoted_cp2k = shlex.quote(cp2k_command)
         version = run_wsl(
             selected_distro,
-            f"{quoted_cp2k} --version 2>&1 | head -40",
+            f"{quoted_cp2k} --version 2>&1",
             args.timeout,
         )
         report["commands"]["cp2k_version"] = version
         report["cp2k"]["version_output"] = version["stdout"] or version["stderr"]
         if not version["ok"]:
-            warnings.append("CP2K command was found, but version probing failed.")
+            warnings.append("CP2K command is configured or detected, but version probing failed.")
 
     mpirun_command = args.mpirun_command
     if not mpirun_command:
@@ -272,10 +329,11 @@ def main() -> int:
     parser = argparse.ArgumentParser(
         description="Collect WSL2 and CP2K environment facts for WinQStep."
     )
+    parser.add_argument("--config", help="Path to a WinQStep JSON config file.")
     parser.add_argument("--distro", help="WSL distro name. Defaults to the WSL default.")
     parser.add_argument(
         "--cp2k-command",
-        help="CP2K command inside WSL, for example cp2k.psmp or /usr/bin/cp2k.psmp.",
+        help="CP2K command inside WSL, for example cp2k.ssmp or /usr/bin/cp2k.ssmp.",
     )
     parser.add_argument(
         "--mpirun-command",
@@ -286,13 +344,23 @@ def main() -> int:
         help="CP2K data directory inside WSL. Defaults to the CP2K_DATA_DIR environment variable.",
     )
     parser.add_argument(
+        "--default-windows-workspace",
+        help="Default Windows folder for WinQStep jobs.",
+    )
+    parser.add_argument(
         "--timeout",
         type=int,
-        default=20,
+        default=None,
         help="Timeout in seconds for each subprocess call.",
     )
     parser.add_argument("--compact", action="store_true", help="Emit compact JSON.")
     args = parser.parse_args()
+    try:
+        config = load_config(args.config)
+        args = apply_config(args, config)
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 2
 
     report = probe_wsl(args)
     indent = None if args.compact else 2
