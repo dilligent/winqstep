@@ -42,6 +42,12 @@ For machine-specific settings, use the sample config:
 python .\scripts\detect_environment.py --config .\examples\winqstep.config.json
 ```
 
+To preview the WSL command for a future CP2K job without running it:
+
+```powershell
+python .\scripts\build_job_dry_run.py --config .\examples\winqstep.config.json --input D:\Library\自制品\winqstep\outputs\water.inp
+```
+
 ## License
 
 WinQStep is licensed under `GPL-3.0-or-later`. See `LICENSE`.

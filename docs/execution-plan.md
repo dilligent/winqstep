@@ -11,7 +11,7 @@ Each round should end with a focused commit.
 - Current code: standard-library Python environment probe plus unit tests.
 - Current docs: product scope, architecture, WSL execution rules, and CP2K input
   model.
-- Next active round: Round 2, path conversion and job model.
+- Next active round: Round 3, QuickStep input generator.
 - Known local facts:
   - WSL2 is available.
   - Default distro is `Ubuntu`.
@@ -57,6 +57,8 @@ Commit boundary:
 - One commit for config format, loader, tests, and docs.
 
 ## Round 2: Path Conversion and Job Model
+
+Status: implemented.
 
 Goal: define how Windows files become WSL-side job commands before running CP2K.
 

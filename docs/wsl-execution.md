@@ -36,6 +36,8 @@ environments while remaining harmless when conda is not installed or not active.
 - Generated inputs should be written to a stable job folder before CP2K starts.
 - Output files should be kept with the input that produced them.
 - The runner should never depend on the GUI process current directory.
+- Absolute Windows drive paths convert to `/mnt/<drive>/...`, preserving path
+  segments, spaces, and non-ASCII characters.
 
 ## Command Shape
 
@@ -52,6 +54,24 @@ The Linux command should:
 3. set required environment variables;
 4. run either CP2K directly or through MPI;
 5. write stdout/stderr to files that the GUI can stream or tail.
+
+## Dry-run Jobs
+
+The current command builder emits JSON metadata without starting CP2K:
+
+```powershell
+python .\scripts\build_job_dry_run.py --config .\examples\winqstep.config.json --input D:\Library\自制品\winqstep\outputs\water.inp
+```
+
+The dry-run output includes:
+
+- Windows input, output, stdout, stderr, and metadata paths;
+- WSL input and job directory paths;
+- the WSL-side shell command;
+- the Windows `wsl.exe` argument vector.
+
+This keeps path conversion and quoting testable before long-running CP2K jobs
+are enabled.
 
 ## Cancellation
 
