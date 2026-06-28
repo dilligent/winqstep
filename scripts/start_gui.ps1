@@ -9,6 +9,17 @@ $ErrorActionPreference = "Stop"
 
 $Script:RepoRoot = Split-Path -Parent $PSScriptRoot
 $Script:PythonCommand = "python"
+$Script:Utf8NoBomEncoding = New-Object System.Text.UTF8Encoding($false)
+
+function Set-WinQStepUtf8Encoding {
+    [Console]::InputEncoding = $Script:Utf8NoBomEncoding
+    [Console]::OutputEncoding = $Script:Utf8NoBomEncoding
+    $global:OutputEncoding = $Script:Utf8NoBomEncoding
+    $env:PYTHONIOENCODING = "utf-8"
+    $env:PYTHONUTF8 = "1"
+}
+
+Set-WinQStepUtf8Encoding
 
 function Resolve-WinQStepPath {
     param([Parameter(Mandatory = $true)][string]$RelativePath)
@@ -65,11 +76,14 @@ function Invoke-WinQStepPython {
     )
 
     Push-Location $Script:RepoRoot
+    $previousErrorActionPreference = $ErrorActionPreference
     try {
+        $ErrorActionPreference = "Continue"
         $output = & $Script:PythonCommand @Arguments 2>&1
         $exitCode = if ($null -eq $global:LASTEXITCODE) { 0 } else { $global:LASTEXITCODE }
     }
     finally {
+        $ErrorActionPreference = $previousErrorActionPreference
         Pop-Location
     }
 
@@ -109,7 +123,7 @@ function New-WinQStepWindow {
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="WinQStep" Height="760" Width="1120" MinHeight="620" MinWidth="900"
-        Background="#F5F7FA" FontFamily="Segoe UI" WindowStartupLocation="CenterScreen">
+        Background="#F5F7FA" FontFamily="Segoe UI, Microsoft YaHei UI, Microsoft YaHei" WindowStartupLocation="CenterScreen">
   <Window.Resources>
     <Style TargetType="TextBox">
       <Setter Property="Margin" Value="6,4"/>
@@ -194,22 +208,22 @@ function New-WinQStepWindow {
 
     <TabControl Grid.Row="2">
       <TabItem Header="Environment">
-        <TextBox x:Name="EnvironmentText" FontFamily="Consolas" FontSize="12"
+        <TextBox x:Name="EnvironmentText" FontFamily="Cascadia Mono, Consolas, Microsoft YaHei UI, Microsoft YaHei, SimSun" FontSize="12"
                  AcceptsReturn="True" AcceptsTab="True" TextWrapping="NoWrap"
                  HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"/>
       </TabItem>
       <TabItem Header="Structure">
-        <TextBox x:Name="StructureText" FontFamily="Consolas" FontSize="12"
+        <TextBox x:Name="StructureText" FontFamily="Cascadia Mono, Consolas, Microsoft YaHei UI, Microsoft YaHei, SimSun" FontSize="12"
                  AcceptsReturn="True" AcceptsTab="True" TextWrapping="NoWrap"
                  HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"/>
       </TabItem>
       <TabItem Header="Input Preview">
-        <TextBox x:Name="PreviewText" FontFamily="Consolas" FontSize="12"
+        <TextBox x:Name="PreviewText" FontFamily="Cascadia Mono, Consolas, Microsoft YaHei UI, Microsoft YaHei, SimSun" FontSize="12"
                  AcceptsReturn="True" AcceptsTab="True" TextWrapping="NoWrap"
                  HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"/>
       </TabItem>
       <TabItem Header="Job Log">
-        <TextBox x:Name="LogText" FontFamily="Consolas" FontSize="12"
+        <TextBox x:Name="LogText" FontFamily="Cascadia Mono, Consolas, Microsoft YaHei UI, Microsoft YaHei, SimSun" FontSize="12"
                  AcceptsReturn="True" AcceptsTab="True" TextWrapping="Wrap"
                  HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"/>
       </TabItem>
@@ -453,6 +467,13 @@ function New-WinQStepWindow {
 if ($SmokeTest) {
     $report = Test-WinQStepGuiPrerequisites
     $window = New-WinQStepWindow
+    $expectedEncodingText = "$([char]0x4e2d)$([char]0x6587)$([char]0x8def)$([char]0x5f84):D:\Library\$([char]0x81ea)$([char]0x5236)$([char]0x54c1)"
+    $chineseFolderName = "$([char]0x81ea)$([char]0x5236)$([char]0x54c1)"
+    $encodingProbeResult = Invoke-WinQStepPython @(
+        "-c",
+        "import json; sep = chr(92); text = ''.join(chr(x) for x in [0x4e2d, 0x6587, 0x8def, 0x5f84]) + ':D:' + sep + 'Library' + sep + ''.join(chr(x) for x in [0x81ea, 0x5236, 0x54c1]); print(json.dumps(dict(text=text), ensure_ascii=False))"
+    )
+    $encodingProbe = Get-JsonResult $encodingProbeResult
     $previewResult = Invoke-WinQStepPython @(
         "scripts\run_workflow.py",
         "--config", (Resolve-WinQStepPath "examples\winqstep.config.json"),
@@ -476,6 +497,11 @@ if ($SmokeTest) {
     $window.FindName("ExistingInputModeRadio").IsChecked = $true
     $report["xaml_loaded"] = ($window -is [System.Windows.Window])
     $report["title"] = $window.Title
+    $report["console_output_encoding"] = [Console]::OutputEncoding.WebName
+    $report["pythonioencoding"] = $env:PYTHONIOENCODING
+    $report["encoding_probe_exit_code"] = $encodingProbeResult.ExitCode
+    $report["encoding_probe_text"] = $encodingProbe.text
+    $report["encoding_probe_ok"] = $encodingProbe.text -eq $expectedEncodingText
     $report["preview_exit_code"] = $previewResult.ExitCode
     $report["preview_input_exists"] = [System.IO.File]::Exists($previewMetadata.files.input.path)
     $report["preview_summary_status"] = $previewMetadata.cp2k_output.status
@@ -483,6 +509,8 @@ if ($SmokeTest) {
     $report["existing_preview_mode"] = $existingPreviewMetadata.job.mode
     $report["existing_preview_input_exists"] = [System.IO.File]::Exists($existingPreviewMetadata.files.input.path)
     $report["existing_preview_summary_status"] = $existingPreviewMetadata.cp2k_output.status
+    $report["existing_preview_input_path"] = [string]$existingPreviewMetadata.files.input.path
+    $report["existing_preview_path_encoding_ok"] = ([string]$existingPreviewMetadata.files.input.path).Contains($chineseFolderName)
     $report["existing_mode_input_enabled"] = [bool]$window.FindName("ExistingInputPathBox").IsEnabled
     $report["existing_mode_import_enabled"] = [bool]$window.FindName("ImportButton").IsEnabled
     $report | ConvertTo-Json -Depth 5

@@ -32,6 +32,9 @@ The GUI does not parse or generate CP2K input itself. It displays JSON, rendered
 input text, job metadata, and CP2K output summaries produced by the core
 commands.
 
+The PowerShell host forces UTF-8 for Python subprocess output so Windows paths
+with Chinese characters render correctly in the text panes.
+
 ## Smoke Test
 
 Use smoke mode to validate the WPF host and default paths without showing the
