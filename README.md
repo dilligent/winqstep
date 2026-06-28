@@ -66,6 +66,12 @@ To combine a structure file with a calculation template and run CP2K:
 python .\scripts\run_workflow.py --config .\examples\winqstep.config.json --template .\examples\templates\energy_pbe.json --structure .\tests\fixtures\structures\water.xyz --job-dir .\outputs\workflow-energy
 ```
 
+To open the Windows GUI prototype:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\start_gui.ps1
+```
+
 To render and run a minimal QuickStep job through WSL/CP2K:
 
 ```powershell

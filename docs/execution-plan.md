@@ -9,9 +9,9 @@ Each round should end with a focused commit.
 - Product name: WinQStep.
 - License: `GPL-3.0-or-later`.
 - Current code: standard-library Python core commands plus unit tests.
-- Current docs: product scope, architecture, WSL execution rules, and CP2K input
-  model.
-- Next active round: Round 6, GUI prototype.
+- Current docs: product scope, architecture, WSL execution rules, CP2K input
+  model, workflow, and GUI prototype.
+- Next active round: Round 7, existing-input job execution.
 - Known local facts:
   - WSL2 is available.
   - Default distro is `Ubuntu`.
@@ -205,7 +205,16 @@ Commit boundary:
 
 ## Round 6: GUI Prototype
 
+Status: implemented.
+
 Goal: build a thin Windows UI over the already-tested core workflow.
+
+Local verification:
+
+- The current machine has the .NET Desktop runtime but no .NET SDK, so the first
+  WPF prototype is hosted by PowerShell instead of a compiled WPF project.
+- `scripts/start_gui.ps1 -SmokeTest` loads the WPF window and validates default
+  repository paths without showing the UI.
 
 Tasks:
 
@@ -222,6 +231,28 @@ Acceptance:
 Commit boundary:
 
 - One commit for initial GUI skeleton and integration notes.
+
+## Round 7: Existing-Input Job Execution
+
+Goal: run a user-provided CP2K `.inp` file without regenerating it.
+
+Tasks:
+
+- Add a CLI that accepts an existing Windows input path and optional job folder.
+- Reuse the current WSL command builder, CP2K data directory handling, and conda
+  cleanup prelude.
+- Preserve the original input file instead of rendering or copying over it.
+- Record stdout, stderr, return code, output file paths, and metadata.
+
+Acceptance:
+
+- A known-good `.inp` can run through the same WSL/CP2K path.
+- The command works independently of the QuickStep JSON and workflow template
+  layers.
+
+Commit boundary:
+
+- One commit for existing-input execution, tests, docs, and local smoke output.
 
 ## Working Rules
 
