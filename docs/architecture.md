@@ -20,9 +20,11 @@ GUI should call this core instead of owning CP2K-specific behavior directly.
 CP2K remains an external program. WinQStep should communicate with it through
 `wsl.exe` and command-line execution, not by linking or embedding CP2K.
 
-Structure parsing can live in a Python sidecar because the scientific Python
+Structure parsing lives in a Python sidecar because the scientific Python
 ecosystem already has mature readers for CIF, POSCAR, and XYZ. The first sidecar
-API should be file-in, JSON-out, with explicit errors that the GUI can display.
+API is file-in, JSON-out, with explicit errors that the GUI can display. ASE is
+the preferred reader, with small built-in fallback readers for simple fixtures
+and offline tests.
 
 ## Data Flow
 

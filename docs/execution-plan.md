@@ -11,7 +11,7 @@ Each round should end with a focused commit.
 - Current code: standard-library Python environment probe plus unit tests.
 - Current docs: product scope, architecture, WSL execution rules, and CP2K input
   model.
-- Next active round: Round 4, structure import sidecar.
+- Next active round: Round 5, local CP2K smoke run.
 - Known local facts:
   - WSL2 is available.
   - Default distro is `Ubuntu`.
@@ -114,7 +114,16 @@ Commit boundary:
 
 ## Round 4: Structure Import Sidecar
 
+Status: implemented.
+
 Goal: normalize CIF, POSCAR, and XYZ into one structure JSON shape.
+
+Local verification:
+
+- ASE `3.29.0` is available on the current machine.
+- `scripts/import_structure.py` imports XYZ, POSCAR, and CIF fixtures.
+- The normalized JSON contains source metadata, cell vectors, PBC flags,
+  periodic label, elements, and Cartesian coordinates.
 
 Tasks:
 

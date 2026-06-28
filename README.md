@@ -54,6 +54,12 @@ To render a conservative QuickStep input from JSON:
 python .\scripts\render_quickstep_input.py --input-json .\examples\quickstep_energy.json
 ```
 
+To import a structure file as normalized JSON:
+
+```powershell
+python .\scripts\import_structure.py --input .\tests\fixtures\structures\water.xyz
+```
+
 ## License
 
 WinQStep is licensed under `GPL-3.0-or-later`. See `LICENSE`.
