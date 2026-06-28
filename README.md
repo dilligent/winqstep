@@ -60,6 +60,12 @@ To import a structure file as normalized JSON:
 python .\scripts\import_structure.py --input .\tests\fixtures\structures\water.xyz
 ```
 
+To render and run a minimal QuickStep job through WSL/CP2K:
+
+```powershell
+python .\scripts\run_quickstep_job.py --config .\examples\winqstep.config.json --input-json .\examples\quickstep_energy.json --job-dir .\outputs\smoke-energy
+```
+
 ## License
 
 WinQStep is licensed under `GPL-3.0-or-later`. See `LICENSE`.

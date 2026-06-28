@@ -11,7 +11,7 @@ Each round should end with a focused commit.
 - Current code: standard-library Python environment probe plus unit tests.
 - Current docs: product scope, architecture, WSL execution rules, and CP2K input
   model.
-- Next active round: Round 5, local CP2K smoke run.
+- Next active round: Round 6, GUI prototype.
 - Known local facts:
   - WSL2 is available.
   - Default distro is `Ubuntu`.
@@ -144,7 +144,18 @@ Commit boundary:
 
 ## Round 5: Local CP2K Smoke Run
 
+Status: implemented.
+
 Goal: run one minimal CP2K job end to end through WSL.
+
+Local verification:
+
+- `scripts/run_quickstep_job.py` runs the configured CP2K command through WSL.
+- The runner writes `.inp`, `.out`, stdout/stderr logs, and metadata in the job
+  folder.
+- `examples/quickstep_energy.json` completed through the runner in
+  `outputs/smoke-round5` on 2026-06-29 with return code `0` and zero CP2K
+  warnings.
 
 Tasks:
 

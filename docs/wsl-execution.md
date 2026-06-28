@@ -73,6 +73,16 @@ The dry-run output includes:
 This keeps path conversion and quoting testable before long-running CP2K jobs
 are enabled.
 
+## Running Jobs
+
+`scripts/run_quickstep_job.py` uses the same dry-run model, then executes the
+generated `wsl.exe` argument vector. It writes rendered input, CP2K output,
+stdout/stderr logs, and metadata in the selected job folder.
+
+The runner treats the process return code as the source of truth for
+`succeeded` or `failed`. It preserves raw CP2K output for later inspection
+instead of trying to interpret scientific results.
+
 ## Cancellation
 
 Stopping a job must stop the WSL-side process group, not just the Windows
