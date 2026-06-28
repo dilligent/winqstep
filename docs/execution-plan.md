@@ -16,12 +16,16 @@ Each round should end with a focused commit.
   - WSL2 is available.
   - Default distro is `Ubuntu`.
   - `mpirun` is available at `/usr/bin/mpirun`.
-  - The normal direct CP2K command in WSL2 is `cp2k.ssmp`.
+  - The direct CP2K executable is `/home/teng/cp2k/exe/local/cp2k.ssmp`.
+  - The detected CP2K version is 2025.2.
+  - The matching CP2K data directory is `/home/teng/cp2k/data`.
   - WSL-side commands should deactivate conda before probing or running CP2K.
-  - CP2K is not currently found on WSL `PATH`.
+  - `cp2k.ssmp` is available in an interactive WSL shell, but not in the
+    non-interactive `bash -lc` shell used by WinQStep.
   - `CP2K_DATA_DIR` is not exported in the selected distro.
-  - A local CP2K 2026.1 data snapshot exists at
-    `/mnt/d/Library/自制品/winqstep/cp2k-2026.1/data`.
+  - A separate CP2K 2026.1 data snapshot exists at
+    `/mnt/d/Library/自制品/winqstep/cp2k-2026.1/data`, but it should not be the
+    default for the CP2K 2025.2 executable.
 
 ## Round 1: Configuration File Support
 

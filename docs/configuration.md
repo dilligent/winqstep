@@ -11,9 +11,9 @@ See `examples/winqstep.config.json`.
 ```json
 {
   "distro": "Ubuntu",
-  "cp2k_command": "cp2k.ssmp",
+  "cp2k_command": "/home/teng/cp2k/exe/local/cp2k.ssmp",
   "mpirun_command": "",
-  "cp2k_data_dir": "/mnt/d/Library/自制品/winqstep/cp2k-2026.1/data",
+  "cp2k_data_dir": "/home/teng/cp2k/data",
   "default_windows_workspace": "D:\\Library\\自制品\\winqstep\\outputs",
   "wsl_shell_prelude": "conda deactivate >/dev/null 2>&1 || true",
   "timeout": 20
@@ -35,8 +35,8 @@ python .\scripts\detect_environment.py --config .\examples\winqstep.config.json 
 ## Keys
 
 - `distro`: WSL distro name, such as `Ubuntu`.
-- `cp2k_command`: CP2K command inside WSL. For this project machine, the normal
-  direct command is `cp2k.ssmp`.
+- `cp2k_command`: CP2K command inside WSL. Use an absolute path when the command
+  is only available after interactive shell initialization.
 - `mpirun_command`: optional MPI launcher. Use an empty string when direct
   `cp2k.ssmp` execution is preferred.
 - `cp2k_data_dir`: CP2K data directory inside WSL.
