@@ -14,6 +14,8 @@ This repository is in the foundation stage. The immediate work is to define the
 product boundary, capture the Windows/WSL2 execution rules, and build a small
 environment probe before adding a GUI.
 
+The local execution plan is tracked in `docs/execution-plan.md`.
+
 ## First Target
 
 The first usable version should:
