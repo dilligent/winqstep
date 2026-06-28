@@ -46,6 +46,7 @@ function Test-WinQStepGuiPrerequisites {
         "scripts\run_workflow.py",
         "scripts\run_existing_input.py",
         "scripts\list_job_history.py",
+        "scripts\manage_config.py",
         "examples\winqstep.config.json",
         "examples\templates\energy_pbe.json",
         "tests\fixtures\structures\water.xyz",
@@ -151,6 +152,8 @@ function New-WinQStepWindow {
     <DockPanel Grid.Row="0">
       <TextBlock Text="WinQStep" FontSize="22" FontWeight="SemiBold" DockPanel.Dock="Left"/>
       <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
+        <Button x:Name="LoadConfigButton" Content="Load Config"/>
+        <Button x:Name="SaveConfigButton" Content="Save Config"/>
         <Button x:Name="DetectButton" Content="Detect"/>
         <Button x:Name="ImportButton" Content="Import"/>
         <Button x:Name="PreviewButton" Content="Preview"/>
@@ -209,6 +212,53 @@ function New-WinQStepWindow {
     </GroupBox>
 
     <TabControl Grid.Row="2">
+      <TabItem Header="Config">
+        <Grid Margin="8">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="160"/>
+            <ColumnDefinition Width="*"/>
+          </Grid.ColumnDefinitions>
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+          </Grid.RowDefinitions>
+
+          <TextBlock Grid.Row="0" Grid.Column="0" Text="Distro"/>
+          <TextBox x:Name="DistroBox" Grid.Row="0" Grid.Column="1"/>
+
+          <TextBlock Grid.Row="1" Grid.Column="0" Text="CP2K Command"/>
+          <TextBox x:Name="Cp2kCommandBox" Grid.Row="1" Grid.Column="1"/>
+
+          <TextBlock Grid.Row="2" Grid.Column="0" Text="CP2K Data Dir"/>
+          <TextBox x:Name="Cp2kDataDirBox" Grid.Row="2" Grid.Column="1"/>
+
+          <TextBlock Grid.Row="3" Grid.Column="0" Text="MPI Command"/>
+          <TextBox x:Name="MpirunCommandBox" Grid.Row="3" Grid.Column="1"/>
+
+          <TextBlock Grid.Row="4" Grid.Column="0" Text="Workspace"/>
+          <TextBox x:Name="DefaultWorkspaceBox" Grid.Row="4" Grid.Column="1"/>
+
+          <TextBlock Grid.Row="5" Grid.Column="0" Text="WSL Prelude"/>
+          <TextBox x:Name="WslPreludeBox" Grid.Row="5" Grid.Column="1" Height="64"
+                   AcceptsReturn="True" TextWrapping="NoWrap" VerticalContentAlignment="Top"
+                   HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"/>
+
+          <TextBlock Grid.Row="6" Grid.Column="0" Text="Timeout"/>
+          <TextBox x:Name="TimeoutBox" Grid.Row="6" Grid.Column="1"/>
+
+          <TextBox x:Name="ConfigValidationText" Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="2"
+                   FontFamily="Cascadia Mono, Consolas, Microsoft YaHei UI, Microsoft YaHei, SimSun"
+                   FontSize="12" AcceptsReturn="True" TextWrapping="Wrap"
+                   HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
+                   IsReadOnly="True"/>
+        </Grid>
+      </TabItem>
       <TabItem Header="Environment">
         <TextBox x:Name="EnvironmentText" FontFamily="Cascadia Mono, Consolas, Microsoft YaHei UI, Microsoft YaHei, SimSun" FontSize="12"
                  AcceptsReturn="True" AcceptsTab="True" TextWrapping="NoWrap"
@@ -263,8 +313,11 @@ function New-WinQStepWindow {
         "WorkflowModeRadio", "ExistingInputModeRadio",
         "ConfigPathBox", "TemplatePathBox", "StructurePathBox", "ExistingInputPathBox",
         "JobDirBox", "ProjectNameBox",
+        "DistroBox", "Cp2kCommandBox", "Cp2kDataDirBox", "MpirunCommandBox",
+        "DefaultWorkspaceBox", "WslPreludeBox", "TimeoutBox", "ConfigValidationText",
         "EnvironmentText", "StructureText", "PreviewText", "LogText", "HistoryGrid", "StatusText",
-        "DetectButton", "ImportButton", "PreviewButton", "RunButton", "HistoryButton", "ClearButton",
+        "LoadConfigButton", "SaveConfigButton", "DetectButton", "ImportButton",
+        "PreviewButton", "RunButton", "HistoryButton", "ClearButton",
         "BrowseConfigButton", "BrowseTemplateButton", "BrowseStructureButton",
         "BrowseExistingInputButton", "BrowseJobDirButton"
     )
@@ -280,8 +333,9 @@ function New-WinQStepWindow {
     $controls["ProjectNameBox"].Text = "gui_preview"
 
     $actionButtons = @(
-        $controls["DetectButton"], $controls["ImportButton"], $controls["PreviewButton"],
-        $controls["RunButton"], $controls["HistoryButton"], $controls["ClearButton"], $controls["BrowseConfigButton"],
+        $controls["LoadConfigButton"], $controls["SaveConfigButton"], $controls["DetectButton"],
+        $controls["ImportButton"], $controls["PreviewButton"], $controls["RunButton"],
+        $controls["HistoryButton"], $controls["ClearButton"], $controls["BrowseConfigButton"],
         $controls["BrowseTemplateButton"], $controls["BrowseStructureButton"],
         $controls["BrowseExistingInputButton"], $controls["BrowseJobDirButton"]
     )
@@ -416,6 +470,122 @@ function New-WinQStepWindow {
         return "$summaryText`r`n`r`n$Output"
     }.GetNewClosure()
 
+    $GetJsonProperty = {
+        param($Object, [Parameter(Mandatory = $true)][string]$Name, [string]$Default = "")
+        if ($null -eq $Object) {
+            return $Default
+        }
+        $property = $Object.PSObject.Properties[$Name]
+        if ($null -eq $property -or $null -eq $property.Value) {
+            return $Default
+        }
+        return [string]$property.Value
+    }.GetNewClosure()
+
+    $FormatConfigValidation = {
+        param([Parameter(Mandatory = $true)]$Payload)
+        $validation = $Payload.validation
+        $lines = @()
+        if ($null -ne $validation -and [bool]$validation.valid) {
+            $lines += "Config valid"
+        }
+        else {
+            $lines += "Config invalid"
+        }
+        if ($null -ne $validation -and $null -ne $validation.errors) {
+            foreach ($errorText in @($validation.errors)) {
+                $lines += "ERROR: $errorText"
+            }
+        }
+        if ($null -ne $validation -and $null -ne $validation.warnings) {
+            foreach ($warningText in @($validation.warnings)) {
+                $lines += "WARNING: $warningText"
+            }
+        }
+        return ($lines -join "`r`n")
+    }.GetNewClosure()
+
+    $SetConfigFieldsFromPayload = {
+        param([Parameter(Mandatory = $true)]$Payload)
+        $config = $Payload.config
+        $controls["DistroBox"].Text = & $GetJsonProperty $config "distro"
+        $controls["Cp2kCommandBox"].Text = & $GetJsonProperty $config "cp2k_command"
+        $controls["Cp2kDataDirBox"].Text = & $GetJsonProperty $config "cp2k_data_dir"
+        $controls["MpirunCommandBox"].Text = & $GetJsonProperty $config "mpirun_command"
+        $controls["DefaultWorkspaceBox"].Text = & $GetJsonProperty $config "default_windows_workspace"
+        $controls["WslPreludeBox"].Text = & $GetJsonProperty $config "wsl_shell_prelude"
+        $controls["TimeoutBox"].Text = & $GetJsonProperty $config "timeout"
+        $workspace = $controls["DefaultWorkspaceBox"].Text
+        if (-not [string]::IsNullOrWhiteSpace($workspace)) {
+            $controls["JobDirBox"].Text = $workspace
+        }
+        $controls["ConfigValidationText"].Text = & $FormatConfigValidation $Payload
+    }.GetNewClosure()
+
+    $ReadConfigManagerResult = {
+        param([Parameter(Mandatory = $true)]$Result)
+        try {
+            $payload = $Result.Output | ConvertFrom-Json
+        }
+        catch {
+            throw "Command did not return JSON. Raw output:`n$($Result.Output)"
+        }
+        if ($null -ne $payload.config) {
+            & $SetConfigFieldsFromPayload $payload
+        }
+        if ($Result.ExitCode -ne 0) {
+            throw (& $FormatConfigValidation $payload)
+        }
+        return $payload
+    }.GetNewClosure()
+
+    $GetConfigFieldsJson = {
+        $fields = [ordered]@{
+            distro = $controls["DistroBox"].Text
+            cp2k_command = $controls["Cp2kCommandBox"].Text
+            mpirun_command = $controls["MpirunCommandBox"].Text
+            cp2k_data_dir = $controls["Cp2kDataDirBox"].Text
+            default_windows_workspace = $controls["DefaultWorkspaceBox"].Text
+            wsl_shell_prelude = $controls["WslPreludeBox"].Text
+            timeout = $controls["TimeoutBox"].Text
+        }
+        return ($fields | ConvertTo-Json -Compress)
+    }.GetNewClosure()
+
+    $LoadConfigFields = {
+        param([bool]$WriteLog)
+        $result = Invoke-WinQStepPython @(
+            "scripts\manage_config.py",
+            "--config", $controls["ConfigPathBox"].Text,
+            "--compact"
+        )
+        $payload = & $ReadConfigManagerResult $result
+        if ($WriteLog) {
+            $controls["LogText"].Text = $result.Output
+        }
+        return $payload
+    }.GetNewClosure()
+
+    $SaveConfigFields = {
+        param([bool]$RequireExecution, [bool]$WriteLog)
+        $arguments = @(
+            "scripts\manage_config.py",
+            "--config", $controls["ConfigPathBox"].Text,
+            "--write",
+            "--fields-json", (& $GetConfigFieldsJson),
+            "--compact"
+        )
+        if ($RequireExecution) {
+            $arguments += "--require-execution"
+        }
+        $result = Invoke-WinQStepPython $arguments
+        $payload = & $ReadConfigManagerResult $result
+        if ($WriteLog) {
+            $controls["LogText"].Text = $result.Output
+        }
+        return $payload
+    }.GetNewClosure()
+
     $LoadHistory = {
         $result = Invoke-WinQStepPython @(
             "scripts\list_job_history.py",
@@ -458,7 +628,24 @@ function New-WinQStepWindow {
         }
     }.GetNewClosure()
 
-    $controls["BrowseConfigButton"].Add_Click({ & $SelectFilePath $controls["ConfigPathBox"] "JSON files (*.json)|*.json|All files (*.*)|*.*" }.GetNewClosure())
+    $controls["LoadConfigButton"].Add_Click({
+        & $InvokeGuiAction "Loading config" {
+            $null = & $LoadConfigFields $true
+        }
+    }.GetNewClosure())
+
+    $controls["SaveConfigButton"].Add_Click({
+        & $InvokeGuiAction "Saving config" {
+            $null = & $SaveConfigFields $false $true
+        }
+    }.GetNewClosure())
+
+    $controls["BrowseConfigButton"].Add_Click({
+        & $SelectFilePath $controls["ConfigPathBox"] "JSON files (*.json)|*.json|All files (*.*)|*.*"
+        & $InvokeGuiAction "Loading config" {
+            $null = & $LoadConfigFields $true
+        }
+    }.GetNewClosure())
     $controls["BrowseTemplateButton"].Add_Click({ & $SelectFilePath $controls["TemplatePathBox"] "JSON files (*.json)|*.json|All files (*.*)|*.*" }.GetNewClosure())
     $controls["BrowseStructureButton"].Add_Click({ & $SelectFilePath $controls["StructurePathBox"] "Structures (*.xyz;*.cif;POSCAR;CONTCAR)|*.xyz;*.cif;POSCAR;CONTCAR|All files (*.*)|*.*" }.GetNewClosure())
     $controls["BrowseExistingInputButton"].Add_Click({ & $SelectFilePath $controls["ExistingInputPathBox"] "CP2K input files (*.inp)|*.inp|All files (*.*)|*.*" }.GetNewClosure())
@@ -468,6 +655,7 @@ function New-WinQStepWindow {
 
     $controls["DetectButton"].Add_Click({
         & $InvokeGuiAction "Detecting environment" {
+            $null = & $SaveConfigFields $false $false
             $result = Invoke-WinQStepPython @("scripts\detect_environment.py", "--config", $controls["ConfigPathBox"].Text)
             $controls["EnvironmentText"].Text = $result.Output
             & $AppendLog "detect_environment.py exited with code $($result.ExitCode)"
@@ -485,6 +673,7 @@ function New-WinQStepWindow {
     $controls["PreviewButton"].Add_Click({
         $status = if (& $TestIsExistingInputMode) { "Preparing existing input preview" } else { "Preparing workflow input preview" }
         & $InvokeGuiAction $status {
+            $null = & $SaveConfigFields $true $false
             $result = Invoke-WinQStepPython (& $GetActiveJobArguments $true)
             $metadata = Get-JsonResult $result
             $inputPath = & $GetActiveInputPreviewPath $metadata
@@ -500,6 +689,7 @@ function New-WinQStepWindow {
 
     $controls["RunButton"].Add_Click({
         & $InvokeGuiAction "Running CP2K" {
+            $null = & $SaveConfigFields $true $false
             $result = Invoke-WinQStepPython (& $GetActiveJobArguments $false)
             $metadata = Get-JsonResult $result
             $logText = & $FormatLogWithSummary $metadata $result.Output
@@ -530,6 +720,12 @@ function New-WinQStepWindow {
         $controls["HistoryGrid"].ItemsSource = $null
     }.GetNewClosure())
 
+    try {
+        $null = & $LoadConfigFields $false
+    }
+    catch {
+        $controls["ConfigValidationText"].Text = $_.Exception.Message
+    }
     & $UpdateModeControls
     return $window
 }
@@ -607,8 +803,16 @@ if ($SmokeTest) {
         $historyJobs = @($history.jobs)
     }
     $window.FindName("ExistingInputModeRadio").IsChecked = $true
+    $configWorkspace = [string]$window.FindName("DefaultWorkspaceBox").Text
     $report["xaml_loaded"] = ($window -is [System.Windows.Window])
     $report["title"] = $window.Title
+    $report["config_tab_loaded"] = ($window.FindName("DistroBox") -is [System.Windows.Controls.TextBox])
+    $report["config_distro"] = [string]$window.FindName("DistroBox").Text
+    $report["config_cp2k_command"] = [string]$window.FindName("Cp2kCommandBox").Text
+    $report["config_data_dir"] = [string]$window.FindName("Cp2kDataDirBox").Text
+    $report["config_workspace_path"] = $configWorkspace
+    $report["config_workspace_encoding_ok"] = $configWorkspace.Contains($chineseFolderName)
+    $report["config_validation_text"] = [string]$window.FindName("ConfigValidationText").Text
     $report["history_grid_loaded"] = ($window.FindName("HistoryGrid") -is [System.Windows.Controls.DataGrid])
     $report["console_output_encoding"] = [Console]::OutputEncoding.WebName
     $report["pythonioencoding"] = $env:PYTHONIOENCODING

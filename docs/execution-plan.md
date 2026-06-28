@@ -10,9 +10,9 @@ Each round should end with a focused commit.
 - License: `GPL-3.0-or-later`.
 - Current code: standard-library Python core commands plus unit tests.
 - Current docs: product scope, architecture, WSL execution rules, CP2K input
-  model, workflow, GUI prototype, existing-input jobs, output summaries, and
-  job history.
-- Next active round: Round 11, configuration editor and validation.
+  model, workflow, GUI prototype, existing-input jobs, output summaries, job
+  history, and config editing.
+- Next active round: Round 12, QuickStep template editor.
 - Known local facts:
   - WSL2 is available.
   - Default distro is `Ubuntu`.
@@ -347,7 +347,16 @@ Commit boundary:
 
 ## Round 11: Configuration Editor and Validation
 
+Status: implemented.
+
 Goal: make the GUI safer for real local configuration edits.
+
+Local verification:
+
+- `scripts/manage_config.py` validates and writes config JSON with stable key
+  order and UTF-8 text.
+- `scripts/start_gui.ps1 -SmokeTest` validates the GUI config tab and Chinese
+  workspace path rendering without launching CP2K.
 
 Tasks:
 
@@ -366,6 +375,28 @@ Acceptance:
 Commit boundary:
 
 - One commit for GUI config editing, validation tests, and docs.
+
+## Round 12: QuickStep Template Editor
+
+Goal: let users adjust common QuickStep calculation settings without editing
+template JSON by hand.
+
+Tasks:
+
+- Expose run type, charge, multiplicity, cutoff, SCF limits, basis sets, and
+  potentials in the GUI.
+- Validate template fields before rendering input.
+- Keep the existing JSON template format as the source of truth.
+- Save edited templates with stable UTF-8 JSON output.
+
+Acceptance:
+
+- A user can open a template, adjust conservative ENERGY/GEO_OPT settings, and
+  preview the generated CP2K input without hand-editing JSON.
+
+Commit boundary:
+
+- One commit for template editing, validation tests, and docs.
 
 ## Working Rules
 

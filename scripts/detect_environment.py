@@ -15,16 +15,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-CONFIG_KEYS = {
-    "distro",
-    "cp2k_command",
-    "mpirun_command",
-    "cp2k_data_dir",
-    "default_windows_workspace",
-    "wsl_shell_prelude",
-    "timeout",
-}
+from winqstep.config import CONFIG_KEYS, config_value, load_config
 
 
 def decode_output(value: bytes | None) -> str:
@@ -135,31 +128,6 @@ def first_line(text: str) -> str:
         if line.strip():
             return line.strip()
     return ""
-
-
-def load_config(path: str | None) -> dict[str, Any]:
-    if not path:
-        return {}
-
-    config_path = Path(path)
-    with config_path.open("r", encoding="utf-8") as handle:
-        config = json.load(handle)
-
-    if not isinstance(config, dict):
-        raise ValueError("config file must contain a JSON object")
-
-    unknown_keys = sorted(set(config) - CONFIG_KEYS)
-    if unknown_keys:
-        raise ValueError("unknown config key(s): " + ", ".join(unknown_keys))
-
-    return config
-
-
-def config_value(config: dict[str, Any], key: str, default: Any = None) -> Any:
-    value = config.get(key, default)
-    if value == "":
-        return default
-    return value
 
 
 def apply_config(args: argparse.Namespace, config: dict[str, Any]) -> argparse.Namespace:

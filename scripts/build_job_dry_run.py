@@ -10,15 +10,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from winqstep.config import load_config
 from winqstep.jobs import build_cp2k_job_dry_run
-
-
-def load_config(path: str) -> dict[str, object]:
-    with Path(path).open("r", encoding="utf-8") as handle:
-        config = json.load(handle)
-    if not isinstance(config, dict):
-        raise ValueError("config file must contain a JSON object")
-    return config
 
 
 def main() -> int:

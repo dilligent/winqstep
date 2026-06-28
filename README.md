@@ -42,6 +42,12 @@ For machine-specific settings, use the sample config:
 python .\scripts\detect_environment.py --config .\examples\winqstep.config.json
 ```
 
+To validate or rewrite that config with stable UTF-8 JSON:
+
+```powershell
+python .\scripts\manage_config.py --config .\examples\winqstep.config.json --require-execution
+```
+
 To preview the WSL command for a future CP2K job without running it:
 
 ```powershell
@@ -74,7 +80,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\start_gui.ps1
 
 The GUI can run either the structure/template workflow or an existing `.inp`
 file through the same command-line core. It can also browse previous job
-metadata from the selected job folder.
+metadata from the selected job folder and edit the active WinQStep config.
 
 To render and run a minimal QuickStep job through WSL/CP2K:
 
