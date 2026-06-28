@@ -10,8 +10,8 @@ Each round should end with a focused commit.
 - License: `GPL-3.0-or-later`.
 - Current code: standard-library Python core commands plus unit tests.
 - Current docs: product scope, architecture, WSL execution rules, CP2K input
-  model, workflow, and GUI prototype.
-- Next active round: Round 7, existing-input job execution.
+  model, workflow, GUI prototype, and existing-input jobs.
+- Next active round: Round 8, GUI existing-input integration.
 - Known local facts:
   - WSL2 is available.
   - Default distro is `Ubuntu`.
@@ -234,7 +234,14 @@ Commit boundary:
 
 ## Round 7: Existing-Input Job Execution
 
+Status: implemented.
+
 Goal: run a user-provided CP2K `.inp` file without regenerating it.
+
+Local verification:
+
+- `scripts/run_existing_input.py` can run a known-good CP2K input through the
+  same WSL command path used by generated jobs.
 
 Tasks:
 
@@ -253,6 +260,25 @@ Acceptance:
 Commit boundary:
 
 - One commit for existing-input execution, tests, docs, and local smoke output.
+
+## Round 8: GUI Existing-Input Integration
+
+Goal: expose the existing-input runner in the GUI prototype.
+
+Tasks:
+
+- Add a GUI mode selector for workflow-generated input vs existing `.inp` input.
+- Keep both modes routed through the command-line core scripts.
+- Show the selected input path, output path, and metadata consistently.
+
+Acceptance:
+
+- The GUI can preview or run an existing `.inp` without requiring a structure
+  file or workflow template.
+
+Commit boundary:
+
+- One commit for GUI integration, smoke test updates, and docs.
 
 ## Working Rules
 

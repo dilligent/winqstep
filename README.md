@@ -78,6 +78,12 @@ To render and run a minimal QuickStep job through WSL/CP2K:
 python .\scripts\run_quickstep_job.py --config .\examples\winqstep.config.json --input-json .\examples\quickstep_energy.json --job-dir .\outputs\smoke-energy
 ```
 
+To run an existing CP2K input file without regenerating it:
+
+```powershell
+python .\scripts\run_existing_input.py --config .\examples\winqstep.config.json --input D:\path\to\job.inp --job-dir .\outputs\existing-job
+```
+
 ## License
 
 WinQStep is licensed under `GPL-3.0-or-later`. See `LICENSE`.

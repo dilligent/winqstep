@@ -101,9 +101,7 @@ def run_quickstep_job(
             "stderr": "",
         },
     }
-    _write_metadata(metadata_path, metadata)
-    metadata["files"] = _job_files(dry_run)
-    _write_metadata(metadata_path, metadata)
+    _write_metadata_with_current_files(metadata_path, metadata, dry_run)
 
     if not execute:
         return metadata
@@ -118,8 +116,82 @@ def run_quickstep_job(
         "stdout": _decode_process_text(getattr(completed, "stdout", "")),
         "stderr": _decode_process_text(getattr(completed, "stderr", "")),
     }
-    metadata["files"] = _job_files(dry_run)
-    _write_metadata(metadata_path, metadata)
+    _write_metadata_with_current_files(metadata_path, metadata, dry_run)
+    return metadata
+
+
+def run_existing_input_job(
+    *,
+    config: dict[str, Any],
+    windows_input_path: str | Path,
+    windows_job_dir: str | Path | None = None,
+    mpi_ranks: int | None = None,
+    execute: bool = True,
+    executor: Executor | None = None,
+) -> dict[str, Any]:
+    """Run an existing CP2K input file without rewriting or copying it."""
+    input_path = Path(windows_input_path).resolve()
+    if not input_path.is_file():
+        raise RunnerError(f"input file does not exist: {input_path}")
+
+    job_dir = (
+        Path(windows_job_dir).resolve()
+        if windows_job_dir is not None
+        else input_path.parent
+    )
+    job_dir.mkdir(parents=True, exist_ok=True)
+
+    try:
+        cp2k_command = str(config["cp2k_command"])
+    except KeyError as exc:
+        raise RunnerError("config missing cp2k_command") from exc
+
+    dry_run = build_cp2k_job_dry_run(
+        distro=_optional_str(config.get("distro")),
+        cp2k_command=cp2k_command,
+        windows_input_path=str(input_path),
+        windows_job_dir=str(job_dir),
+        cp2k_data_dir=_optional_str(config.get("cp2k_data_dir")),
+        wsl_shell_prelude=_optional_str(config.get("wsl_shell_prelude")),
+        mpirun_command=_optional_str(config.get("mpirun_command")),
+        mpi_ranks=mpi_ranks,
+    )
+    if execute:
+        _remove_previous_run_outputs(dry_run)
+
+    metadata_path = Path(dry_run["windows"]["metadata_path"])
+    metadata: dict[str, Any] = {
+        "status": "prepared",
+        "created_at": utc_now(),
+        "completed_at": None,
+        "returncode": None,
+        "job": {
+            "mode": "existing_input",
+            "input_stem": input_path.stem,
+        },
+        "dry_run": dry_run,
+        "files": _job_files(dry_run),
+        "wrapper": {
+            "stdout": "",
+            "stderr": "",
+        },
+    }
+    _write_metadata_with_current_files(metadata_path, metadata, dry_run)
+
+    if not execute:
+        return metadata
+
+    actual_executor = executor or default_executor
+    completed = actual_executor(dry_run["command"]["argv"])
+    returncode = int(getattr(completed, "returncode", 1))
+    metadata["status"] = "succeeded" if returncode == 0 else "failed"
+    metadata["completed_at"] = utc_now()
+    metadata["returncode"] = returncode
+    metadata["wrapper"] = {
+        "stdout": _decode_process_text(getattr(completed, "stdout", "")),
+        "stderr": _decode_process_text(getattr(completed, "stderr", "")),
+    }
+    _write_metadata_with_current_files(metadata_path, metadata, dry_run)
     return metadata
 
 
@@ -158,7 +230,27 @@ def _file_info(path: str) -> dict[str, Any]:
 
 
 def _write_metadata(path: Path, metadata: dict[str, Any]) -> None:
-    path.write_text(json.dumps(metadata, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    path.write_text(_metadata_text(metadata), encoding="utf-8", newline="\n")
+
+
+def _write_metadata_with_current_files(
+    path: Path, metadata: dict[str, Any], dry_run: dict[str, Any]
+) -> None:
+    metadata["files"] = _job_files(dry_run)
+    metadata_file = metadata["files"]["metadata"]
+    for _ in range(10):
+        text = _metadata_text(metadata)
+        size = len(text.encode("utf-8"))
+        if metadata_file.get("exists") is True and metadata_file.get("size") == size:
+            path.write_text(text, encoding="utf-8", newline="\n")
+            return
+        metadata_file["exists"] = True
+        metadata_file["size"] = size
+    path.write_text(_metadata_text(metadata), encoding="utf-8", newline="\n")
+
+
+def _metadata_text(metadata: dict[str, Any]) -> str:
+    return json.dumps(metadata, ensure_ascii=False, indent=2) + "\n"
 
 
 def _decode_process_text(value: Any) -> str:

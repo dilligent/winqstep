@@ -35,6 +35,10 @@ class RunnerTests(unittest.TestCase):
             self.assertTrue(Path(metadata["files"]["input"]["path"]).exists())
             self.assertTrue(Path(metadata["dry_run"]["windows"]["metadata_path"]).exists())
             self.assertFalse(Path(metadata["files"]["output"]["path"]).exists())
+            self.assertEqual(
+                metadata["files"]["metadata"]["size"],
+                Path(metadata["files"]["metadata"]["path"]).stat().st_size,
+            )
 
     def test_prepare_only_accepts_relative_job_dir(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -78,6 +82,10 @@ class RunnerTests(unittest.TestCase):
             self.assertTrue(metadata["files"]["output"]["exists"])
             saved = json.loads(Path(metadata["dry_run"]["windows"]["metadata_path"]).read_text(encoding="utf-8"))
             self.assertEqual(saved["status"], "succeeded")
+            self.assertEqual(
+                saved["files"]["metadata"]["size"],
+                Path(metadata["files"]["metadata"]["path"]).stat().st_size,
+            )
 
     def test_failed_executor_records_wrapper_stderr(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
