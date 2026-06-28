@@ -17,6 +17,18 @@ The application should detect:
 Detection results should be stored as JSON so the GUI and tests can consume the
 same data.
 
+## Shell Prelude
+
+Every WSL-side command may run an optional shell prelude before the actual work.
+The current local policy is to deactivate conda first:
+
+```bash
+conda deactivate >/dev/null 2>&1 || true
+```
+
+This keeps CP2K probing and future job execution out of accidental conda
+environments while remaining harmless when conda is not installed or not active.
+
 ## Path Rules
 
 - Windows project folders are the user's source of truth.
@@ -35,10 +47,11 @@ wsl.exe -d <distro> -- bash -lc "<quoted Linux command>"
 
 The Linux command should:
 
-1. change to the job working directory;
-2. set required environment variables;
-3. run either CP2K directly or through MPI;
-4. write stdout/stderr to files that the GUI can stream or tail.
+1. run the configured shell prelude;
+2. change to the job working directory;
+3. set required environment variables;
+4. run either CP2K directly or through MPI;
+5. write stdout/stderr to files that the GUI can stream or tail.
 
 ## Cancellation
 

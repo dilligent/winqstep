@@ -6,6 +6,7 @@ from pathlib import Path
 
 from scripts.detect_environment import (
     apply_config,
+    build_wsl_shell_command,
     decode_output,
     first_line,
     load_config,
@@ -39,6 +40,12 @@ class DetectEnvironmentTests(unittest.TestCase):
     def test_first_line_skips_empty_lines(self) -> None:
         self.assertEqual(first_line("\n\n/usr/bin/cp2k.psmp\n"), "/usr/bin/cp2k.psmp")
 
+    def test_build_wsl_shell_command_prepends_prelude(self) -> None:
+        self.assertEqual(
+            build_wsl_shell_command("cp2k.ssmp --version", "conda deactivate || true"),
+            "conda deactivate || true\ncp2k.ssmp --version",
+        )
+
     def test_load_config_reads_supported_keys(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
             config_path = Path(tmp_dir) / "winqstep.config.json"
@@ -49,12 +56,14 @@ class DetectEnvironmentTests(unittest.TestCase):
                         "cp2k_command": "cp2k.ssmp",
                         "cp2k_data_dir": "/opt/cp2k/data",
                         "default_windows_workspace": "D:\\Jobs",
+                        "wsl_shell_prelude": "conda deactivate >/dev/null 2>&1 || true",
                     }
                 ),
                 encoding="utf-8",
             )
 
             self.assertEqual(load_config(str(config_path))["cp2k_command"], "cp2k.ssmp")
+            self.assertIn("conda deactivate", load_config(str(config_path))["wsl_shell_prelude"])
 
     def test_load_config_rejects_unknown_keys(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -72,6 +81,7 @@ class DetectEnvironmentTests(unittest.TestCase):
             mpirun_command=None,
             cp2k_data_dir=None,
             default_windows_workspace=None,
+            wsl_shell_prelude=None,
             timeout=None,
         )
         merged = apply_config(
@@ -80,6 +90,7 @@ class DetectEnvironmentTests(unittest.TestCase):
                 "distro": "Ubuntu",
                 "cp2k_command": "cp2k.ssmp",
                 "cp2k_data_dir": "/opt/cp2k/data",
+                "wsl_shell_prelude": "conda deactivate >/dev/null 2>&1 || true",
                 "timeout": 7,
             },
         )
@@ -87,6 +98,7 @@ class DetectEnvironmentTests(unittest.TestCase):
         self.assertEqual(merged.distro, "Ubuntu")
         self.assertEqual(merged.cp2k_command, "custom-cp2k")
         self.assertEqual(merged.cp2k_data_dir, "/opt/cp2k/data")
+        self.assertIn("conda deactivate", merged.wsl_shell_prelude)
         self.assertEqual(merged.timeout, 7)
 
 

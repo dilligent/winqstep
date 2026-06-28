@@ -17,6 +17,7 @@ Each round should end with a focused commit.
   - Default distro is `Ubuntu`.
   - `mpirun` is available at `/usr/bin/mpirun`.
   - The normal direct CP2K command in WSL2 is `cp2k.ssmp`.
+  - WSL-side commands should deactivate conda before probing or running CP2K.
   - CP2K is not currently found on WSL `PATH`.
   - `CP2K_DATA_DIR` is not exported in the selected distro.
   - A local CP2K 2026.1 data snapshot exists at
@@ -34,7 +35,7 @@ Tasks:
 - Add a repo-local sample config, such as `examples/winqstep.config.json`.
 - Teach `scripts/detect_environment.py` to read a config file.
 - Support config keys for `distro`, `cp2k_command`, `mpirun_command`,
-  `cp2k_data_dir`, and a default Windows workspace folder.
+  `cp2k_data_dir`, a default Windows workspace folder, and a WSL shell prelude.
 - Keep CLI arguments as overrides over config values.
 - Add tests for config loading and override precedence.
 - Prefer `cp2k.ssmp` in the repo-local sample config because that matches the

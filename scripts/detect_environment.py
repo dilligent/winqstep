@@ -22,6 +22,7 @@ CONFIG_KEYS = {
     "mpirun_command",
     "cp2k_data_dir",
     "default_windows_workspace",
+    "wsl_shell_prelude",
     "timeout",
 }
 
@@ -107,16 +108,26 @@ def parse_wsl_list(output: str) -> list[dict[str, Any]]:
     return distros
 
 
-def wsl_bash_command(distro: str | None, command: str) -> list[str]:
+def build_wsl_shell_command(command: str, prelude: str | None = None) -> str:
+    if not prelude:
+        return command
+    return prelude.rstrip() + "\n" + command
+
+
+def wsl_bash_command(
+    distro: str | None, command: str, prelude: str | None = None
+) -> list[str]:
     args = ["wsl.exe"]
     if distro:
         args.extend(["-d", distro])
-    args.extend(["--", "bash", "-lc", command])
+    args.extend(["--", "bash", "-lc", build_wsl_shell_command(command, prelude)])
     return args
 
 
-def run_wsl(distro: str | None, command: str, timeout: int) -> dict[str, Any]:
-    return run_command(wsl_bash_command(distro, command), timeout)
+def run_wsl(
+    distro: str | None, command: str, timeout: int, prelude: str | None = None
+) -> dict[str, Any]:
+    return run_command(wsl_bash_command(distro, command, prelude), timeout)
 
 
 def first_line(text: str) -> str:
@@ -186,6 +197,7 @@ def probe_wsl(args: argparse.Namespace) -> dict[str, Any]:
             "available": bool(wsl_path),
             "distros": [],
             "selected_distro": args.distro,
+            "shell_prelude": args.wsl_shell_prelude,
         },
         "cp2k": {
             "command": args.cp2k_command,
@@ -234,6 +246,7 @@ def probe_wsl(args: argparse.Namespace) -> dict[str, Any]:
             selected_distro,
             "command -v cp2k.ssmp || command -v cp2k.psmp || command -v cp2k || true",
             args.timeout,
+            args.wsl_shell_prelude,
         )
         report["commands"]["find_cp2k"] = find_cp2k
         if find_cp2k["ok"]:
@@ -251,6 +264,7 @@ def probe_wsl(args: argparse.Namespace) -> dict[str, Any]:
             selected_distro,
             f"{quoted_cp2k} --version 2>&1",
             args.timeout,
+            args.wsl_shell_prelude,
         )
         report["commands"]["cp2k_version"] = version
         report["cp2k"]["version_output"] = version["stdout"] or version["stderr"]
@@ -263,6 +277,7 @@ def probe_wsl(args: argparse.Namespace) -> dict[str, Any]:
             selected_distro,
             "command -v mpirun || command -v mpiexec || true",
             args.timeout,
+            args.wsl_shell_prelude,
         )
         report["commands"]["find_mpi"] = find_mpi
         if find_mpi["ok"]:
@@ -277,6 +292,7 @@ def probe_wsl(args: argparse.Namespace) -> dict[str, Any]:
             selected_distro,
             f"test -d {quoted_data_dir} && printf '%s' {quoted_data_dir}",
             args.timeout,
+            args.wsl_shell_prelude,
         )
         report["commands"]["cp2k_data_dir_check"] = data_dir_check
         if not data_dir_check["ok"]:
@@ -284,7 +300,12 @@ def probe_wsl(args: argparse.Namespace) -> dict[str, Any]:
             return report
         data_dir_value = args.cp2k_data_dir
     else:
-        data_dir = run_wsl(selected_distro, "printf '%s' \"${CP2K_DATA_DIR:-}\"", args.timeout)
+        data_dir = run_wsl(
+            selected_distro,
+            "printf '%s' \"${CP2K_DATA_DIR:-}\"",
+            args.timeout,
+            args.wsl_shell_prelude,
+        )
         report["commands"]["cp2k_data_dir"] = data_dir
         report["cp2k"]["data_dir"] = data_dir["stdout"]
         if not data_dir["ok"]:
@@ -307,6 +328,7 @@ def probe_wsl(args: argparse.Namespace) -> dict[str, Any]:
         + " -maxdepth 1 -type f \\( -name '*BASIS*' -o -name '*POTENTIAL*' \\) "
         + "-printf '%f\\n' | sort | head -100",
         args.timeout,
+        args.wsl_shell_prelude,
     )
     report["commands"]["cp2k_data_files"] = data_files
     if data_files["ok"]:
@@ -346,6 +368,10 @@ def main() -> int:
     parser.add_argument(
         "--default-windows-workspace",
         help="Default Windows folder for WinQStep jobs.",
+    )
+    parser.add_argument(
+        "--wsl-shell-prelude",
+        help="Shell code to run before each WSL command, such as safe conda cleanup.",
     )
     parser.add_argument(
         "--timeout",

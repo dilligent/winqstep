@@ -15,6 +15,7 @@ See `examples/winqstep.config.json`.
   "mpirun_command": "",
   "cp2k_data_dir": "/mnt/d/Library/自制品/winqstep/cp2k-2026.1/data",
   "default_windows_workspace": "D:\\Library\\自制品\\winqstep\\outputs",
+  "wsl_shell_prelude": "conda deactivate >/dev/null 2>&1 || true",
   "timeout": 20
 }
 ```
@@ -40,4 +41,7 @@ python .\scripts\detect_environment.py --config .\examples\winqstep.config.json 
   `cp2k.ssmp` execution is preferred.
 - `cp2k_data_dir`: CP2K data directory inside WSL.
 - `default_windows_workspace`: default Windows folder for future job outputs.
+- `wsl_shell_prelude`: shell code to run before each WSL command. The sample
+  uses `conda deactivate >/dev/null 2>&1 || true` so conda environments do not
+  leak into CP2K probing or future job execution.
 - `timeout`: subprocess timeout in seconds.
