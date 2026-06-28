@@ -18,7 +18,8 @@ The command writes:
 - `<project>.winqstep.json`: WinQStep metadata.
 
 The metadata includes the dry-run command, return code, job status, wrapper
-stdout/stderr from `wsl.exe`, and file existence/size information.
+stdout/stderr from `wsl.exe`, file existence/size information, and a compact
+`cp2k_output` summary parsed from the `.out` file.
 
 Before launching CP2K, the runner removes stale `.out`, `.stdout.log`, and
 `.stderr.log` files for the same input stem so repeated runs do not append or
@@ -41,3 +42,5 @@ This is useful for UI previews and command inspection.
 - `failed`: CP2K or WSL returned a non-zero exit code.
 
 Raw CP2K output is preserved. The runner does not parse scientific results yet.
+It only extracts diagnostic run markers such as warning count and whether CP2K
+printed `PROGRAM ENDED AT`.

@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from .cp2k_output import parse_cp2k_output_file
 from .jobs import build_cp2k_job_dry_run
 from .quickstep import quickstep_input_from_dict, render_quickstep_input
 
@@ -237,6 +238,7 @@ def _write_metadata_with_current_files(
     path: Path, metadata: dict[str, Any], dry_run: dict[str, Any]
 ) -> None:
     metadata["files"] = _job_files(dry_run)
+    metadata["cp2k_output"] = parse_cp2k_output_file(dry_run["windows"]["output_path"])
     metadata_file = metadata["files"]["metadata"]
     for _ in range(10):
         text = _metadata_text(metadata)

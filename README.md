@@ -87,6 +87,9 @@ To run an existing CP2K input file without regenerating it:
 python .\scripts\run_existing_input.py --config .\examples\winqstep.config.json --input D:\path\to\job.inp --job-dir .\outputs\existing-job
 ```
 
+Completed jobs include a compact `cp2k_output` summary in metadata with warning
+count and CP2K program-end status.
+
 ## License
 
 WinQStep is licensed under `GPL-3.0-or-later`. See `LICENSE`.

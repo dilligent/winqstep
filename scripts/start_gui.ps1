@@ -92,6 +92,16 @@ function Get-JsonResult {
     }
 }
 
+function Format-Cp2kSummary {
+    param([Parameter(Mandatory = $true)]$Metadata)
+    if ($null -eq $Metadata.cp2k_output) {
+        return ""
+    }
+    $summary = $Metadata.cp2k_output
+    $warningCount = if ($null -eq $summary.warning_count) { "n/a" } else { [string]$summary.warning_count }
+    return "CP2K summary: status=$($summary.status), warnings=$warningCount, program_ended=$($summary.program_ended)"
+}
+
 function New-WinQStepWindow {
     Add-WinQStepWpfAssemblies
 
@@ -366,6 +376,15 @@ function New-WinQStepWindow {
         return [string]$Metadata.files.input.path
     }.GetNewClosure()
 
+    $FormatLogWithSummary = {
+        param([Parameter(Mandatory = $true)]$Metadata, [Parameter(Mandatory = $true)][string]$Output)
+        $summaryText = Format-Cp2kSummary $Metadata
+        if ([string]::IsNullOrWhiteSpace($summaryText)) {
+            return $Output
+        }
+        return "$summaryText`r`n`r`n$Output"
+    }.GetNewClosure()
+
     $controls["BrowseConfigButton"].Add_Click({ & $SelectFilePath $controls["ConfigPathBox"] "JSON files (*.json)|*.json|All files (*.*)|*.*" }.GetNewClosure())
     $controls["BrowseTemplateButton"].Add_Click({ & $SelectFilePath $controls["TemplatePathBox"] "JSON files (*.json)|*.json|All files (*.*)|*.*" }.GetNewClosure())
     $controls["BrowseStructureButton"].Add_Click({ & $SelectFilePath $controls["StructurePathBox"] "Structures (*.xyz;*.cif;POSCAR;CONTCAR)|*.xyz;*.cif;POSCAR;CONTCAR|All files (*.*)|*.*" }.GetNewClosure())
@@ -402,7 +421,7 @@ function New-WinQStepWindow {
             else {
                 $controls["PreviewText"].Text = "Input file was not written: $inputPath"
             }
-            $controls["LogText"].Text = $result.Output
+            $controls["LogText"].Text = & $FormatLogWithSummary $metadata $result.Output
         }
     }.GetNewClosure())
 
@@ -410,7 +429,7 @@ function New-WinQStepWindow {
         & $InvokeGuiAction "Running CP2K" {
             $result = Invoke-WinQStepPython (& $GetActiveJobArguments $false)
             $metadata = Get-JsonResult $result
-            $logText = $result.Output
+            $logText = & $FormatLogWithSummary $metadata $result.Output
             $outputPath = $metadata.files.output.path
             if ([System.IO.File]::Exists($outputPath)) {
                 $tail = Get-Content -LiteralPath $outputPath -Tail 80 | Out-String
@@ -459,9 +478,11 @@ if ($SmokeTest) {
     $report["title"] = $window.Title
     $report["preview_exit_code"] = $previewResult.ExitCode
     $report["preview_input_exists"] = [System.IO.File]::Exists($previewMetadata.files.input.path)
+    $report["preview_summary_status"] = $previewMetadata.cp2k_output.status
     $report["existing_preview_exit_code"] = $existingPreviewResult.ExitCode
     $report["existing_preview_mode"] = $existingPreviewMetadata.job.mode
     $report["existing_preview_input_exists"] = [System.IO.File]::Exists($existingPreviewMetadata.files.input.path)
+    $report["existing_preview_summary_status"] = $existingPreviewMetadata.cp2k_output.status
     $report["existing_mode_input_enabled"] = [bool]$window.FindName("ExistingInputPathBox").IsEnabled
     $report["existing_mode_import_enabled"] = [bool]$window.FindName("ImportButton").IsEnabled
     $report | ConvertTo-Json -Depth 5

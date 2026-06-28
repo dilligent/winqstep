@@ -4,6 +4,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 
 from winqstep.runner import load_json_file
 from winqstep.structures import import_structure
@@ -46,8 +47,40 @@ class WorkflowTests(unittest.TestCase):
             self.assertEqual(metadata["status"], "prepared")
             self.assertEqual(metadata["workflow"]["atom_count"], 3)
             self.assertEqual(metadata["workflow"]["elements"], ["H", "O"])
+            self.assertEqual(metadata["cp2k_output"]["status"], "not_available")
             saved = json.loads(Path(metadata["files"]["metadata"]["path"]).read_text(encoding="utf-8"))
             self.assertEqual(saved["workflow"]["structure_source"]["format"], "xyz")
+            self.assertEqual(saved["cp2k_output"]["status"], "not_available")
+
+    def test_successful_workflow_preserves_output_summary(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+
+            def fake_executor(argv: list[str]) -> SimpleNamespace:
+                job_dir = Path(tmp_dir)
+                (job_dir / "workflow_run.out").write_text(
+                    "The number of warnings for this run is : 0\n"
+                    "PROGRAM ENDED AT                 2026-06-29 03:24:28.023\n",
+                    encoding="utf-8",
+                )
+                (job_dir / "workflow_run.stdout.log").write_text("", encoding="utf-8")
+                (job_dir / "workflow_run.stderr.log").write_text("", encoding="utf-8")
+                return SimpleNamespace(returncode=0, stdout=b"", stderr=b"")
+
+            metadata = run_quickstep_workflow(
+                config=self.config,
+                template_data=self.template,
+                structure_path=STRUCTURES / "water.xyz",
+                windows_job_dir=tmp_dir,
+                project_name="workflow_run",
+                executor=fake_executor,
+            )
+
+            self.assertEqual(metadata["status"], "succeeded")
+            self.assertEqual(metadata["cp2k_output"]["status"], "completed")
+            self.assertEqual(metadata["cp2k_output"]["warning_count"], 0)
+            saved = json.loads(Path(metadata["files"]["metadata"]["path"]).read_text(encoding="utf-8"))
+            self.assertEqual(saved["workflow"]["atom_count"], 3)
+            self.assertEqual(saved["cp2k_output"]["status"], "completed")
 
     def test_missing_kind_reports_template_error(self) -> None:
         imported = import_structure(STRUCTURES / "water.xyz")

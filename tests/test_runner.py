@@ -35,6 +35,7 @@ class RunnerTests(unittest.TestCase):
             self.assertTrue(Path(metadata["files"]["input"]["path"]).exists())
             self.assertTrue(Path(metadata["dry_run"]["windows"]["metadata_path"]).exists())
             self.assertFalse(Path(metadata["files"]["output"]["path"]).exists())
+            self.assertEqual(metadata["cp2k_output"]["status"], "not_available")
             self.assertEqual(
                 metadata["files"]["metadata"]["size"],
                 Path(metadata["files"]["metadata"]["path"]).stat().st_size,
@@ -65,7 +66,11 @@ class RunnerTests(unittest.TestCase):
             def fake_executor(argv: list[str]) -> SimpleNamespace:
                 self.assertEqual(argv[0], "wsl.exe")
                 self.assertFalse((job_dir / "water_energy.out").exists())
-                (job_dir / "water_energy.out").write_text("PROGRAM ENDED\n", encoding="utf-8")
+                (job_dir / "water_energy.out").write_text(
+                    "The number of warnings for this run is : 0\n"
+                    "PROGRAM ENDED AT                 2026-06-29 03:24:28.023\n",
+                    encoding="utf-8",
+                )
                 (job_dir / "water_energy.stdout.log").write_text("", encoding="utf-8")
                 (job_dir / "water_energy.stderr.log").write_text("", encoding="utf-8")
                 return SimpleNamespace(returncode=0, stdout=b"", stderr=b"")
@@ -79,9 +84,12 @@ class RunnerTests(unittest.TestCase):
 
             self.assertEqual(metadata["status"], "succeeded")
             self.assertEqual(metadata["returncode"], 0)
+            self.assertEqual(metadata["cp2k_output"]["status"], "completed")
+            self.assertEqual(metadata["cp2k_output"]["warning_count"], 0)
             self.assertTrue(metadata["files"]["output"]["exists"])
             saved = json.loads(Path(metadata["dry_run"]["windows"]["metadata_path"]).read_text(encoding="utf-8"))
             self.assertEqual(saved["status"], "succeeded")
+            self.assertEqual(saved["cp2k_output"]["status"], "completed")
             self.assertEqual(
                 saved["files"]["metadata"]["size"],
                 Path(metadata["files"]["metadata"]["path"]).stat().st_size,

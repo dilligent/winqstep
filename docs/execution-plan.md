@@ -10,8 +10,8 @@ Each round should end with a focused commit.
 - License: `GPL-3.0-or-later`.
 - Current code: standard-library Python core commands plus unit tests.
 - Current docs: product scope, architecture, WSL execution rules, CP2K input
-  model, workflow, GUI prototype, and existing-input jobs.
-- Next active round: Round 9, output summary parsing.
+  model, workflow, GUI prototype, existing-input jobs, and output summaries.
+- Next active round: Round 10, job history browser.
 - Known local facts:
   - WSL2 is available.
   - Default distro is `Ubuntu`.
@@ -289,7 +289,15 @@ Commit boundary:
 
 ## Round 9: Output Summary Parsing
 
+Status: implemented.
+
 Goal: extract a compact status summary from CP2K output files.
+
+Local verification:
+
+- Unit tests cover completed, incomplete, and missing CP2K output.
+- `scripts/start_gui.ps1 -SmokeTest` confirms GUI metadata includes output
+  summary status for both preview modes.
 
 Tasks:
 
@@ -307,6 +315,25 @@ Acceptance:
 Commit boundary:
 
 - One commit for parser, tests, docs, and GUI display updates.
+
+## Round 10: Job History Browser
+
+Goal: make generated metadata easier to inspect from the GUI.
+
+Tasks:
+
+- Scan a selected job folder for `*.winqstep.json` metadata files.
+- Show recent jobs with status, return code, warning count, and output path.
+- Open selected metadata and CP2K output in the existing GUI log/preview panes.
+
+Acceptance:
+
+- The GUI can list previous generated, workflow, and existing-input runs from a
+  workspace folder without rerunning CP2K.
+
+Commit boundary:
+
+- One commit for metadata discovery, GUI list view, tests, and docs.
 
 ## Working Rules
 

@@ -27,3 +27,6 @@ The command writes output files in the job folder using the input file stem:
 
 Before a real run, stale output and log files for the same input stem are
 removed. The input file is never rewritten or copied over.
+
+Completed metadata includes a `cp2k_output` summary with warning count and
+whether CP2K printed its `PROGRAM ENDED AT` marker.

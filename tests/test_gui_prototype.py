@@ -39,9 +39,11 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertEqual(report["title"], "WinQStep")
         self.assertEqual(report["preview_exit_code"], 0)
         self.assertTrue(report["preview_input_exists"])
+        self.assertEqual(report["preview_summary_status"], "not_available")
         self.assertEqual(report["existing_preview_exit_code"], 0)
         self.assertEqual(report["existing_preview_mode"], "existing_input")
         self.assertTrue(report["existing_preview_input_exists"])
+        self.assertEqual(report["existing_preview_summary_status"], "not_available")
         self.assertTrue(report["existing_mode_input_enabled"])
         self.assertFalse(report["existing_mode_import_enabled"])
 

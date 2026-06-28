@@ -29,7 +29,8 @@ same scripts used by tests:
 - `Run`: `scripts/run_workflow.py` or `scripts/run_existing_input.py`
 
 The GUI does not parse or generate CP2K input itself. It displays JSON, rendered
-input text, and job metadata produced by the core commands.
+input text, job metadata, and CP2K output summaries produced by the core
+commands.
 
 ## Smoke Test
 
