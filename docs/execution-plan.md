@@ -10,8 +10,9 @@ Each round should end with a focused commit.
 - License: `GPL-3.0-or-later`.
 - Current code: standard-library Python core commands plus unit tests.
 - Current docs: product scope, architecture, WSL execution rules, CP2K input
-  model, workflow, GUI prototype, existing-input jobs, and output summaries.
-- Next active round: Round 10, job history browser.
+  model, workflow, GUI prototype, existing-input jobs, output summaries, and
+  job history.
+- Next active round: Round 11, configuration editor and validation.
 - Known local facts:
   - WSL2 is available.
   - Default distro is `Ubuntu`.
@@ -318,7 +319,16 @@ Commit boundary:
 
 ## Round 10: Job History Browser
 
+Status: implemented.
+
 Goal: make generated metadata easier to inspect from the GUI.
+
+Local verification:
+
+- `scripts/list_job_history.py` lists `*.winqstep.json` metadata under a
+  workspace folder.
+- `scripts/start_gui.ps1 -SmokeTest` validates the WPF history grid and history
+  scanner without launching CP2K.
 
 Tasks:
 
@@ -334,6 +344,28 @@ Acceptance:
 Commit boundary:
 
 - One commit for metadata discovery, GUI list view, tests, and docs.
+
+## Round 11: Configuration Editor and Validation
+
+Goal: make the GUI safer for real local configuration edits.
+
+Tasks:
+
+- Show editable config fields for distro, CP2K command, data directory, MPI
+  command, and WSL shell prelude.
+- Validate required fields before previewing or running jobs.
+- Save a config JSON file with UTF-8 output and stable key order.
+- Keep CLI config parsing as the source of truth.
+
+Acceptance:
+
+- Users can inspect and save the active GUI configuration without hand-editing
+  JSON.
+- Invalid or missing CP2K paths are reported before CP2K is launched.
+
+Commit boundary:
+
+- One commit for GUI config editing, validation tests, and docs.
 
 ## Working Rules
 

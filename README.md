@@ -73,7 +73,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\start_gui.ps1
 ```
 
 The GUI can run either the structure/template workflow or an existing `.inp`
-file through the same command-line core.
+file through the same command-line core. It can also browse previous job
+metadata from the selected job folder.
 
 To render and run a minimal QuickStep job through WSL/CP2K:
 
@@ -89,6 +90,12 @@ python .\scripts\run_existing_input.py --config .\examples\winqstep.config.json 
 
 Completed jobs include a compact `cp2k_output` summary in metadata with warning
 count and CP2K program-end status.
+
+To list previous WinQStep jobs from metadata:
+
+```powershell
+python .\scripts\list_job_history.py --workspace .\outputs --limit 10
+```
 
 ## License
 

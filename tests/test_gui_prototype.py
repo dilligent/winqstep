@@ -37,6 +37,7 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertTrue(report["wpf_available"])
         self.assertTrue(report["xaml_loaded"])
         self.assertEqual(report["title"], "WinQStep")
+        self.assertTrue(report["history_grid_loaded"])
         self.assertEqual(report["console_output_encoding"].lower(), "utf-8")
         self.assertEqual(report["pythonioencoding"], "utf-8")
         self.assertEqual(report["encoding_probe_exit_code"], 0)
@@ -49,6 +50,10 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertTrue(report["existing_preview_input_exists"])
         self.assertEqual(report["existing_preview_summary_status"], "not_available")
         self.assertTrue(report["existing_preview_path_encoding_ok"], report["existing_preview_input_path"])
+        self.assertEqual(report["history_exit_code"], 0)
+        self.assertGreaterEqual(report["history_job_count"], 1)
+        self.assertEqual(report["history_first_mode"], "existing_input")
+        self.assertEqual(report["history_first_warning_count"], 0)
         self.assertTrue(report["existing_mode_input_enabled"])
         self.assertFalse(report["existing_mode_import_enabled"])
 

@@ -45,6 +45,7 @@ function Test-WinQStepGuiPrerequisites {
         "scripts\import_structure.py",
         "scripts\run_workflow.py",
         "scripts\run_existing_input.py",
+        "scripts\list_job_history.py",
         "examples\winqstep.config.json",
         "examples\templates\energy_pbe.json",
         "tests\fixtures\structures\water.xyz",
@@ -154,6 +155,7 @@ function New-WinQStepWindow {
         <Button x:Name="ImportButton" Content="Import"/>
         <Button x:Name="PreviewButton" Content="Preview"/>
         <Button x:Name="RunButton" Content="Run"/>
+        <Button x:Name="HistoryButton" Content="History"/>
         <Button x:Name="ClearButton" Content="Clear"/>
       </StackPanel>
     </DockPanel>
@@ -227,6 +229,21 @@ function New-WinQStepWindow {
                  AcceptsReturn="True" AcceptsTab="True" TextWrapping="Wrap"
                  HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"/>
       </TabItem>
+      <TabItem Header="History">
+        <DataGrid x:Name="HistoryGrid" AutoGenerateColumns="False" IsReadOnly="True"
+                  SelectionMode="Single" HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                  FontSize="12">
+          <DataGrid.Columns>
+            <DataGridTextColumn Header="Completed" Binding="{Binding completed_at}" Width="155"/>
+            <DataGridTextColumn Header="Mode" Binding="{Binding mode}" Width="115"/>
+            <DataGridTextColumn Header="Status" Binding="{Binding status}" Width="90"/>
+            <DataGridTextColumn Header="Code" Binding="{Binding returncode}" Width="55"/>
+            <DataGridTextColumn Header="Warnings" Binding="{Binding warning_count}" Width="75"/>
+            <DataGridTextColumn Header="Project/Input" Binding="{Binding project_name}" Width="160"/>
+            <DataGridTextColumn Header="Output" Binding="{Binding output_path}" Width="*"/>
+          </DataGrid.Columns>
+        </DataGrid>
+      </TabItem>
     </TabControl>
 
     <StatusBar Grid.Row="3" Margin="0,10,0,0">
@@ -246,8 +263,8 @@ function New-WinQStepWindow {
         "WorkflowModeRadio", "ExistingInputModeRadio",
         "ConfigPathBox", "TemplatePathBox", "StructurePathBox", "ExistingInputPathBox",
         "JobDirBox", "ProjectNameBox",
-        "EnvironmentText", "StructureText", "PreviewText", "LogText", "StatusText",
-        "DetectButton", "ImportButton", "PreviewButton", "RunButton", "ClearButton",
+        "EnvironmentText", "StructureText", "PreviewText", "LogText", "HistoryGrid", "StatusText",
+        "DetectButton", "ImportButton", "PreviewButton", "RunButton", "HistoryButton", "ClearButton",
         "BrowseConfigButton", "BrowseTemplateButton", "BrowseStructureButton",
         "BrowseExistingInputButton", "BrowseJobDirButton"
     )
@@ -264,7 +281,7 @@ function New-WinQStepWindow {
 
     $actionButtons = @(
         $controls["DetectButton"], $controls["ImportButton"], $controls["PreviewButton"],
-        $controls["RunButton"], $controls["ClearButton"], $controls["BrowseConfigButton"],
+        $controls["RunButton"], $controls["HistoryButton"], $controls["ClearButton"], $controls["BrowseConfigButton"],
         $controls["BrowseTemplateButton"], $controls["BrowseStructureButton"],
         $controls["BrowseExistingInputButton"], $controls["BrowseJobDirButton"]
     )
@@ -399,6 +416,48 @@ function New-WinQStepWindow {
         return "$summaryText`r`n`r`n$Output"
     }.GetNewClosure()
 
+    $LoadHistory = {
+        $result = Invoke-WinQStepPython @(
+            "scripts\list_job_history.py",
+            "--workspace", $controls["JobDirBox"].Text,
+            "--compact"
+        )
+        $history = Get-JsonResult $result
+        $jobs = @()
+        if ($null -ne $history.jobs) {
+            $jobs = @($history.jobs)
+        }
+        $errors = @()
+        if ($null -ne $history.errors) {
+            $errors = @($history.errors)
+        }
+        $controls["HistoryGrid"].ItemsSource = $jobs
+        $controls["LogText"].Text = "History jobs: $($jobs.Count), errors: $($errors.Count)`r`n`r`n$($result.Output)"
+    }.GetNewClosure()
+
+    $OpenSelectedHistory = {
+        $item = $controls["HistoryGrid"].SelectedItem
+        if ($null -eq $item) {
+            return
+        }
+
+        $metadataPath = [string]$item.metadata_path
+        if (-not [string]::IsNullOrWhiteSpace($metadataPath) -and [System.IO.File]::Exists($metadataPath)) {
+            $controls["LogText"].Text = [System.IO.File]::ReadAllText($metadataPath, [System.Text.Encoding]::UTF8)
+        }
+        else {
+            $controls["LogText"].Text = "Metadata file was not found: $metadataPath"
+        }
+
+        $outputPath = [string]$item.output_path
+        if (-not [string]::IsNullOrWhiteSpace($outputPath) -and [System.IO.File]::Exists($outputPath)) {
+            $controls["PreviewText"].Text = [System.IO.File]::ReadAllText($outputPath, [System.Text.Encoding]::UTF8)
+        }
+        else {
+            $controls["PreviewText"].Text = "CP2K output was not found: $outputPath"
+        }
+    }.GetNewClosure()
+
     $controls["BrowseConfigButton"].Add_Click({ & $SelectFilePath $controls["ConfigPathBox"] "JSON files (*.json)|*.json|All files (*.*)|*.*" }.GetNewClosure())
     $controls["BrowseTemplateButton"].Add_Click({ & $SelectFilePath $controls["TemplatePathBox"] "JSON files (*.json)|*.json|All files (*.*)|*.*" }.GetNewClosure())
     $controls["BrowseStructureButton"].Add_Click({ & $SelectFilePath $controls["StructurePathBox"] "Structures (*.xyz;*.cif;POSCAR;CONTCAR)|*.xyz;*.cif;POSCAR;CONTCAR|All files (*.*)|*.*" }.GetNewClosure())
@@ -453,11 +512,22 @@ function New-WinQStepWindow {
         }
     }.GetNewClosure())
 
+    $controls["HistoryButton"].Add_Click({
+        & $InvokeGuiAction "Loading job history" {
+            & $LoadHistory
+        }
+    }.GetNewClosure())
+
+    $controls["HistoryGrid"].Add_MouseDoubleClick({
+        & $OpenSelectedHistory
+    }.GetNewClosure())
+
     $controls["ClearButton"].Add_Click({
         $controls["EnvironmentText"].Clear()
         $controls["StructureText"].Clear()
         $controls["PreviewText"].Clear()
         $controls["LogText"].Clear()
+        $controls["HistoryGrid"].ItemsSource = $null
     }.GetNewClosure())
 
     & $UpdateModeControls
@@ -494,9 +564,52 @@ if ($SmokeTest) {
         "--compact"
     )
     $existingPreviewMetadata = Get-JsonResult $existingPreviewResult
+    $historySmokeDir = Resolve-WinQStepPath "outputs\gui-history-smoke"
+    [System.IO.Directory]::CreateDirectory($historySmokeDir) | Out-Null
+    $historyMetadataPath = Join-Path $historySmokeDir "history_smoke.winqstep.json"
+    $historyInputPath = Join-Path $historySmokeDir "history_smoke.inp"
+    $historyOutputPath = Join-Path $historySmokeDir "history_smoke.out"
+    $historyMetadata = [ordered]@{
+        status = "succeeded"
+        created_at = "2026-06-29T00:00:00Z"
+        completed_at = "2026-06-29T00:01:00Z"
+        returncode = 0
+        job = [ordered]@{
+            mode = "existing_input"
+            input_stem = "history_smoke"
+        }
+        files = [ordered]@{
+            input = [ordered]@{ path = $historyInputPath }
+            output = [ordered]@{ path = $historyOutputPath }
+            stdout = [ordered]@{ path = (Join-Path $historySmokeDir "history_smoke.stdout.log") }
+            stderr = [ordered]@{ path = (Join-Path $historySmokeDir "history_smoke.stderr.log") }
+            metadata = [ordered]@{ path = $historyMetadataPath }
+        }
+        cp2k_output = [ordered]@{
+            status = "completed"
+            warning_count = 0
+            program_ended = $true
+        }
+    }
+    [System.IO.File]::WriteAllText(
+        $historyMetadataPath,
+        (($historyMetadata | ConvertTo-Json -Depth 8) + "`n"),
+        $Script:Utf8NoBomEncoding
+    )
+    $historyResult = Invoke-WinQStepPython @(
+        "scripts\list_job_history.py",
+        "--workspace", $historySmokeDir,
+        "--compact"
+    )
+    $history = Get-JsonResult $historyResult
+    $historyJobs = @()
+    if ($null -ne $history.jobs) {
+        $historyJobs = @($history.jobs)
+    }
     $window.FindName("ExistingInputModeRadio").IsChecked = $true
     $report["xaml_loaded"] = ($window -is [System.Windows.Window])
     $report["title"] = $window.Title
+    $report["history_grid_loaded"] = ($window.FindName("HistoryGrid") -is [System.Windows.Controls.DataGrid])
     $report["console_output_encoding"] = [Console]::OutputEncoding.WebName
     $report["pythonioencoding"] = $env:PYTHONIOENCODING
     $report["encoding_probe_exit_code"] = $encodingProbeResult.ExitCode
@@ -511,6 +624,10 @@ if ($SmokeTest) {
     $report["existing_preview_summary_status"] = $existingPreviewMetadata.cp2k_output.status
     $report["existing_preview_input_path"] = [string]$existingPreviewMetadata.files.input.path
     $report["existing_preview_path_encoding_ok"] = ([string]$existingPreviewMetadata.files.input.path).Contains($chineseFolderName)
+    $report["history_exit_code"] = $historyResult.ExitCode
+    $report["history_job_count"] = $historyJobs.Count
+    $report["history_first_mode"] = if ($historyJobs.Count -gt 0) { [string]$historyJobs[0].mode } else { "" }
+    $report["history_first_warning_count"] = if ($historyJobs.Count -gt 0) { $historyJobs[0].warning_count } else { $null }
     $report["existing_mode_input_enabled"] = [bool]$window.FindName("ExistingInputPathBox").IsEnabled
     $report["existing_mode_import_enabled"] = [bool]$window.FindName("ImportButton").IsEnabled
     $report | ConvertTo-Json -Depth 5

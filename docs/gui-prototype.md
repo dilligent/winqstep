@@ -12,6 +12,10 @@ Round 8 adds a mode selector for the two supported job paths:
 - `Existing input`: user-provided `.inp`, routed through
   `scripts/run_existing_input.py`
 
+Round 10 adds a job history browser over existing metadata files. The `History`
+button scans the selected job folder with `scripts/list_job_history.py`, and the
+`History` tab lists previous generated, workflow, and existing-input jobs.
+
 ## Start
 
 ```powershell
@@ -27,10 +31,14 @@ same scripts used by tests:
 - `Preview`: `scripts/run_workflow.py --prepare-only` or
   `scripts/run_existing_input.py --prepare-only`
 - `Run`: `scripts/run_workflow.py` or `scripts/run_existing_input.py`
+- `History`: `scripts/list_job_history.py`
 
 The GUI does not parse or generate CP2K input itself. It displays JSON, rendered
 input text, job metadata, and CP2K output summaries produced by the core
 commands.
+
+Double-clicking a row in the history grid loads the selected metadata into the
+job log pane and the selected CP2K output file into the input preview pane.
 
 The PowerShell host forces UTF-8 for Python subprocess output so Windows paths
 with Chinese characters render correctly in the text panes.
@@ -45,4 +53,5 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\start_gui.ps1 -Smo
 ```
 
 The Python unit suite runs the same smoke test on Windows. Smoke mode validates
-both workflow preview and existing-input preview without launching CP2K.
+workflow preview, existing-input preview, and history scanning without launching
+CP2K.
