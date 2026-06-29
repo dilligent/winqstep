@@ -187,6 +187,7 @@ Launcher, prerequisite, and release-hygiene notes are in
 `docs/startup.md`.
 GUI localization notes are in `docs/localization.md`.
 Release packaging notes are in `docs/release.md`.
+Release candidate handoff notes are in `docs/release-candidate-handoff.md`.
 Testing matrix notes are in `docs/testing.md`.
 
 To build a local source-release zip:

@@ -10,6 +10,15 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class ReleaseCandidateWalkthroughTests(unittest.TestCase):
+    def test_handoff_doc_is_linked_from_readme(self) -> None:
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        handoff = (ROOT / "docs" / "release-candidate-handoff.md").read_text(encoding="utf-8")
+
+        self.assertIn("docs/release-candidate-handoff.md", readme)
+        self.assertIn("## Required Handoff Commands", handoff)
+        self.assertIn("python .\\scripts\\run_checks.py --profile all --compact", handoff)
+        self.assertIn("## Known Limitations", handoff)
+
     def test_cli_runs_offline_walkthrough(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
             completed = subprocess.run(

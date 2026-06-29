@@ -26,6 +26,7 @@ REQUIRED_UNPACKED_FILES = (
     "pyproject.toml",
     "WinQStep.ps1",
     "WinQStep.cmd",
+    "docs/release-candidate-handoff.md",
     "docs/release.md",
     "docs/startup.md",
     "scripts/build_release.py",

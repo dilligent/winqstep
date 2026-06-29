@@ -38,6 +38,7 @@ class ReleaseBuildTests(unittest.TestCase):
         self.assertIn("scripts/gui/WinQStep.xaml", plan["files"])
         self.assertIn("resources/i18n/en-US.json", plan["files"])
         self.assertIn("resources/i18n/zh-CN.json", plan["files"])
+        self.assertIn("docs/release-candidate-handoff.md", plan["files"])
         self.assertIn("THIRD_PARTY_NOTICES.md", plan["files"])
         self.assertNotIn("outputs/gui-smoke/gui_smoke.inp", plan["files"])
 
@@ -93,6 +94,7 @@ class ReleaseBuildTests(unittest.TestCase):
             self.assertIn(f"{root}/scripts/run_checks.py", names)
             self.assertIn(f"{root}/scripts/release_candidate_walkthrough.py", names)
             self.assertIn(f"{root}/scripts/start_gui.ps1", names)
+            self.assertIn(f"{root}/docs/release-candidate-handoff.md", names)
             self.assertIn(f"{root}/RELEASE-MANIFEST.json", names)
             self.assertFalse(any("/outputs/" in name for name in names))
             self.assertFalse(any("/dist/" in name for name in names))

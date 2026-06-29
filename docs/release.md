@@ -94,6 +94,10 @@ Before handing off a release candidate from a development checkout, run:
 python .\scripts\run_checks.py --profile all
 ```
 
+Use `docs/release-candidate-handoff.md` as the final handoff checklist. It
+lists the required commands, expected artifacts, first-run tester path, and
+current known limitations.
+
 The `all` profile includes the release-candidate walkthrough:
 
 ```powershell

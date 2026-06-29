@@ -16,8 +16,10 @@ Each round should end with a focused commit.
   inspection, structured GUI result summaries, job input preflight validation,
   startup diagnostics, and GUI modularization, GUI localization, persisted GUI
   language preferences, local release packaging, release install smoke testing,
-  release-candidate workflow walkthrough, and user guide polish.
-- Next active round: Round 31, release candidate cleanup and handoff notes.
+  release-candidate workflow walkthrough, release handoff notes, and user guide
+  polish.
+- Next active round: Round 32, final release artifact build and manual tester
+  pass.
 - Known local facts:
   - WSL2 is available.
   - Default distro is `Ubuntu`.
@@ -1047,6 +1049,33 @@ Commit boundary:
 
 - One commit for RC walkthrough script, check-runner integration, tests, and
   docs.
+
+## Round 31: Release-Candidate Handoff Notes
+
+Status: implemented.
+
+Goal: make release handoff explicit enough that a tester or future session can
+verify, package, and start the candidate without reading the whole repository.
+
+Tasks:
+
+- Add a short handoff document with required commands, expected artifacts,
+  tester first-run path, and known limitations.
+- Link the handoff document from README and release docs.
+- Make release install smoke treat the handoff note as a required unpacked file.
+- Add tests that verify the handoff note is discoverable and included in the
+  release plan/archive.
+
+Acceptance:
+
+- The source-release zip includes `docs/release-candidate-handoff.md`.
+- README points readers to the handoff note.
+- Tests fail if the handoff note is missing from release contents.
+
+Commit boundary:
+
+- One commit for handoff documentation, release smoke wiring, tests, and plan
+  update.
 
 ## Working Rules
 
