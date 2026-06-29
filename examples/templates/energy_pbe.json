@@ -15,17 +15,49 @@
   "structure_transform": {
     "fallback_cell": {
       "periodic": "XYZ",
-      "a": [10.0, 0.0, 0.0],
-      "b": [0.0, 10.0, 0.0],
-      "c": [0.0, 0.0, 10.0]
+      "a": [
+        10.0,
+        0.0,
+        0.0
+      ],
+      "b": [
+        0.0,
+        10.0,
+        0.0
+      ],
+      "c": [
+        0.0,
+        0.0,
+        10.0
+      ]
     },
     "center_atoms": true
   },
   "kinds": [
-    {"element": "H", "basis_set": "DZVP-MOLOPT-SR-GTH", "potential": "GTH-PBE-q1"},
-    {"element": "O", "basis_set": "DZVP-MOLOPT-SR-GTH", "potential": "GTH-PBE-q6"},
-    {"element": "Si", "basis_set": "DZVP-MOLOPT-SR-GTH", "potential": "GTH-PBE-q4"},
-    {"element": "Na", "basis_set": "DZVP-MOLOPT-SR-GTH", "potential": "GTH-PBE-q9"},
-    {"element": "Cl", "basis_set": "DZVP-MOLOPT-SR-GTH", "potential": "GTH-PBE-q7"}
+    {
+      "element": "H",
+      "basis_set": "DZVP-MOLOPT-SR-GTH",
+      "potential": "GTH-PBE-q1"
+    },
+    {
+      "element": "O",
+      "basis_set": "DZVP-MOLOPT-SR-GTH",
+      "potential": "GTH-PBE-q6"
+    },
+    {
+      "element": "Si",
+      "basis_set": "DZVP-MOLOPT-SR-GTH",
+      "potential": "GTH-PBE-q4"
+    },
+    {
+      "element": "Na",
+      "basis_set": "DZVP-MOLOPT-SR-GTH",
+      "potential": "GTH-PBE-q9"
+    },
+    {
+      "element": "Cl",
+      "basis_set": "DZVP-MOLOPT-SR-GTH",
+      "potential": "GTH-PBE-q7"
+    }
   ]
 }
