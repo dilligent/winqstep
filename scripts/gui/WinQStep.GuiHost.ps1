@@ -157,6 +157,7 @@ function Test-WinQStepGuiPrerequisites {
         "WinQStep.ps1",
         "scripts\check_startup.py",
         "scripts\build_release.py",
+        "scripts\smoke_release_install.py",
         "scripts\start_gui.ps1",
         "scripts\gui\WinQStep.GuiHost.ps1",
         "scripts\gui\WinQStep.xaml",

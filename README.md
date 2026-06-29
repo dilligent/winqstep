@@ -10,21 +10,48 @@ WinQStep is not affiliated with the CP2K project.
 
 ## Current Stage
 
-This repository is in the foundation stage. The immediate work is to define the
-product boundary, capture the Windows/WSL2 execution rules, and build a small
-environment probe before adding a GUI.
+This repository is a local Windows prototype. It has a PowerShell-hosted WPF GUI
+over tested Python commands for QuickStep input generation, existing-input runs,
+job history, config/template editing, CP2K data inspection, startup diagnostics,
+and source-release packaging.
 
 The local execution plan is tracked in `docs/execution-plan.md`.
 
-## First Target
+## Current Target
 
-The first usable version should:
+The current usable path is:
 
-- detect the selected WSL2 distro and CP2K command;
-- locate `CP2K_DATA_DIR` and common basis/potential files;
-- import a simple structure file through a Python sidecar;
-- generate a QuickStep `ENERGY` or `GEO_OPT` input from typed options;
-- run CP2K through `wsl.exe` and store outputs in a Windows project folder.
+- configure a WSL2 distro, CP2K command, and CP2K data directory;
+- generate conservative QuickStep `ENERGY` or `GEO_OPT` inputs from structures
+  and templates;
+- run either generated inputs or existing `.inp` files through `wsl.exe`;
+- keep inputs, outputs, stdout/stderr logs, metadata, and history in a Windows
+  workspace folder;
+- package and smoke-test a source release that can be unpacked on Windows.
+
+## Quick Start
+
+From an unpacked WinQStep folder on Windows:
+
+```powershell
+.\WinQStep.ps1 -Diagnostics -SkipLiveProbes
+```
+
+If the local WSL2/CP2K environment is available, run the full probe:
+
+```powershell
+.\WinQStep.ps1 -Diagnostics
+```
+
+Open the GUI with:
+
+```powershell
+.\WinQStep.ps1
+```
+
+The sample config in `examples/winqstep.config.json` defaults job output to the
+relative `outputs` folder inside the current WinQStep directory. Edit it from
+the GUI `Config` tab or with `scripts/manage_config.py` for your own CP2K paths.
 
 ## Development
 
@@ -70,7 +97,7 @@ python .\scripts\inspect_cp2k_data.py --config .\examples\winqstep.config.json
 To preview the WSL command for a future CP2K job without running it:
 
 ```powershell
-python .\scripts\build_job_dry_run.py --config .\examples\winqstep.config.json --input D:\Library\自制品\winqstep\outputs\water.inp
+python .\scripts\build_job_dry_run.py --config .\examples\winqstep.config.json --input D:\path\to\water.inp
 ```
 
 To render a conservative QuickStep input from JSON:
@@ -154,6 +181,12 @@ To build a local source-release zip:
 
 ```powershell
 python .\scripts\build_release.py
+```
+
+To build, unpack, and smoke-test that release in a temporary directory:
+
+```powershell
+python .\scripts\smoke_release_install.py
 ```
 
 ## License

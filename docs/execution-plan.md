@@ -14,10 +14,9 @@ Each round should end with a focused commit.
   history, config editing, template editing, CP2K data inspection, and
   asynchronous GUI job execution, GUI job lifecycle hardening, GUI output
   inspection, job input preflight validation, startup diagnostics, and GUI
-  modularization, GUI localization, persisted GUI language preferences, and
-  local release packaging.
-- Next active round: Round 23, release artifact install smoke and user guide
-  polish.
+  modularization, GUI localization, persisted GUI language preferences, local
+  release packaging, release install smoke testing, and user guide polish.
+- Next active round: Round 24, release candidate workflow walkthrough.
 - Known local facts:
   - WSL2 is available.
   - Default distro is `Ubuntu`.
@@ -774,6 +773,44 @@ Notes:
 Commit boundary:
 
 - One commit for GUI template drop-down controls, smoke assertions, and docs.
+
+## Round 23: Release Install Smoke and User Guide Polish
+
+Status: implemented.
+
+Goal: verify the release zip as an unpacked artifact and make the first-run path
+clearer for users.
+
+Local verification:
+
+- `scripts/smoke_release_install.py` builds a release archive in a temporary
+  directory, extracts it, checks required/unwanted paths, and runs
+  `WinQStep.ps1 -Diagnostics -SkipLiveProbes` from the unpacked folder.
+- The sample config now uses a relative `outputs` workspace so release folders
+  are portable after extraction.
+- GUI workspace handling resolves relative workspaces from the WinQStep folder,
+  keeping release defaults local to the unpacked directory.
+
+Tasks:
+
+- Add an install smoke command for newly built or existing release zips.
+- Include `.gitignore` and the smoke script in release artifacts so unpacked
+  startup diagnostics can verify release hygiene.
+- Keep diagnostics deterministic by defaulting the install smoke to
+  `-SkipLiveProbes`.
+- Polish README, startup, release, and configuration notes around first run,
+  release verification, and portable output folders.
+
+Acceptance:
+
+- A user can build a zip, smoke-test the unpacked artifact, run startup
+  diagnostics from the release folder, and understand where outputs will be
+  written by default.
+
+Commit boundary:
+
+- One commit for release install smoke, tests, portable config defaults, and
+  user-facing docs.
 
 ## Working Rules
 

@@ -27,9 +27,11 @@ class ReleaseBuildTests(unittest.TestCase):
         plan = build_release_plan(ROOT)
 
         self.assertTrue(plan["valid"], plan["missing"])
+        self.assertIn(".gitignore", plan["files"])
         self.assertIn("WinQStep.ps1", plan["files"])
         self.assertIn("WinQStep.cmd", plan["files"])
         self.assertIn("scripts/build_release.py", plan["files"])
+        self.assertIn("scripts/smoke_release_install.py", plan["files"])
         self.assertIn("scripts/start_gui.ps1", plan["files"])
         self.assertIn("scripts/gui/WinQStep.xaml", plan["files"])
         self.assertIn("resources/i18n/en-US.json", plan["files"])
@@ -83,12 +85,39 @@ class ReleaseBuildTests(unittest.TestCase):
                 names = archive.namelist()
 
             root = payload["archive_root"]
+            self.assertIn(f"{root}/.gitignore", names)
             self.assertIn(f"{root}/WinQStep.ps1", names)
+            self.assertIn(f"{root}/scripts/smoke_release_install.py", names)
             self.assertIn(f"{root}/scripts/start_gui.ps1", names)
             self.assertIn(f"{root}/RELEASE-MANIFEST.json", names)
             self.assertFalse(any("/outputs/" in name for name in names))
             self.assertFalse(any("/dist/" in name for name in names))
             self.assertFalse(any("/.git/" in name for name in names))
+
+    def test_release_install_smoke_cli_builds_and_unpacks_archive(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    str(ROOT / "scripts" / "smoke_release_install.py"),
+                    "--output-dir",
+                    str(Path(tmp_dir) / "dist"),
+                    "--compact",
+                ],
+                cwd=ROOT,
+                capture_output=True,
+                check=False,
+            )
+
+            self.assertEqual(completed.returncode, 0, completed.stderr.decode("utf-8", errors="replace"))
+            payload = json.loads(completed.stdout.decode("utf-8"))
+            self.assertEqual(payload["mode"], "release_install_smoke")
+            self.assertTrue(payload["valid"], payload["errors"])
+            self.assertTrue(Path(payload["archive_path"]).is_file())
+            self.assertEqual(payload["archive"]["archive_root"], payload["build"]["archive_root"])
+            self.assertGreater(payload["archive"]["file_count"], 0)
+            if not payload["diagnostics"]["skipped"]:
+                self.assertTrue(payload["diagnostics"]["valid"], payload["diagnostics"]["error"])
 
 
 if __name__ == "__main__":

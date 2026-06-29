@@ -739,6 +739,17 @@ function New-WinQStepWindow {
         return ($lines -join "`r`n")
     }.GetNewClosure()
 
+    $ResolveWindowsWorkspacePath = {
+        param([AllowEmptyString()][string]$Workspace)
+        if ([string]::IsNullOrWhiteSpace($Workspace)) {
+            return ""
+        }
+        if ([System.IO.Path]::IsPathRooted($Workspace)) {
+            return [System.IO.Path]::GetFullPath($Workspace)
+        }
+        return Resolve-WinQStepPath $Workspace
+    }.GetNewClosure()
+
     $SetConfigFieldsFromPayload = {
         param([Parameter(Mandatory = $true)]$Payload)
         $config = $Payload.config
@@ -754,7 +765,7 @@ function New-WinQStepWindow {
         & $ApplyConfiguredLanguage $uiLanguage
         $workspace = $controls["DefaultWorkspaceBox"].Text
         if (-not [string]::IsNullOrWhiteSpace($workspace)) {
-            $controls["JobDirBox"].Text = $workspace
+            $controls["JobDirBox"].Text = & $ResolveWindowsWorkspacePath $workspace
         }
         $controls["ConfigValidationText"].Text = & $FormatConfigValidation $Payload
     }.GetNewClosure()
@@ -995,6 +1006,7 @@ function New-WinQStepWindow {
         if ([string]::IsNullOrWhiteSpace($workspace)) {
             $workspace = $controls["JobDirBox"].Text
         }
+        $workspace = & $ResolveWindowsWorkspacePath $workspace
         [System.IO.Directory]::CreateDirectory($workspace) | Out-Null
         return (Join-Path $workspace "cp2k-data.winqstep-cache.json")
     }.GetNewClosure()
@@ -1671,7 +1683,13 @@ if ($SmokeTest) {
     $report["config_ui_language"] = [string]$window.FindName("UiLanguageBox").SelectedItem.Tag
     $report["config_ui_language_text"] = [string]$window.FindName("UiLanguageBox").SelectedItem.Content
     $report["config_workspace_path"] = $configWorkspace
-    $report["config_workspace_encoding_ok"] = $configWorkspace.Contains($chineseFolderName)
+    $report["config_workspace_resolved_path"] = if ([System.IO.Path]::IsPathRooted($configWorkspace)) {
+        [System.IO.Path]::GetFullPath($configWorkspace)
+    }
+    else {
+        Resolve-WinQStepPath $configWorkspace
+    }
+    $report["config_workspace_encoding_ok"] = $report["config_workspace_resolved_path"].Contains($chineseFolderName)
     $report["config_validation_text"] = [string]$window.FindName("ConfigValidationText").Text
     $templateComboNames = @(
         "TemplateProjectBox", "TemplateRunTypeBox", "BasisSetFileBox", "PotentialFileBox",

@@ -14,7 +14,7 @@ See `examples/winqstep.config.json`.
   "cp2k_command": "/home/teng/cp2k/exe/local/cp2k.ssmp",
   "mpirun_command": "",
   "cp2k_data_dir": "/home/teng/cp2k/data",
-  "default_windows_workspace": "D:\\Library\\自制品\\winqstep\\outputs",
+  "default_windows_workspace": "outputs",
   "wsl_shell_prelude": "conda deactivate >/dev/null 2>&1 || true",
   "ui_language": "",
   "timeout": 20
@@ -44,7 +44,7 @@ fields are present when `--require-execution` is used, and emits normalized JSON
 with diagnostics. To rewrite a config with stable key order and UTF-8 text:
 
 ```powershell
-python .\scripts\manage_config.py --config .\examples\winqstep.config.json --write --fields-json "{\"distro\":\"Ubuntu\",\"cp2k_command\":\"/home/teng/cp2k/exe/local/cp2k.ssmp\",\"mpirun_command\":\"\",\"cp2k_data_dir\":\"/home/teng/cp2k/data\",\"default_windows_workspace\":\"D:\\Library\\自制品\\winqstep\\outputs\",\"wsl_shell_prelude\":\"conda deactivate >/dev/null 2>&1 || true\",\"ui_language\":\"\",\"timeout\":\"20\"}"
+python .\scripts\manage_config.py --config .\examples\winqstep.config.json --write --fields-json "{\"distro\":\"Ubuntu\",\"cp2k_command\":\"/home/teng/cp2k/exe/local/cp2k.ssmp\",\"mpirun_command\":\"\",\"cp2k_data_dir\":\"/home/teng/cp2k/data\",\"default_windows_workspace\":\"outputs\",\"wsl_shell_prelude\":\"conda deactivate >/dev/null 2>&1 || true\",\"ui_language\":\"\",\"timeout\":\"20\"}"
 ```
 
 ## Keys
@@ -56,6 +56,8 @@ python .\scripts\manage_config.py --config .\examples\winqstep.config.json --wri
   `cp2k.ssmp` execution is preferred.
 - `cp2k_data_dir`: CP2K data directory inside WSL.
 - `default_windows_workspace`: default Windows folder for future job outputs.
+  A relative value such as `outputs` is resolved from the WinQStep folder by the
+  GUI and command-line wrappers, which keeps unpacked release folders portable.
 - `wsl_shell_prelude`: shell code to run before each WSL command. The sample
   uses `conda deactivate >/dev/null 2>&1 || true` so conda environments do not
   leak into CP2K probing or future job execution.

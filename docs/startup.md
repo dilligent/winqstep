@@ -75,7 +75,13 @@ python .\scripts\build_release.py
 ```
 
 Use `--dry-run` to inspect the planned archive without writing `dist/`
-artifacts. See `docs/release.md` for the full packaging checklist.
+artifacts. To verify the zip from a clean temporary extraction:
+
+```powershell
+python .\scripts\smoke_release_install.py
+```
+
+See `docs/release.md` for the full packaging checklist.
 
 ## Release Hygiene
 

@@ -22,11 +22,19 @@ Use `--dry-run` to inspect the file list without writing artifacts:
 python .\scripts\build_release.py --dry-run
 ```
 
+The release builder writes deterministic zip entries and a manifest containing
+the archive size, SHA-256, archive root, and included file list.
+
 ## Contents
 
 The release zip includes the Windows launchers, Python package, scripts,
 resources, examples, tests, and documentation needed to run and verify the
 prototype from an unpacked folder.
+
+The sample config uses a relative `outputs` workspace so an unpacked release
+writes local job artifacts under that release folder by default. Users can save
+an absolute workspace path from the GUI `Config` tab when they want outputs in a
+separate project directory.
 
 The zip intentionally excludes local/generated artifacts:
 
@@ -42,6 +50,25 @@ CP2K binaries, CP2K source snapshots, and CP2K data files remain external
 dependencies and are never copied into the release archive.
 
 ## Verify
+
+To test the release artifact exactly as a user would receive it, run:
+
+```powershell
+python .\scripts\smoke_release_install.py
+```
+
+By default this builds a release zip in a temporary directory, extracts it,
+checks for required files and excluded paths, and runs:
+
+```powershell
+.\WinQStep.ps1 -Diagnostics -SkipLiveProbes
+```
+
+from the unpacked folder. To test an existing archive:
+
+```powershell
+python .\scripts\smoke_release_install.py --archive .\dist\winqstep-<version>.zip
+```
 
 After unpacking the zip on Windows, run:
 

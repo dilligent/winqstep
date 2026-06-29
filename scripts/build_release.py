@@ -15,6 +15,7 @@ from typing import Any
 
 
 RELEASE_ROOT_FILES = (
+    ".gitignore",
     "README.md",
     "LICENSE",
     "THIRD_PARTY_NOTICES.md",

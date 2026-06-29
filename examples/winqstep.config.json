@@ -3,7 +3,7 @@
   "cp2k_command": "/home/teng/cp2k/exe/local/cp2k.ssmp",
   "mpirun_command": "",
   "cp2k_data_dir": "/home/teng/cp2k/data",
-  "default_windows_workspace": "D:\\Library\\自制品\\winqstep\\outputs",
+  "default_windows_workspace": "outputs",
   "wsl_shell_prelude": "conda deactivate >/dev/null 2>&1 || true",
   "ui_language": "",
   "timeout": 20
