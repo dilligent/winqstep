@@ -48,6 +48,7 @@ function Test-WinQStepGuiPrerequisites {
         "scripts\list_job_history.py",
         "scripts\manage_config.py",
         "scripts\manage_template.py",
+        "scripts\inspect_cp2k_data.py",
         "examples\winqstep.config.json",
         "examples\templates\energy_pbe.json",
         "tests\fixtures\structures\water.xyz",
@@ -157,6 +158,7 @@ function New-WinQStepWindow {
         <Button x:Name="SaveConfigButton" Content="Save Config"/>
         <Button x:Name="LoadTemplateButton" Content="Load Template"/>
         <Button x:Name="SaveTemplateButton" Content="Save Template"/>
+        <Button x:Name="InspectDataButton" Content="Inspect Data"/>
         <Button x:Name="DetectButton" Content="Detect"/>
         <Button x:Name="ImportButton" Content="Import"/>
         <Button x:Name="PreviewButton" Content="Preview"/>
@@ -279,6 +281,7 @@ function New-WinQStepWindow {
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="130"/>
             <RowDefinition Height="90"/>
           </Grid.RowDefinitions>
 
@@ -320,7 +323,17 @@ function New-WinQStepWindow {
                    FontSize="12" AcceptsReturn="True" AcceptsTab="True" TextWrapping="NoWrap"
                    HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"/>
 
-          <TextBox x:Name="TemplateValidationText" Grid.Row="8" Grid.Column="0" Grid.ColumnSpan="4"
+          <DataGrid x:Name="DataLabelsGrid" Grid.Row="8" Grid.Column="0" Grid.ColumnSpan="4"
+                    AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single"
+                    HeadersVisibility="Column" GridLinesVisibility="Horizontal" FontSize="12">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Element" Binding="{Binding element}" Width="70"/>
+              <DataGridTextColumn Header="Basis Sets" Binding="{Binding basis_sets}" Width="*"/>
+              <DataGridTextColumn Header="Potentials" Binding="{Binding potentials}" Width="*"/>
+            </DataGrid.Columns>
+          </DataGrid>
+
+          <TextBox x:Name="TemplateValidationText" Grid.Row="9" Grid.Column="0" Grid.ColumnSpan="4"
                    FontFamily="Cascadia Mono, Consolas, Microsoft YaHei UI, Microsoft YaHei, SimSun"
                    FontSize="12" AcceptsReturn="True" TextWrapping="Wrap"
                    HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
@@ -386,9 +399,10 @@ function New-WinQStepWindow {
         "TemplateProjectBox", "TemplateRunTypeBox", "BasisSetFileBox", "PotentialFileBox",
         "XcFunctionalBox", "ChargeBox", "MultiplicityBox", "CutoffBox", "RelCutoffBox",
         "EpsScfBox", "MaxScfBox", "GeoOptimizerBox", "GeoMaxIterBox", "KindsText",
-        "TemplateValidationText",
+        "DataLabelsGrid", "TemplateValidationText",
         "EnvironmentText", "StructureText", "PreviewText", "LogText", "HistoryGrid", "StatusText",
-        "LoadConfigButton", "SaveConfigButton", "LoadTemplateButton", "SaveTemplateButton", "DetectButton", "ImportButton",
+        "LoadConfigButton", "SaveConfigButton", "LoadTemplateButton", "SaveTemplateButton",
+        "InspectDataButton", "DetectButton", "ImportButton",
         "PreviewButton", "RunButton", "HistoryButton", "ClearButton",
         "BrowseConfigButton", "BrowseTemplateButton", "BrowseStructureButton",
         "BrowseExistingInputButton", "BrowseJobDirButton"
@@ -407,7 +421,8 @@ function New-WinQStepWindow {
     $actionButtons = @(
         $controls["LoadConfigButton"], $controls["SaveConfigButton"],
         $controls["LoadTemplateButton"], $controls["SaveTemplateButton"],
-        $controls["DetectButton"], $controls["ImportButton"], $controls["PreviewButton"], $controls["RunButton"],
+        $controls["InspectDataButton"], $controls["DetectButton"], $controls["ImportButton"],
+        $controls["PreviewButton"], $controls["RunButton"],
         $controls["HistoryButton"], $controls["ClearButton"], $controls["BrowseConfigButton"],
         $controls["BrowseTemplateButton"], $controls["BrowseStructureButton"],
         $controls["BrowseExistingInputButton"], $controls["BrowseJobDirButton"]
@@ -771,6 +786,102 @@ function New-WinQStepWindow {
         return $payload
     }.GetNewClosure()
 
+    $GetDataInspectionCachePath = {
+        $workspace = $controls["DefaultWorkspaceBox"].Text
+        if ([string]::IsNullOrWhiteSpace($workspace)) {
+            $workspace = $controls["JobDirBox"].Text
+        }
+        [System.IO.Directory]::CreateDirectory($workspace) | Out-Null
+        return (Join-Path $workspace "cp2k-data.winqstep-cache.json")
+    }.GetNewClosure()
+
+    $SetDataLabelsFromPayload = {
+        param([Parameter(Mandatory = $true)]$Payload)
+        $rows = @()
+        if ($null -ne $Payload.labels_by_element) {
+            foreach ($property in @($Payload.labels_by_element.PSObject.Properties | Sort-Object Name)) {
+                $value = $property.Value
+                $rows += [pscustomobject]@{
+                    element = $property.Name
+                    basis_sets = (@($value.basis_sets) -join ", ")
+                    potentials = (@($value.potentials) -join ", ")
+                }
+            }
+        }
+        $controls["DataLabelsGrid"].ItemsSource = $rows
+        $cachePath = & $GetJsonProperty $Payload "cache_path"
+        $controls["TemplateValidationText"].Text = "CP2K data labels: elements=$($rows.Count), files=$($Payload.counts.files)`r`ncache=$cachePath"
+    }.GetNewClosure()
+
+    $InspectCp2kData = {
+        param([bool]$WriteLog)
+        $null = & $SaveConfigFields $true $false
+        $cachePath = & $GetDataInspectionCachePath
+        $result = Invoke-WinQStepPython @(
+            "scripts\inspect_cp2k_data.py",
+            "--config", $controls["ConfigPathBox"].Text,
+            "--cache", $cachePath,
+            "--compact"
+        )
+        $payload = Get-JsonResult $result
+        & $SetDataLabelsFromPayload $payload
+        if ($WriteLog) {
+            $controls["LogText"].Text = $result.Output
+        }
+        return $payload
+    }.GetNewClosure()
+
+    $SelectPreferredLabel = {
+        param([string]$Text, [string[]]$PreferredPatterns)
+        $values = @(
+            foreach ($value in ($Text -split ",")) {
+                $trimmed = $value.Trim()
+                if (-not [string]::IsNullOrWhiteSpace($trimmed)) {
+                    $trimmed
+                }
+            }
+        )
+        foreach ($pattern in $PreferredPatterns) {
+            $match = @($values | Where-Object { $_ -match $pattern } | Select-Object -First 1)
+            if ($match.Count -gt 0) {
+                return [string]$match[0]
+            }
+        }
+        if ($values.Count -gt 0) {
+            return [string]$values[0]
+        }
+        return ""
+    }.GetNewClosure()
+
+    $ApplySelectedDataLabel = {
+        $item = $controls["DataLabelsGrid"].SelectedItem
+        if ($null -eq $item) {
+            return
+        }
+        $element = [string]$item.element
+        $basis = & $SelectPreferredLabel ([string]$item.basis_sets) @("DZVP-MOLOPT-SR-GTH", "MOLOPT")
+        $potential = & $SelectPreferredLabel ([string]$item.potentials) @("GTH-PBE-q", "GTH-PBE")
+        if ([string]::IsNullOrWhiteSpace($element) -or [string]::IsNullOrWhiteSpace($basis) -or [string]::IsNullOrWhiteSpace($potential)) {
+            return
+        }
+        $newLine = "$element $basis $potential"
+        $updated = $false
+        $lines = @()
+        foreach ($line in @($controls["KindsText"].Text -split "`r?`n")) {
+            if ($line.Trim() -match "^$([regex]::Escape($element))\s+") {
+                $lines += $newLine
+                $updated = $true
+            }
+            elseif (-not [string]::IsNullOrWhiteSpace($line)) {
+                $lines += $line
+            }
+        }
+        if (-not $updated) {
+            $lines += $newLine
+        }
+        $controls["KindsText"].Text = ($lines -join "`r`n")
+    }.GetNewClosure()
+
     $LoadHistory = {
         $result = Invoke-WinQStepPython @(
             "scripts\list_job_history.py",
@@ -834,6 +945,12 @@ function New-WinQStepWindow {
     $controls["SaveTemplateButton"].Add_Click({
         & $InvokeGuiAction "Saving template" {
             $null = & $SaveTemplateFields $true
+        }
+    }.GetNewClosure())
+
+    $controls["InspectDataButton"].Add_Click({
+        & $InvokeGuiAction "Inspecting CP2K data" {
+            $null = & $InspectCp2kData $true
         }
     }.GetNewClosure())
 
@@ -920,12 +1037,17 @@ function New-WinQStepWindow {
         & $OpenSelectedHistory
     }.GetNewClosure())
 
+    $controls["DataLabelsGrid"].Add_MouseDoubleClick({
+        & $ApplySelectedDataLabel
+    }.GetNewClosure())
+
     $controls["ClearButton"].Add_Click({
         $controls["EnvironmentText"].Clear()
         $controls["StructureText"].Clear()
         $controls["PreviewText"].Clear()
         $controls["LogText"].Clear()
         $controls["HistoryGrid"].ItemsSource = $null
+        $controls["DataLabelsGrid"].ItemsSource = $null
     }.GetNewClosure())
 
     try {
@@ -1033,6 +1155,7 @@ if ($SmokeTest) {
     $report["template_cutoff"] = [string]$window.FindName("CutoffBox").Text
     $report["template_kinds_has_oxygen"] = ([string]$window.FindName("KindsText").Text).Contains("O")
     $report["template_validation_text"] = [string]$window.FindName("TemplateValidationText").Text
+    $report["data_labels_grid_loaded"] = ($window.FindName("DataLabelsGrid") -is [System.Windows.Controls.DataGrid])
     $report["history_grid_loaded"] = ($window.FindName("HistoryGrid") -is [System.Windows.Controls.DataGrid])
     $report["console_output_encoding"] = [Console]::OutputEncoding.WebName
     $report["pythonioencoding"] = $env:PYTHONIOENCODING

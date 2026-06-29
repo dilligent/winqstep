@@ -1,0 +1,7 @@
+# Minimal CP2K-like potential fixture.
+H GTH-PBE-q1
+ 1
+O GTH-PBE-q6
+ 6
+Si GTH-PBE-q4
+ 4

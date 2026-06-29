@@ -54,6 +54,12 @@ To validate or rewrite a workflow template:
 python .\scripts\manage_template.py --template .\examples\templates\energy_pbe.json
 ```
 
+To inspect configured CP2K basis and potential labels:
+
+```powershell
+python .\scripts\inspect_cp2k_data.py --config .\examples\winqstep.config.json
+```
+
 To preview the WSL command for a future CP2K job without running it:
 
 ```powershell
@@ -87,7 +93,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\start_gui.ps1
 The GUI can run either the structure/template workflow or an existing `.inp`
 file through the same command-line core. It can also browse previous job
 metadata from the selected job folder, edit the active WinQStep config, and edit
-common QuickStep template settings.
+common QuickStep template settings. It can also inspect CP2K data files and
+populate basis/potential choices for template KIND entries.
 
 To render and run a minimal QuickStep job through WSL/CP2K:
 

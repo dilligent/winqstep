@@ -11,8 +11,8 @@ Each round should end with a focused commit.
 - Current code: standard-library Python core commands plus unit tests.
 - Current docs: product scope, architecture, WSL execution rules, CP2K input
   model, workflow, GUI prototype, existing-input jobs, output summaries, job
-  history, config editing, and template editing.
-- Next active round: Round 13, CP2K data file inspection.
+  history, config editing, template editing, and CP2K data inspection.
+- Next active round: Round 14, asynchronous GUI job execution.
 - Known local facts:
   - WSL2 is available.
   - Default distro is `Ubuntu`.
@@ -409,8 +409,18 @@ Commit boundary:
 
 ## Round 13: CP2K Data File Inspection
 
+Status: implemented.
+
 Goal: help users choose basis sets and potentials from the configured CP2K data
 directory.
+
+Local verification:
+
+- `scripts/inspect_cp2k_data.py` parses fixture CP2K data files without WSL.
+- A local WSL smoke run inspected `/home/teng/cp2k/data` and wrote
+  `outputs/cp2k-data-round13.json`.
+- `scripts/start_gui.ps1 -SmokeTest` validates the GUI data label grid without
+  launching CP2K.
 
 Tasks:
 
@@ -428,6 +438,26 @@ Acceptance:
 Commit boundary:
 
 - One commit for data inspection, GUI population, tests, and docs.
+
+## Round 14: Asynchronous GUI Job Execution
+
+Goal: keep the GUI responsive while CP2K jobs run.
+
+Tasks:
+
+- Run long CP2K commands in a background job or process.
+- Stream or refresh stdout/stderr and CP2K output tails while the job is active.
+- Add a cancel/stop action that terminates the wrapper process where possible.
+- Keep metadata updates compatible with the existing runner output shape.
+
+Acceptance:
+
+- Starting a CP2K job does not block the GUI event loop, and users can inspect
+  logs or cancel a running job from the window.
+
+Commit boundary:
+
+- One commit for async execution plumbing, GUI controls, tests, and docs.
 
 ## Working Rules
 

@@ -49,6 +49,7 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertEqual(report["template_cutoff"], "400")
         self.assertTrue(report["template_kinds_has_oxygen"])
         self.assertIn("Template valid", report["template_validation_text"])
+        self.assertTrue(report["data_labels_grid_loaded"])
         self.assertTrue(report["history_grid_loaded"])
         self.assertEqual(report["console_output_encoding"].lower(), "utf-8")
         self.assertEqual(report["pythonioencoding"], "utf-8")

@@ -24,6 +24,10 @@ Round 12 adds the `Template` tab plus `Load Template` and `Save Template`
 buttons. The tab edits the existing workflow template JSON through
 `scripts/manage_template.py`.
 
+Round 13 adds the `Inspect Data` button. It scans the configured CP2K data
+directory with `scripts/inspect_cp2k_data.py`, caches the extracted labels, and
+shows basis/potential choices in the `Template` tab.
+
 ## Start
 
 ```powershell
@@ -42,6 +46,7 @@ same scripts used by tests:
 - `History`: `scripts/list_job_history.py`
 - `Load Config` and `Save Config`: `scripts/manage_config.py`
 - `Load Template` and `Save Template`: `scripts/manage_template.py`
+- `Inspect Data`: `scripts/inspect_cp2k_data.py`
 
 The GUI does not parse or generate CP2K input itself. It displays JSON, rendered
 input text, job metadata, and CP2K output summaries produced by the core
@@ -61,6 +66,10 @@ In workflow mode, `Preview` and `Run` also save and validate the current
 template fields before rendering input. Existing-input mode skips template
 handling.
 
+Double-clicking a row in the CP2K data label table updates the corresponding
+`KindsText` entry, preferring MOLOPT basis labels and GTH-PBE potentials when
+available.
+
 ## Smoke Test
 
 Use smoke mode to validate the WPF host and default paths without showing the
@@ -72,4 +81,5 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\start_gui.ps1 -Smo
 
 The Python unit suite runs the same smoke test on Windows. Smoke mode validates
 config loading, template loading, workflow preview, existing-input preview, and
-history scanning without launching CP2K.
+history scanning without launching CP2K. CP2K data inspection is covered by
+unit tests with fixture data and by manual/local WSL smoke runs.
