@@ -17,6 +17,7 @@ $Script:RepoRoot = Split-Path -Parent $PSScriptRoot
 $Script:PythonCommand = "python"
 $Script:Utf8NoBomEncoding = New-Object System.Text.UTF8Encoding($false)
 $Script:RequestedLanguage = $Language
+$Script:SuppressGuiMessageBoxes = [bool]$ButtonSmokeTest
 
 . (Join-Path $PSScriptRoot "gui\WinQStep.GuiHost.ps1")
 function New-WinQStepWindow {
@@ -302,6 +303,9 @@ function New-WinQStepWindow {
         catch {
             $message = $_.Exception.Message
             & $AppendLog "ERROR: $message"
+            if ($Script:SuppressGuiMessageBoxes) {
+                throw
+            }
             [System.Windows.MessageBox]::Show(
                 $window,
                 $message,
@@ -1662,6 +1666,11 @@ if ($ButtonSmokeTest) {
 
     $historySmokeDir = Resolve-WinQStepPath "outputs\gui-button-history-smoke"
     [System.IO.Directory]::CreateDirectory($historySmokeDir) | Out-Null
+    $smokeConfigPath = Join-Path $historySmokeDir "button_smoke.config.json"
+    $smokeTemplatePath = Join-Path $historySmokeDir "button_smoke.template.json"
+    [System.IO.File]::Copy((Resolve-WinQStepPath "examples\winqstep.config.json"), $smokeConfigPath, $true)
+    [System.IO.File]::Copy((Resolve-WinQStepPath "examples\templates\energy_pbe.json"), $smokeTemplatePath, $true)
+
     $historyMetadataPath = Join-Path $historySmokeDir "button_history.winqstep.json"
     $historyInputPath = Join-Path $historySmokeDir "button_history.inp"
     $historyOutputPath = Join-Path $historySmokeDir "button_history.out"
@@ -1691,14 +1700,17 @@ if ($ButtonSmokeTest) {
     }
     [System.IO.File]::WriteAllText($historyInputPath, "&GLOBAL`n  PROJECT button_history`n&END GLOBAL`n", $Script:Utf8NoBomEncoding)
     [System.IO.File]::WriteAllText($historyOutputPath, "The number of warnings for this run is : 0`nPROGRAM ENDED AT                 2026-06-29 00:01:00.000`n", $Script:Utf8NoBomEncoding)
-    [System.IO.File]::WriteAllText($historyStdoutPath, "", $Script:Utf8NoBomEncoding)
-    [System.IO.File]::WriteAllText($historyStderrPath, "", $Script:Utf8NoBomEncoding)
+    [System.IO.File]::WriteAllText($historyStdoutPath, "stdout smoke`n", $Script:Utf8NoBomEncoding)
+    [System.IO.File]::WriteAllText($historyStderrPath, "stderr smoke`n", $Script:Utf8NoBomEncoding)
     [System.IO.File]::WriteAllText(
         $historyMetadataPath,
         (($historyMetadata | ConvertTo-Json -Depth 8) + "`n"),
         $Script:Utf8NoBomEncoding
     )
+    $window.FindName("ConfigPathBox").Text = $smokeConfigPath
+    $window.FindName("TemplatePathBox").Text = $smokeTemplatePath
     $window.FindName("JobDirBox").Text = $historySmokeDir
+    $window.FindName("ProjectNameBox").Text = "button_workflow"
 
     $InvokeButtonSmokeClick = {
         param([Parameter(Mandatory = $true)][string]$Name)
@@ -1706,41 +1718,156 @@ if ($ButtonSmokeTest) {
         if ($null -eq $button) {
             throw "Button was not found: $Name"
         }
+        if (-not [bool]$button.IsEnabled) {
+            throw "Button is disabled: $Name"
+        }
         $eventArgs = [System.Windows.RoutedEventArgs]::new([System.Windows.Controls.Button]::ClickEvent)
         $button.RaiseEvent($eventArgs)
         [System.Windows.Forms.Application]::DoEvents()
     }.GetNewClosure()
 
-    $buttonNames = @("ImportButton", "HistoryButton")
-    if (-not $SkipLiveProbes) {
-        $buttonNames = @("DetectButton", "InspectDataButton") + $buttonNames
-    }
-    foreach ($buttonName in $buttonNames) {
+    $RecordButtonSmokeClick = {
+        param(
+            [Parameter(Mandatory = $true)][string]$Name,
+            [string]$ReportName = ""
+        )
+        $key = if ([string]::IsNullOrWhiteSpace($ReportName)) { $Name } else { $ReportName }
         try {
-            & $InvokeButtonSmokeClick $buttonName
-            $buttonReports[$buttonName] = [ordered]@{
+            & $InvokeButtonSmokeClick $Name
+            $buttonReports[$key] = [ordered]@{
                 ok = $true
                 error = $null
             }
         }
         catch {
-            $buttonReports[$buttonName] = [ordered]@{
+            $buttonReports[$key] = [ordered]@{
                 ok = $false
                 error = $_.Exception.Message
             }
         }
+    }.GetNewClosure()
+
+    $buttonNames = @(
+        "LoadConfigButton",
+        "SaveConfigButton",
+        "LoadTemplateButton",
+        "SaveTemplateButton"
+    )
+    if (-not $SkipLiveProbes) {
+        $buttonNames = @("DetectButton", "InspectDataButton") + $buttonNames
+    }
+    $buttonNames += @("ImportButton")
+    foreach ($buttonName in $buttonNames) {
+        & $RecordButtonSmokeClick $buttonName
     }
 
-    $historyItems = @($window.FindName("HistoryGrid").ItemsSource)
+    & $RecordButtonSmokeClick "PreviewButton" "PreviewWorkflowButton"
+    $workflowPreviewText = [string]$window.FindName("PreviewText").Text
+
+    $window.FindName("ExistingInputModeRadio").IsChecked = $true
+    [System.Windows.Forms.Application]::DoEvents()
+    $existingModeImportDisabled = (-not [bool]$window.FindName("ImportButton").IsEnabled)
+    & $RecordButtonSmokeClick "PreviewButton" "PreviewExistingInputButton"
+    $existingPreviewText = [string]$window.FindName("PreviewText").Text
+
+    & $RecordButtonSmokeClick "HistoryButton"
+    $historyLogText = [string]$window.FindName("LogText").Text
+
+    $historyGrid = $window.FindName("HistoryGrid")
+    $historyItems = @($historyGrid.ItemsSource)
+    $selectedHistoryItem = $null
+    foreach ($item in $historyItems) {
+        if ([string]$item.project_name -eq "button_history") {
+            $selectedHistoryItem = $item
+            break
+        }
+    }
+    try {
+        if ($null -eq $selectedHistoryItem) {
+            throw "button_history job was not found in history grid."
+        }
+        $historyGrid.SelectedItem = $selectedHistoryItem
+        $mouseArgs = [System.Windows.Input.MouseButtonEventArgs]::new(
+            [System.Windows.Input.Mouse]::PrimaryDevice,
+            0,
+            [System.Windows.Input.MouseButton]::Left
+        )
+        $mouseArgs.RoutedEvent = [System.Windows.Controls.Control]::MouseDoubleClickEvent
+        $historyGrid.RaiseEvent($mouseArgs)
+        [System.Windows.Forms.Application]::DoEvents()
+        $buttonReports["HistoryGridDoubleClick"] = [ordered]@{
+            ok = $true
+            error = $null
+        }
+    }
+    catch {
+        $buttonReports["HistoryGridDoubleClick"] = [ordered]@{
+            ok = $false
+            error = $_.Exception.Message
+        }
+    }
+
+    foreach ($buttonName in @("ViewInputButton", "ViewOutputButton", "ViewMetadataButton", "ViewStdoutButton", "ViewStderrButton")) {
+        & $RecordButtonSmokeClick $buttonName
+    }
+
+    $importTextHasAtomsBeforeClear = ([string]$window.FindName("StructureText").Text).Contains("atoms")
+    $artifactSummaryBeforeClear = [string]$window.FindName("ArtifactSummaryText").Text
+    $artifactTextBeforeClear = [string]$window.FindName("ArtifactText").Text
+    $previewTextBeforeClear = [string]$window.FindName("PreviewText").Text
+    $logTextBeforeClear = [string]$window.FindName("LogText").Text
+    & $RecordButtonSmokeClick "ClearButton"
+
+    $artifactViewButtonsDisabled = @(
+        "ViewInputButton", "ViewOutputButton", "ViewMetadataButton", "ViewStdoutButton", "ViewStderrButton"
+    ).Where({ [bool]$window.FindName($_).IsEnabled }).Count -eq 0
+    $textFieldsCleared = @(
+        "EnvironmentText", "StructureText", "PreviewText", "LogText", "ArtifactSummaryText", "ArtifactText"
+    ).Where({ -not [string]::IsNullOrWhiteSpace([string]$window.FindName($_).Text) }).Count -eq 0
+
     $report["button_clicks"] = $buttonReports
     $report["button_live_probes_skipped"] = [bool]$SkipLiveProbes
-    $report["import_text_has_atoms"] = ([string]$window.FindName("StructureText").Text).Contains("atoms")
+    $report["button_message_boxes_suppressed"] = [bool]$Script:SuppressGuiMessageBoxes
+    $report["scratch_config_path"] = $smokeConfigPath
+    $report["scratch_template_path"] = $smokeTemplatePath
+    $report["scratch_config_exists"] = [System.IO.File]::Exists($smokeConfigPath)
+    $report["scratch_template_exists"] = [System.IO.File]::Exists($smokeTemplatePath)
+    $report["import_text_has_atoms"] = $importTextHasAtomsBeforeClear
     $report["history_grid_count"] = $historyItems.Count
-    $report["history_log_has_jobs"] = ([string]$window.FindName("LogText").Text).Contains("History jobs:")
+    $report["history_selected_project"] = if ($null -ne $selectedHistoryItem) { [string]$selectedHistoryItem.project_name } else { "" }
+    $report["history_log_has_jobs"] = $historyLogText.Contains("History jobs:")
+    $report["existing_mode_import_disabled"] = $existingModeImportDisabled
+    $report["workflow_preview_has_global"] = $workflowPreviewText.Contains("&GLOBAL")
+    $report["existing_preview_has_global"] = $existingPreviewText.Contains("&GLOBAL")
+    $report["artifact_summary_has_history"] = $artifactSummaryBeforeClear.Contains("button_history")
+    $report["artifact_text_has_stderr"] = $artifactTextBeforeClear.Contains("stderr smoke")
+    $report["artifact_log_has_stderr"] = $logTextBeforeClear.Contains("stderr smoke")
+    $report["preview_text_has_output"] = $previewTextBeforeClear.Contains("PROGRAM ENDED")
+    $report["clear_emptied_text_fields"] = $textFieldsCleared
+    $report["clear_disabled_artifact_buttons"] = $artifactViewButtonsDisabled
+    $report["clear_removed_history_items"] = ($null -eq $window.FindName("HistoryGrid").ItemsSource)
     $report | ConvertTo-Json -Depth 6
 
     $allButtonsOk = -not @($buttonReports.Values | Where-Object { -not [bool]$_.ok }).Count
-    if ($allButtonsOk -and $report["import_text_has_atoms"] -and $report["history_grid_count"] -gt 0 -and $report["history_log_has_jobs"]) {
+    $stateChecksOk = (
+        $report["scratch_config_exists"] -and
+        $report["scratch_template_exists"] -and
+        $report["import_text_has_atoms"] -and
+        $report["history_grid_count"] -gt 0 -and
+        $report["history_selected_project"] -eq "button_history" -and
+        $report["history_log_has_jobs"] -and
+        $report["existing_mode_import_disabled"] -and
+        $report["workflow_preview_has_global"] -and
+        $report["existing_preview_has_global"] -and
+        $report["artifact_summary_has_history"] -and
+        $report["artifact_text_has_stderr"] -and
+        $report["artifact_log_has_stderr"] -and
+        $report["preview_text_has_output"] -and
+        $report["clear_emptied_text_fields"] -and
+        $report["clear_disabled_artifact_buttons"] -and
+        $report["clear_removed_history_items"]
+    )
+    if ($allButtonsOk -and $stateChecksOk) {
         exit 0
     }
     exit 1

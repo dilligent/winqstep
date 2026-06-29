@@ -72,7 +72,11 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn("$ButtonSmokeTest", script_text)
         self.assertIn("$PythonInvokeSmokeTest", script_text)
         self.assertIn("Add_DispatcherUnhandledException", script_text)
+        self.assertIn("$Script:SuppressGuiMessageBoxes", script_text)
         self.assertIn("stderr_has_native_wrapper", script_text)
+        self.assertIn("PreviewWorkflowButton", script_text)
+        self.assertIn("PreviewExistingInputButton", script_text)
+        self.assertIn("HistoryGridDoubleClick", script_text)
         self.assertIn("[System.Windows.MessageBoxImage]::Error", script_text)
         self.assertIn("[System.Windows.MessageBoxImage]::Warning", script_text)
         self.assertNotIn('"OK", (Get-WinQStepText "message.error_caption")', script_text)
@@ -266,11 +270,45 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertEqual(completed.returncode, 0, stderr)
         report = json.loads(stdout)
         self.assertTrue(report["button_live_probes_skipped"])
-        self.assertTrue(report["button_clicks"]["ImportButton"]["ok"])
-        self.assertTrue(report["button_clicks"]["HistoryButton"]["ok"])
+        self.assertTrue(report["button_message_boxes_suppressed"])
+        expected_clicks = [
+            "LoadConfigButton",
+            "SaveConfigButton",
+            "LoadTemplateButton",
+            "SaveTemplateButton",
+            "ImportButton",
+            "PreviewWorkflowButton",
+            "PreviewExistingInputButton",
+            "HistoryButton",
+            "HistoryGridDoubleClick",
+            "ViewInputButton",
+            "ViewOutputButton",
+            "ViewMetadataButton",
+            "ViewStdoutButton",
+            "ViewStderrButton",
+            "ClearButton",
+        ]
+        for name in expected_clicks:
+            self.assertIn(name, report["button_clicks"])
+            self.assertTrue(report["button_clicks"][name]["ok"], report["button_clicks"][name]["error"])
+        self.assertNotIn("DetectButton", report["button_clicks"])
+        self.assertNotIn("InspectDataButton", report["button_clicks"])
+        self.assertTrue(report["scratch_config_exists"])
+        self.assertTrue(report["scratch_template_exists"])
         self.assertTrue(report["import_text_has_atoms"])
         self.assertGreaterEqual(report["history_grid_count"], 1)
+        self.assertEqual(report["history_selected_project"], "button_history")
         self.assertTrue(report["history_log_has_jobs"])
+        self.assertTrue(report["existing_mode_import_disabled"])
+        self.assertTrue(report["workflow_preview_has_global"])
+        self.assertTrue(report["existing_preview_has_global"])
+        self.assertTrue(report["artifact_summary_has_history"])
+        self.assertTrue(report["artifact_text_has_stderr"])
+        self.assertTrue(report["artifact_log_has_stderr"])
+        self.assertTrue(report["preview_text_has_output"])
+        self.assertTrue(report["clear_emptied_text_fields"])
+        self.assertTrue(report["clear_disabled_artifact_buttons"])
+        self.assertTrue(report["clear_removed_history_items"])
 
     @unittest.skipUnless(platform.system() == "Windows", "WPF prototype is Windows-only")
     def test_python_invoke_smoke_keeps_stderr_separate(self) -> None:
