@@ -66,10 +66,21 @@ The diagnostics path calls `scripts/check_startup.py` and returns JSON covering:
 The sample local config uses direct `cp2k.ssmp` execution and a shell prelude
 that deactivates conda before each WSL-side command.
 
+## Release Packaging
+
+Build a local source-release zip with:
+
+```powershell
+python .\scripts\build_release.py
+```
+
+Use `--dry-run` to inspect the planned archive without writing `dist/`
+artifacts. See `docs/release.md` for the full packaging checklist.
+
 ## Release Hygiene
 
 The following are local/generated artifacts and should not be committed or
-included in future release artifacts:
+included in release artifacts:
 
 - `outputs/`
 - `build/`

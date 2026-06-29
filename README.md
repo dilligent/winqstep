@@ -148,6 +148,13 @@ python .\scripts\list_job_history.py --workspace .\outputs --limit 10
 Launcher, prerequisite, and release-hygiene notes are in
 `docs/startup.md`.
 GUI localization notes are in `docs/localization.md`.
+Release packaging notes are in `docs/release.md`.
+
+To build a local source-release zip:
+
+```powershell
+python .\scripts\build_release.py
+```
 
 ## License
 

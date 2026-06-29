@@ -14,8 +14,10 @@ Each round should end with a focused commit.
   history, config editing, template editing, CP2K data inspection, and
   asynchronous GUI job execution, GUI job lifecycle hardening, GUI output
   inspection, job input preflight validation, startup diagnostics, and GUI
-  modularization, GUI localization, and persisted GUI language preferences.
-- Next active round: Round 22, release packaging and distribution pass.
+  modularization, GUI localization, persisted GUI language preferences, and
+  local release packaging.
+- Next active round: Round 23, release artifact install smoke and user guide
+  polish.
 - Known local facts:
   - WSL2 is available.
   - Default distro is `Ubuntu`.
@@ -711,6 +713,41 @@ Commit boundary:
 
 - One commit for preference plumbing, coverage tests, focused GUI wiring, and
   docs.
+
+## Round 22: Release Packaging and Distribution Pass
+
+Status: implemented.
+
+Goal: produce a local release archive that can be unpacked and run on Windows
+without carrying generated outputs, local caches, CP2K snapshots, or Codex
+thread state.
+
+Local verification:
+
+- `scripts/build_release.py --dry-run` reports the deterministic release file
+  list without writing artifacts.
+- `scripts/build_release.py` writes `dist/winqstep-<version>.zip` plus a JSON
+  manifest with archive size and SHA-256.
+- Unit tests validate the release file list, exclusion rules, dry-run JSON, and
+  generated zip contents.
+- Startup diagnostics now treat the release builder as a required local file.
+
+Tasks:
+
+- Add a pure-Python release zip builder with explicit include and exclude rules.
+- Keep CP2K binaries, CP2K source/data snapshots, `outputs/`, `build/`, `dist/`,
+  caches, virtual environments, and `codex-thread.json` out of release archives.
+- Document build, dry-run, and post-unpack diagnostics commands.
+- Add deterministic tests for release planning and artifact contents.
+
+Acceptance:
+
+- A user can build a local source-release zip from the repository root, inspect
+  the manifest, and run startup diagnostics after unpacking it.
+
+Commit boundary:
+
+- One commit for release builder, tests, docs, and startup diagnostics updates.
 
 ## Working Rules
 
