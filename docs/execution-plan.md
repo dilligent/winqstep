@@ -16,10 +16,11 @@ Each round should end with a focused commit.
   inspection, structured GUI result summaries, job input preflight validation,
   startup diagnostics, and GUI modularization, GUI localization, persisted GUI
   language preferences, local release packaging, release install smoke testing,
-  release-candidate workflow walkthrough, release handoff notes, and user guide
-  polish.
-- Next active round: Round 32, final release artifact build and manual tester
-  pass.
+  release-candidate workflow walkthrough, release handoff notes, final release
+  artifact build, release install smoke, live CP2K release validation, and user
+  guide polish.
+- Next active round: Round 33, tester handoff feedback triage and packaging
+  decision.
 - Known local facts:
   - WSL2 is available.
   - Default distro is `Ubuntu`.
@@ -1076,6 +1077,57 @@ Commit boundary:
 
 - One commit for handoff documentation, release smoke wiring, tests, and plan
   update.
+
+## Round 32: Final Release Artifact Build
+
+Status: implemented.
+
+Goal: produce the `0.1.0` source-release artifact and verify it through the
+handoff checklist, including local live CP2K validation.
+
+Local verification:
+
+- `python .\scripts\run_checks.py --profile all --compact`: 9/9 checks passed,
+  including 108 unit tests.
+- `python .\scripts\release_candidate_walkthrough.py --compact`: 9/9 offline
+  steps passed.
+- `python .\scripts\build_release.py --compact`: wrote
+  `dist/winqstep-0.1.0.zip` and `dist/winqstep-0.1.0.manifest.json`.
+- `python .\scripts\smoke_release_install.py --archive .\dist\winqstep-0.1.0.zip --compact`:
+  unpacked diagnostics passed.
+- `python .\scripts\release_candidate_walkthrough.py --include-live --keep-workspace --compact`:
+  10/10 steps passed, including a real `ENERGY_FORCE` run.
+- `python .\scripts\run_checks.py --profile live --compact`: 2/2 checks passed.
+
+Artifact:
+
+- Version: `0.1.0`.
+- Source files in archive: 99 plus archive `RELEASE-MANIFEST.json`.
+- Archive SHA-256: recorded in `dist/winqstep-0.1.0.manifest.json` after each
+  build. Do not duplicate the digest here because this document is packaged
+  into the source archive.
+
+Tasks:
+
+- Run the required release-candidate handoff commands.
+- Build the actual source-release zip and manifest.
+- Smoke test the generated archive by unpacking it and running startup
+  diagnostics.
+- Run optional local live CP2K validation because WSL2 and CP2K are available.
+- Record the release baseline for future sessions.
+
+Acceptance:
+
+- `dist/winqstep-0.1.0.zip` and `dist/winqstep-0.1.0.manifest.json` exist.
+- The generated archive passes unpacked release smoke testing.
+- Live CP2K validation succeeds and parses ENERGY_FORCE energy and force
+  summaries.
+- Handoff documentation records the verification baseline and points to the
+  generated manifest as the authoritative archive hash source.
+
+Commit boundary:
+
+- One commit for Round 32 release baseline documentation.
 
 ## Working Rules
 

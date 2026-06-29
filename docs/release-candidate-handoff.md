@@ -94,11 +94,25 @@ full `-Diagnostics` only when WSL2 and CP2K are expected to be available.
 
 ## Current Verification Baseline
 
-Before this handoff note was added, the Round 30 baseline passed:
+Round 32 produced and verified the current `0.1.0` source-release candidate:
 
-- `python .\scripts\release_candidate_walkthrough.py --compact`: 9/9 steps.
-- `python .\scripts\run_checks.py --profile rc --compact`: 1/1 checks.
 - `python .\scripts\run_checks.py --profile all --compact`: 9/9 checks.
+- `python .\scripts\release_candidate_walkthrough.py --compact`: 9/9 steps.
+- `python .\scripts\build_release.py --compact`: valid archive with 99 source
+  files plus archive `RELEASE-MANIFEST.json`.
+- `python .\scripts\smoke_release_install.py --archive .\dist\winqstep-0.1.0.zip --compact`:
+  valid unpacked diagnostics.
+- The authoritative archive SHA-256 is the value in
+  `dist/winqstep-0.1.0.manifest.json`; do not duplicate it in packaged docs,
+  because this handoff note is itself included in the archive.
+
+The optional live checks also passed on the local WSL2/CP2K setup:
+
+- `python .\scripts\release_candidate_walkthrough.py --include-live --keep-workspace --compact`:
+  10/10 steps, including a real `ENERGY_FORCE` CP2K run.
+- Parsed live result included `total_energy_hartree` and
+  `forces.total_atomic_force` in `hartree/bohr`.
+- `python .\scripts\run_checks.py --profile live --compact`: 2/2 checks.
 
 Rerun the required handoff commands after any code, docs, config, or packaging
 change.
