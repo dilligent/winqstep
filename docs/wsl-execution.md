@@ -85,9 +85,13 @@ instead of trying to interpret scientific results.
 
 ## Cancellation
 
-Stopping a job must stop the WSL-side process group, not just the Windows
-`wsl.exe` wrapper. This should be treated as a first-class design requirement
-before long-running jobs are supported.
+The GUI starts CP2K through a Python wrapper process and keeps the window
+responsive with timer-based log refresh. `Stop` requests cancellation by
+terminating the wrapper process tree, including child `wsl.exe` processes where
+Windows exposes them. The job metadata is then marked as `cancelled`.
+
+Future hardening should validate WSL-side process-group termination for MPI and
+long-running CP2K jobs, because child process behavior can vary by launcher.
 
 ## Error Handling
 

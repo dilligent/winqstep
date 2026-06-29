@@ -42,7 +42,9 @@ same scripts used by tests:
 - `Import`: `scripts/import_structure.py`
 - `Preview`: `scripts/run_workflow.py --prepare-only` or
   `scripts/run_existing_input.py --prepare-only`
-- `Run`: `scripts/run_workflow.py` or `scripts/run_existing_input.py`
+- `Run`: starts `scripts/run_workflow.py` or `scripts/run_existing_input.py`
+  in a background process
+- `Stop`: requests cancellation for the running background job
 - `History`: `scripts/list_job_history.py`
 - `Load Config` and `Save Config`: `scripts/manage_config.py`
 - `Load Template` and `Save Template`: `scripts/manage_template.py`
@@ -69,6 +71,12 @@ In workflow mode, `Preview` and `Run` also save and validate the current
 template fields before rendering input. Existing-input mode skips template
 handling.
 
+`Run` first performs a prepare-only pass to write input and metadata, then starts
+the real CP2K job asynchronously. The GUI remains responsive while a timer
+refreshes the job log pane with metadata, CP2K output tails, and stdout/stderr
+tails. `Stop` terminates the Python/WSL wrapper process tree where possible and
+marks the metadata as `cancelled`.
+
 Double-clicking a row in the CP2K data label table updates the corresponding
 `KindsText` entry, preferring MOLOPT basis labels and GTH-PBE potentials when
 available.
@@ -84,5 +92,6 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\start_gui.ps1 -Smo
 
 The Python unit suite runs the same smoke test on Windows. Smoke mode validates
 config loading, template loading, workflow preview, existing-input preview, and
-history scanning without launching CP2K. CP2K data inspection is covered by
-unit tests with fixture data and by manual/local WSL smoke runs.
+history scanning without launching CP2K. It also verifies that the asynchronous
+job controls are present. CP2K data inspection is covered by unit tests with
+fixture data and by manual/local WSL smoke runs.

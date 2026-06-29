@@ -10,6 +10,15 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class GuiPrototypeTests(unittest.TestCase):
+    def test_run_button_is_wired_to_async_job_launcher(self) -> None:
+        script_text = (ROOT / "scripts" / "start_gui.ps1").read_text(encoding="utf-8").replace("\r\n", "\n")
+
+        self.assertIn("[System.Windows.Threading.DispatcherTimer]::new()", script_text)
+        self.assertIn("Start-WinQStepPythonProcess", script_text)
+        self.assertIn("Stop-WinQStepProcessTree", script_text)
+        self.assertIn('$controls["RunButton"].Add_Click({\n        & $StartAsyncJob', script_text)
+        self.assertIn('$controls["CancelJobButton"].Add_Click({\n        & $CancelAsyncJob', script_text)
+
     @unittest.skipUnless(platform.system() == "Windows", "WPF prototype is Windows-only")
     def test_wpf_smoke_test_loads_window(self) -> None:
         powershell = shutil.which("powershell") or shutil.which("pwsh")
@@ -38,6 +47,8 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertTrue(report["xaml_loaded"])
         self.assertEqual(report["title"], "WinQStep")
         self.assertTrue(report["action_button_panel_wraps"])
+        self.assertTrue(report["cancel_button_loaded"])
+        self.assertTrue(report["cancel_button_initially_disabled"])
         self.assertTrue(report["config_tab_loaded"])
         self.assertEqual(report["config_distro"], "Ubuntu")
         self.assertTrue(report["config_cp2k_command"].endswith("cp2k.ssmp"))

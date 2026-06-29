@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 from types import SimpleNamespace
 
-from winqstep.runner import RunnerError, load_json_file, run_existing_input_job
+from winqstep.runner import RunnerError, load_json_file, mark_job_cancelled, run_existing_input_job
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -94,6 +94,69 @@ class ExistingInputRunnerTests(unittest.TestCase):
                     windows_job_dir=Path(tmp_dir) / "job",
                     execute=False,
                 )
+
+    def test_mark_cancelled_updates_existing_metadata(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            input_path = Path(tmp_dir) / "existing.inp"
+            input_path.write_text(FIXTURE_INPUT.read_text(encoding="utf-8"), encoding="utf-8")
+            job_dir = Path(tmp_dir) / "job"
+            metadata = run_existing_input_job(
+                config=self.config,
+                windows_input_path=input_path,
+                windows_job_dir=job_dir,
+                execute=False,
+            )
+            (job_dir / "existing.out").write_text("partial output\n", encoding="utf-8")
+
+            cancelled = mark_job_cancelled(
+                metadata["files"]["metadata"]["path"],
+                returncode=-1,
+                wrapper_stdout="partial json",
+                wrapper_stderr="cancelled by user",
+            )
+
+            self.assertEqual(cancelled["status"], "cancelled")
+            self.assertEqual(cancelled["returncode"], -1)
+            self.assertEqual(cancelled["wrapper"]["stderr"], "cancelled by user")
+            self.assertTrue(cancelled["files"]["output"]["exists"])
+            saved = json.loads(Path(metadata["files"]["metadata"]["path"]).read_text(encoding="utf-8"))
+            self.assertEqual(saved["status"], "cancelled")
+            self.assertEqual(saved["wrapper"]["stdout"], "partial json")
+
+    def test_cancelled_cli_outputs_json(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            input_path = Path(tmp_dir) / "existing.inp"
+            input_path.write_text(FIXTURE_INPUT.read_text(encoding="utf-8"), encoding="utf-8")
+            job_dir = Path(tmp_dir) / "job"
+            metadata = run_existing_input_job(
+                config=self.config,
+                windows_input_path=input_path,
+                windows_job_dir=job_dir,
+                execute=False,
+            )
+            stderr_path = Path(tmp_dir) / "wrapper.stderr.log"
+            stderr_path.write_text("cancel requested", encoding="utf-8")
+
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    str(ROOT / "scripts" / "mark_job_cancelled.py"),
+                    "--metadata",
+                    metadata["files"]["metadata"]["path"],
+                    "--returncode",
+                    "-1",
+                    "--stderr-file",
+                    str(stderr_path),
+                    "--compact",
+                ],
+                capture_output=True,
+                check=False,
+            )
+
+            self.assertEqual(completed.returncode, 0, completed.stderr.decode("utf-8", errors="replace"))
+            payload = json.loads(completed.stdout.decode("utf-8"))
+            self.assertEqual(payload["status"], "cancelled")
+            self.assertEqual(payload["wrapper"]["stderr"], "cancel requested")
 
     def test_cli_prepare_only_outputs_json(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:

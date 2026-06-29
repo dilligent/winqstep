@@ -49,6 +49,7 @@ function Test-WinQStepGuiPrerequisites {
         "scripts\manage_config.py",
         "scripts\manage_template.py",
         "scripts\inspect_cp2k_data.py",
+        "scripts\mark_job_cancelled.py",
         "examples\winqstep.config.json",
         "examples\templates\energy_pbe.json",
         "tests\fixtures\structures\water.xyz",
@@ -94,6 +95,131 @@ function Invoke-WinQStepPython {
     return [pscustomobject]@{
         ExitCode = [int]$exitCode
         Output = (($output | Out-String).TrimEnd())
+    }
+}
+
+function ConvertTo-WinQStepCommandLineArgument {
+    param([AllowEmptyString()][string]$Argument)
+
+    if ($null -eq $Argument -or $Argument.Length -eq 0) {
+        return '""'
+    }
+    if ($Argument -notmatch '[\s"]') {
+        return $Argument
+    }
+
+    $backslash = [char]92
+    $quote = [char]34
+    $builder = [System.Text.StringBuilder]::new()
+    [void]$builder.Append($quote)
+    $backslashCount = 0
+    foreach ($character in $Argument.ToCharArray()) {
+        if ($character -eq $backslash) {
+            $backslashCount += 1
+            continue
+        }
+        if ($character -eq $quote) {
+            if ($backslashCount -gt 0) {
+                [void]$builder.Append(([string]$backslash) * ($backslashCount * 2))
+            }
+            [void]$builder.Append([string]$backslash)
+            [void]$builder.Append($quote)
+            $backslashCount = 0
+            continue
+        }
+        if ($backslashCount -gt 0) {
+            [void]$builder.Append(([string]$backslash) * $backslashCount)
+            $backslashCount = 0
+        }
+        [void]$builder.Append($character)
+    }
+    if ($backslashCount -gt 0) {
+        [void]$builder.Append(([string]$backslash) * ($backslashCount * 2))
+    }
+    [void]$builder.Append($quote)
+    return $builder.ToString()
+}
+
+function Start-WinQStepPythonProcess {
+    param(
+        [Parameter(Mandatory = $true)][string[]]$Arguments,
+        [Parameter(Mandatory = $true)][string]$StdoutPath,
+        [Parameter(Mandatory = $true)][string]$StderrPath
+    )
+
+    $python = Get-Command $Script:PythonCommand -ErrorAction Stop
+    $argumentLine = (($Arguments | ForEach-Object { ConvertTo-WinQStepCommandLineArgument $_ }) -join " ")
+    $stdoutParent = Split-Path -Parent $StdoutPath
+    $stderrParent = Split-Path -Parent $StderrPath
+    if (-not [string]::IsNullOrWhiteSpace($stdoutParent)) {
+        [System.IO.Directory]::CreateDirectory($stdoutParent) | Out-Null
+    }
+    if (-not [string]::IsNullOrWhiteSpace($stderrParent)) {
+        [System.IO.Directory]::CreateDirectory($stderrParent) | Out-Null
+    }
+    return Start-Process -FilePath $python.Source -ArgumentList $argumentLine `
+        -WorkingDirectory $Script:RepoRoot `
+        -RedirectStandardOutput $StdoutPath `
+        -RedirectStandardError $StderrPath `
+        -WindowStyle Hidden `
+        -PassThru
+}
+
+function Stop-WinQStepProcessTree {
+    param([Parameter(Mandatory = $true)][System.Diagnostics.Process]$Process)
+
+    if ($Process.HasExited) {
+        return
+    }
+
+    $children = @()
+    try {
+        $children = @(Get-CimInstance Win32_Process -Filter "ParentProcessId=$($Process.Id)")
+    }
+    catch {
+        $children = @()
+    }
+    foreach ($child in $children) {
+        try {
+            $childProcess = [System.Diagnostics.Process]::GetProcessById([int]$child.ProcessId)
+            Stop-WinQStepProcessTree $childProcess
+        }
+        catch {
+            continue
+        }
+    }
+    try {
+        if (-not $Process.HasExited) {
+            $Process.Kill()
+        }
+    }
+    catch {
+    }
+}
+
+function Read-WinQStepFileText {
+    param([string]$Path)
+    if ([string]::IsNullOrWhiteSpace($Path) -or -not [System.IO.File]::Exists($Path)) {
+        return ""
+    }
+    try {
+        return [System.IO.File]::ReadAllText($Path, [System.Text.Encoding]::UTF8)
+    }
+    catch {
+        return ""
+    }
+}
+
+function Get-WinQStepFileTail {
+    param([string]$Path, [int]$LineCount = 80)
+    if ([string]::IsNullOrWhiteSpace($Path) -or -not [System.IO.File]::Exists($Path)) {
+        return ""
+    }
+    try {
+        return ((Get-Content -LiteralPath $Path -Tail $LineCount -ErrorAction Stop) | Out-String).TrimEnd()
+    }
+    catch {
+        return ""
     }
 }
 
@@ -167,6 +293,7 @@ function New-WinQStepWindow {
         <Button x:Name="ImportButton" Content="Import"/>
         <Button x:Name="PreviewButton" Content="Preview"/>
         <Button x:Name="RunButton" Content="Run"/>
+        <Button x:Name="CancelJobButton" Content="Stop"/>
         <Button x:Name="HistoryButton" Content="History"/>
         <Button x:Name="ClearButton" Content="Clear"/>
       </WrapPanel>
@@ -407,7 +534,7 @@ function New-WinQStepWindow {
         "EnvironmentText", "StructureText", "PreviewText", "LogText", "HistoryGrid", "StatusText",
         "LoadConfigButton", "SaveConfigButton", "LoadTemplateButton", "SaveTemplateButton",
         "InspectDataButton", "DetectButton", "ImportButton",
-        "PreviewButton", "RunButton", "HistoryButton", "ClearButton",
+        "PreviewButton", "RunButton", "CancelJobButton", "HistoryButton", "ClearButton",
         "BrowseConfigButton", "BrowseTemplateButton", "BrowseStructureButton",
         "BrowseExistingInputButton", "BrowseJobDirButton"
     )
@@ -421,6 +548,7 @@ function New-WinQStepWindow {
     $controls["ExistingInputPathBox"].Text = Resolve-WinQStepPath "tests\fixtures\quickstep_energy.inp"
     $controls["JobDirBox"].Text = Resolve-WinQStepPath "outputs\gui-preview"
     $controls["ProjectNameBox"].Text = "gui_preview"
+    $controls["CancelJobButton"].IsEnabled = $false
 
     $actionButtons = @(
         $controls["LoadConfigButton"], $controls["SaveConfigButton"],
@@ -561,6 +689,174 @@ function New-WinQStepWindow {
         }
         return "$summaryText`r`n`r`n$Output"
     }.GetNewClosure()
+
+    $jobState = @{ Current = $null }
+    $jobTimer = [System.Windows.Threading.DispatcherTimer]::new()
+    $jobTimer.Interval = [TimeSpan]::FromSeconds(1)
+
+    $SetAsyncJobRunning = {
+        param([bool]$IsRunning, [string]$Status)
+        $controls["StatusText"].Text = $Status
+        foreach ($button in $actionButtons) {
+            $button.IsEnabled = -not $IsRunning
+        }
+        $controls["CancelJobButton"].IsEnabled = $IsRunning
+        $window.Cursor = $null
+        if (-not $IsRunning) {
+            & $UpdateModeControls
+        }
+        [System.Windows.Forms.Application]::DoEvents()
+    }.GetNewClosure()
+
+    $AddTailSection = {
+        param(
+            [string[]]$Sections,
+            [string]$Title,
+            [string]$Path,
+            [int]$LineCount = 80
+        )
+        $tail = Get-WinQStepFileTail $Path $LineCount
+        if ([string]::IsNullOrWhiteSpace($tail)) {
+            return $Sections
+        }
+        return @($Sections + "--- $Title ---`r`n$tail")
+    }.GetNewClosure()
+
+    $ReadMetadataFile = {
+        param([string]$MetadataPath)
+        $text = Read-WinQStepFileText $MetadataPath
+        if ([string]::IsNullOrWhiteSpace($text)) {
+            return $null
+        }
+        try {
+            return ($text | ConvertFrom-Json)
+        }
+        catch {
+            return $null
+        }
+    }.GetNewClosure()
+
+    $BuildAsyncJobLog = {
+        param([Parameter(Mandatory = $true)][hashtable]$State)
+        $process = [System.Diagnostics.Process]$State["Process"]
+        $sections = @(
+            "CP2K job running asynchronously.`r`nPID=$($process.Id)`r`nmetadata=$($State["MetadataPath"])"
+        )
+
+        $metadata = & $ReadMetadataFile ([string]$State["MetadataPath"])
+        if ($null -ne $metadata) {
+            $summaryText = Format-Cp2kSummary $metadata
+            if (-not [string]::IsNullOrWhiteSpace($summaryText)) {
+                $sections += $summaryText
+            }
+            $sections += "metadata status=$($metadata.status), returncode=$($metadata.returncode)"
+        }
+
+        $sections = & $AddTailSection $sections "CP2K output tail" ([string]$State["OutputPath"]) 80
+        $sections = & $AddTailSection $sections "CP2K stdout tail" ([string]$State["JobStdoutPath"]) 60
+        $sections = & $AddTailSection $sections "CP2K stderr tail" ([string]$State["JobStderrPath"]) 60
+        $sections = & $AddTailSection $sections "wrapper stderr tail" ([string]$State["WrapperStderrPath"]) 40
+        return ($sections -join "`r`n`r`n")
+    }.GetNewClosure()
+
+    $AddMetadataTails = {
+        param([string]$LogText, [Parameter(Mandatory = $true)]$Metadata)
+        $sections = @($LogText)
+        if ($null -ne $Metadata.files) {
+            $sections = & $AddTailSection $sections "CP2K output tail" ([string]$Metadata.files.output.path) 80
+            $sections = & $AddTailSection $sections "CP2K stdout tail" ([string]$Metadata.files.stdout.path) 60
+            $sections = & $AddTailSection $sections "CP2K stderr tail" ([string]$Metadata.files.stderr.path) 60
+        }
+        return ($sections -join "`r`n`r`n")
+    }.GetNewClosure()
+
+    $CompleteAsyncJob = {
+        param([Parameter(Mandatory = $true)][hashtable]$State)
+        $jobTimer.Stop()
+        $process = [System.Diagnostics.Process]$State["Process"]
+        $process.Refresh()
+        $exitCode = if ($process.HasExited) { [int]$process.ExitCode } else { $null }
+        $stdout = Read-WinQStepFileText ([string]$State["WrapperStdoutPath"])
+        $stderr = Read-WinQStepFileText ([string]$State["WrapperStderrPath"])
+        $metadata = $null
+        if (-not [string]::IsNullOrWhiteSpace($stdout)) {
+            try {
+                $metadata = ($stdout | ConvertFrom-Json)
+            }
+            catch {
+                $metadata = $null
+            }
+        }
+
+        if ([bool]$State["Cancelled"] -and [System.IO.File]::Exists([string]$State["MetadataPath"])) {
+            $cancelArgs = @(
+                "scripts\mark_job_cancelled.py",
+                "--metadata", [string]$State["MetadataPath"],
+                "--stdout-file", [string]$State["WrapperStdoutPath"],
+                "--stderr-file", [string]$State["WrapperStderrPath"],
+                "--compact"
+            )
+            if ($null -ne $exitCode) {
+                $cancelArgs += @("--returncode", [string]$exitCode)
+            }
+            $cancelResult = Invoke-WinQStepPython $cancelArgs
+            if ($cancelResult.ExitCode -eq 0) {
+                $metadata = Get-JsonResult $cancelResult
+            }
+            else {
+                $stderr = (($stderr, $cancelResult.Output) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }) -join "`r`n"
+            }
+        }
+
+        if ($null -eq $metadata) {
+            $metadata = & $ReadMetadataFile ([string]$State["MetadataPath"])
+        }
+
+        if ($null -ne $metadata) {
+            $logText = & $FormatLogWithSummary $metadata $stdout
+            if (-not [string]::IsNullOrWhiteSpace($stderr)) {
+                $logText = "$logText`r`n`r`n--- wrapper stderr ---`r`n$stderr"
+            }
+            $controls["LogText"].Text = & $AddMetadataTails $logText $metadata
+            $finalStatus = if ([bool]$State["Cancelled"]) { "Cancelled" } elseif ($exitCode -eq 0) { "Ready" } else { "Finished with errors" }
+        }
+        else {
+            $parts = @("CP2K wrapper exited without JSON metadata. exit_code=$exitCode")
+            if (-not [string]::IsNullOrWhiteSpace($stdout)) {
+                $parts += "--- wrapper stdout ---`r`n$stdout"
+            }
+            if (-not [string]::IsNullOrWhiteSpace($stderr)) {
+                $parts += "--- wrapper stderr ---`r`n$stderr"
+            }
+            $controls["LogText"].Text = ($parts -join "`r`n`r`n")
+            $finalStatus = if ([bool]$State["Cancelled"]) { "Cancelled" } else { "Finished with errors" }
+        }
+
+        $controls["LogText"].ScrollToEnd()
+        $jobState["Current"] = $null
+        & $SetAsyncJobRunning $false $finalStatus
+    }.GetNewClosure()
+
+    $RefreshAsyncJob = {
+        $current = $jobState["Current"]
+        if ($null -eq $current) {
+            $jobTimer.Stop()
+            return
+        }
+
+        $process = [System.Diagnostics.Process]$current["Process"]
+        if ($process.HasExited) {
+            & $CompleteAsyncJob $current
+            return
+        }
+
+        $controls["LogText"].Text = & $BuildAsyncJobLog $current
+        $controls["LogText"].ScrollToEnd()
+    }.GetNewClosure()
+
+    $jobTimer.Add_Tick({
+        & $RefreshAsyncJob
+    }.GetNewClosure())
 
     $GetJsonProperty = {
         param($Object, [Parameter(Mandatory = $true)][string]$Name, [string]$Default = "")
@@ -928,6 +1224,77 @@ function New-WinQStepWindow {
         }
     }.GetNewClosure()
 
+    $StartAsyncJob = {
+        if ($null -ne $jobState["Current"]) {
+            & $AppendLog "A CP2K job is already running."
+            return
+        }
+
+        & $SetBusy $true "Preparing CP2K job"
+        try {
+            $null = & $SaveConfigFields $true $false
+            if (-not (& $TestIsExistingInputMode)) {
+                $null = & $SaveTemplateFields $false
+            }
+
+            $prepareArguments = @(& $GetActiveJobArguments $true)
+            $prepareArguments += "--compact"
+            $prepareResult = Invoke-WinQStepPython $prepareArguments
+            $preparedMetadata = Get-JsonResult $prepareResult
+            $inputPath = & $GetActiveInputPreviewPath $preparedMetadata
+            if ([System.IO.File]::Exists($inputPath)) {
+                $controls["PreviewText"].Text = [System.IO.File]::ReadAllText($inputPath, [System.Text.Encoding]::UTF8)
+            }
+
+            $jobDir = [string]$preparedMetadata.dry_run.windows.job_dir
+            [System.IO.Directory]::CreateDirectory($jobDir) | Out-Null
+            $stamp = [DateTime]::UtcNow.ToString("yyyyMMddTHHmmssfffZ")
+            $wrapperStdoutPath = Join-Path $jobDir "winqstep-gui-$stamp.stdout.json"
+            $wrapperStderrPath = Join-Path $jobDir "winqstep-gui-$stamp.stderr.log"
+            $runArguments = @(& $GetActiveJobArguments $false)
+            $runArguments += "--compact"
+            $process = Start-WinQStepPythonProcess -Arguments $runArguments -StdoutPath $wrapperStdoutPath -StderrPath $wrapperStderrPath
+
+            $jobState["Current"] = @{
+                Process = $process
+                MetadataPath = [string]$preparedMetadata.files.metadata.path
+                OutputPath = [string]$preparedMetadata.files.output.path
+                JobStdoutPath = [string]$preparedMetadata.files.stdout.path
+                JobStderrPath = [string]$preparedMetadata.files.stderr.path
+                WrapperStdoutPath = $wrapperStdoutPath
+                WrapperStderrPath = $wrapperStderrPath
+                Cancelled = $false
+            }
+            $controls["LogText"].Text = & $BuildAsyncJobLog $jobState["Current"]
+            & $SetAsyncJobRunning $true "Running CP2K (PID $($process.Id))"
+            $jobTimer.Start()
+        }
+        catch {
+            $message = $_.Exception.Message
+            & $AppendLog "ERROR: $message"
+            [System.Windows.MessageBox]::Show($window, $message, "WinQStep", "OK", "Error") | Out-Null
+            & $SetBusy $false "Ready"
+        }
+    }.GetNewClosure()
+
+    $CancelAsyncJob = {
+        $current = $jobState["Current"]
+        if ($null -eq $current) {
+            return
+        }
+        $current["Cancelled"] = $true
+        $controls["CancelJobButton"].IsEnabled = $false
+        $controls["StatusText"].Text = "Cancelling CP2K"
+        & $AppendLog "Cancellation requested."
+        try {
+            Stop-WinQStepProcessTree ([System.Diagnostics.Process]$current["Process"])
+        }
+        catch {
+            & $AppendLog "ERROR: failed to stop process tree: $($_.Exception.Message)"
+        }
+        & $RefreshAsyncJob
+    }.GetNewClosure()
+
     $controls["LoadConfigButton"].Add_Click({
         & $InvokeGuiAction "Loading config" {
             $null = & $LoadConfigFields $true
@@ -1014,21 +1381,11 @@ function New-WinQStepWindow {
     }.GetNewClosure())
 
     $controls["RunButton"].Add_Click({
-        & $InvokeGuiAction "Running CP2K" {
-            $null = & $SaveConfigFields $true $false
-            if (-not (& $TestIsExistingInputMode)) {
-                $null = & $SaveTemplateFields $false
-            }
-            $result = Invoke-WinQStepPython (& $GetActiveJobArguments $false)
-            $metadata = Get-JsonResult $result
-            $logText = & $FormatLogWithSummary $metadata $result.Output
-            $outputPath = $metadata.files.output.path
-            if ([System.IO.File]::Exists($outputPath)) {
-                $tail = Get-Content -LiteralPath $outputPath -Tail 80 | Out-String
-                $logText = "$logText`r`n`r`n--- CP2K output tail ---`r`n$tail"
-            }
-            $controls["LogText"].Text = $logText
-        }
+        & $StartAsyncJob
+    }.GetNewClosure())
+
+    $controls["CancelJobButton"].Add_Click({
+        & $CancelAsyncJob
     }.GetNewClosure())
 
     $controls["HistoryButton"].Add_Click({
@@ -1147,6 +1504,8 @@ if ($SmokeTest) {
     $report["xaml_loaded"] = ($window -is [System.Windows.Window])
     $report["title"] = $window.Title
     $report["action_button_panel_wraps"] = ($window.FindName("ActionButtonPanel") -is [System.Windows.Controls.WrapPanel])
+    $report["cancel_button_loaded"] = ($window.FindName("CancelJobButton") -is [System.Windows.Controls.Button])
+    $report["cancel_button_initially_disabled"] = (-not [bool]$window.FindName("CancelJobButton").IsEnabled)
     $report["config_tab_loaded"] = ($window.FindName("DistroBox") -is [System.Windows.Controls.TextBox])
     $report["config_distro"] = [string]$window.FindName("DistroBox").Text
     $report["config_cp2k_command"] = [string]$window.FindName("Cp2kCommandBox").Text

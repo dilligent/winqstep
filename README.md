@@ -94,7 +94,9 @@ The GUI can run either the structure/template workflow or an existing `.inp`
 file through the same command-line core. It can also browse previous job
 metadata from the selected job folder, edit the active WinQStep config, and edit
 common QuickStep template settings. It can also inspect CP2K data files and
-populate basis/potential choices for template KIND entries.
+populate basis/potential choices for template KIND entries. CP2K runs start in
+the background so the window remains responsive, with a `Stop` action for
+best-effort cancellation.
 
 To render and run a minimal QuickStep job through WSL/CP2K:
 

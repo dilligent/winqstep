@@ -196,6 +196,32 @@ def run_existing_input_job(
     return metadata
 
 
+def mark_job_cancelled(
+    metadata_path: str | Path,
+    *,
+    returncode: int | None = None,
+    wrapper_stdout: str = "",
+    wrapper_stderr: str = "",
+) -> dict[str, Any]:
+    """Mark an existing job metadata file as cancelled by the GUI."""
+    path = Path(metadata_path).resolve()
+    metadata = load_json_file(path)
+    metadata["status"] = "cancelled"
+    metadata["completed_at"] = utc_now()
+    metadata["returncode"] = returncode
+    metadata["wrapper"] = {
+        "stdout": wrapper_stdout,
+        "stderr": wrapper_stderr,
+    }
+
+    dry_run = metadata.get("dry_run")
+    if isinstance(dry_run, dict) and isinstance(dry_run.get("windows"), dict):
+        _write_metadata_with_current_files(path, metadata, dry_run)
+    else:
+        _write_metadata(path, metadata)
+    return metadata
+
+
 def _optional_str(value: Any) -> str | None:
     if value is None:
         return None

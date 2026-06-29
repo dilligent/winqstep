@@ -11,8 +11,9 @@ Each round should end with a focused commit.
 - Current code: standard-library Python core commands plus unit tests.
 - Current docs: product scope, architecture, WSL execution rules, CP2K input
   model, workflow, GUI prototype, existing-input jobs, output summaries, job
-  history, config editing, template editing, and CP2K data inspection.
-- Next active round: Round 14, asynchronous GUI job execution.
+  history, config editing, template editing, CP2K data inspection, and
+  asynchronous GUI job execution.
+- Next active round: Round 15, GUI job lifecycle hardening.
 - Known local facts:
   - WSL2 is available.
   - Default distro is `Ubuntu`.
@@ -441,7 +442,17 @@ Commit boundary:
 
 ## Round 14: Asynchronous GUI Job Execution
 
+Status: implemented.
+
 Goal: keep the GUI responsive while CP2K jobs run.
+
+Local verification:
+
+- `scripts/start_gui.ps1 -SmokeTest` validates the `Stop` control and the WPF
+  shell without launching CP2K.
+- Unit tests verify the GUI run button is wired to the async job launcher.
+- Unit tests verify cancelled jobs are written back to `.winqstep.json`
+  metadata with the existing file/output summary shape.
 
 Tasks:
 
@@ -458,6 +469,26 @@ Acceptance:
 Commit boundary:
 
 - One commit for async execution plumbing, GUI controls, tests, and docs.
+
+## Round 15: GUI Job Lifecycle Hardening
+
+Goal: make long-running and interrupted CP2K jobs easier to supervise.
+
+Tasks:
+
+- Manually validate async run and stop behavior against a longer WSL CP2K job.
+- Add a close-window guard when a background job is still running.
+- Add clearer running-job path/PID/status display.
+- Decide whether MPI/WSL process-group cancellation needs a stronger helper.
+
+Acceptance:
+
+- Users can see exactly which job is running, avoid accidentally closing the
+  window mid-run, and have documented behavior for interrupted WSL jobs.
+
+Commit boundary:
+
+- One commit for lifecycle hardening, tests, and docs.
 
 ## Working Rules
 
