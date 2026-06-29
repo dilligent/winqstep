@@ -70,7 +70,9 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn("wrapper_stdout=$($State[\"WrapperStdoutPath\"])", script_text)
         self.assertIn("$LifecycleSmokeTest", script_text)
         self.assertIn("$ButtonSmokeTest", script_text)
+        self.assertIn("$PythonInvokeSmokeTest", script_text)
         self.assertIn("Add_DispatcherUnhandledException", script_text)
+        self.assertIn("stderr_has_native_wrapper", script_text)
         self.assertIn("[System.Windows.MessageBoxImage]::Error", script_text)
         self.assertIn("[System.Windows.MessageBoxImage]::Warning", script_text)
         self.assertNotIn('"OK", (Get-WinQStepText "message.error_caption")', script_text)
@@ -269,6 +271,36 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertTrue(report["import_text_has_atoms"])
         self.assertGreaterEqual(report["history_grid_count"], 1)
         self.assertTrue(report["history_log_has_jobs"])
+
+    @unittest.skipUnless(platform.system() == "Windows", "WPF prototype is Windows-only")
+    def test_python_invoke_smoke_keeps_stderr_separate(self) -> None:
+        powershell = shutil.which("powershell") or shutil.which("pwsh")
+        if not powershell:
+            self.skipTest("PowerShell is not available")
+
+        completed = subprocess.run(
+            [
+                powershell,
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                str(ROOT / "scripts" / "start_gui.ps1"),
+                "-PythonInvokeSmokeTest",
+            ],
+            capture_output=True,
+            check=False,
+        )
+
+        stderr = completed.stderr.decode("utf-8", errors="replace")
+        stdout = completed.stdout.decode("utf-8-sig", errors="replace")
+        self.assertEqual(completed.returncode, 0, stderr)
+        report = json.loads(stdout)
+        self.assertEqual(report["mode"], "python_invoke_smoke")
+        self.assertEqual(report["json_stdout_output"], '{"ok": true}')
+        self.assertEqual(report["json_stdout_error"], "plain stderr")
+        self.assertIn("Expecting property name enclosed in double quotes", report["bad_fields_error"])
+        self.assertFalse(report["stderr_has_native_wrapper"])
 
 
 if __name__ == "__main__":

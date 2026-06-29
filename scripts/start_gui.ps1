@@ -4,6 +4,7 @@ param(
     [switch]$SmokeTest,
     [switch]$LifecycleSmokeTest,
     [switch]$ButtonSmokeTest,
+    [switch]$PythonInvokeSmokeTest,
     [switch]$Diagnostics,
     [switch]$SkipLiveProbes,
     [string]$Language = ""
@@ -786,7 +787,14 @@ function New-WinQStepWindow {
             $payload = $Result.Output | ConvertFrom-Json
         }
         catch {
-            throw "Command did not return JSON. Raw output:`n$($Result.Output)"
+            if ($Result.ExitCode -ne 0 -and -not [string]::IsNullOrWhiteSpace([string]$Result.Error)) {
+                throw $Result.Error
+            }
+            $raw = [string]$Result.Output
+            if (-not [string]::IsNullOrWhiteSpace([string]$Result.Error)) {
+                $raw = (($raw, [string]$Result.Error) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }) -join "`r`n"
+            }
+            throw "Command did not return JSON. Raw output:`n$raw"
         }
         if ($null -ne $payload.config) {
             & $SetConfigFieldsFromPayload $payload
@@ -950,7 +958,14 @@ function New-WinQStepWindow {
             $payload = $Result.Output | ConvertFrom-Json
         }
         catch {
-            throw "Command did not return JSON. Raw output:`n$($Result.Output)"
+            if ($Result.ExitCode -ne 0 -and -not [string]::IsNullOrWhiteSpace([string]$Result.Error)) {
+                throw $Result.Error
+            }
+            $raw = [string]$Result.Output
+            if (-not [string]::IsNullOrWhiteSpace([string]$Result.Error)) {
+                $raw = (($raw, [string]$Result.Error) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }) -join "`r`n"
+            }
+            throw "Command did not return JSON. Raw output:`n$raw"
         }
         if ($null -ne $payload.template) {
             & $SetTemplateFieldsFromPayload $payload
@@ -1553,6 +1568,47 @@ if ($Diagnostics) {
         Write-Output $result.Output
     }
     exit $result.ExitCode
+}
+
+if ($PythonInvokeSmokeTest) {
+    $jsonOnStdoutResult = Invoke-WinQStepPython @(
+        "-c",
+        "import sys; print('{`"ok`": true}'); print('plain stderr', file=sys.stderr); sys.exit(2)"
+    )
+    $badFieldsResult = Invoke-WinQStepPython @(
+        "scripts\manage_config.py",
+        "--config", (Resolve-WinQStepPath "examples\winqstep.config.json"),
+        "--write",
+        "--fields-json", "{bad}",
+        "--compact"
+    )
+    $report = [ordered]@{
+        mode = "python_invoke_smoke"
+        json_stdout_exit_code = $jsonOnStdoutResult.ExitCode
+        json_stdout_output = $jsonOnStdoutResult.Output
+        json_stdout_error = $jsonOnStdoutResult.Error
+        bad_fields_exit_code = $badFieldsResult.ExitCode
+        bad_fields_output = $badFieldsResult.Output
+        bad_fields_error = $badFieldsResult.Error
+        stderr_has_native_wrapper = (
+            ([string]$jsonOnStdoutResult.Error).Contains("NativeCommandError") -or
+            ([string]$badFieldsResult.Error).Contains("NativeCommandError") -or
+            ([string]$badFieldsResult.Error).Contains("python.exe :")
+        )
+    }
+    $report | ConvertTo-Json -Depth 4
+    if (
+        $jsonOnStdoutResult.ExitCode -eq 2 -and
+        $jsonOnStdoutResult.Output -eq '{"ok": true}' -and
+        $jsonOnStdoutResult.Error -eq "plain stderr" -and
+        $badFieldsResult.ExitCode -eq 2 -and
+        [string]::IsNullOrWhiteSpace($badFieldsResult.Output) -and
+        ([string]$badFieldsResult.Error).Contains("Expecting property name enclosed in double quotes") -and
+        -not [bool]$report["stderr_has_native_wrapper"]
+    ) {
+        exit 0
+    }
+    exit 1
 }
 
 if ($LifecycleSmokeTest) {

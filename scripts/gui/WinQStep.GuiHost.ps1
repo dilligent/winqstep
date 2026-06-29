@@ -203,21 +203,42 @@ function Invoke-WinQStepPython {
         [Parameter(Mandatory = $true)][string[]]$Arguments
     )
 
-    Push-Location $Script:RepoRoot
-    $previousErrorActionPreference = $ErrorActionPreference
+    $python = Get-Command $Script:PythonCommand -ErrorAction Stop
+    $argumentLine = (($Arguments | ForEach-Object { ConvertTo-WinQStepCommandLineArgument $_ }) -join " ")
+    $startInfo = [System.Diagnostics.ProcessStartInfo]::new()
+    $startInfo.FileName = $python.Source
+    $startInfo.Arguments = $argumentLine
+    $startInfo.WorkingDirectory = $Script:RepoRoot
+    $startInfo.UseShellExecute = $false
+    $startInfo.CreateNoWindow = $true
+    $startInfo.RedirectStandardOutput = $true
+    $startInfo.RedirectStandardError = $true
+    $startInfo.StandardOutputEncoding = $Script:Utf8NoBomEncoding
+    $startInfo.StandardErrorEncoding = $Script:Utf8NoBomEncoding
+
+    $process = [System.Diagnostics.Process]::new()
+    $process.StartInfo = $startInfo
     try {
-        $ErrorActionPreference = "Continue"
-        $output = & $Script:PythonCommand @Arguments 2>&1
-        $exitCode = if ($null -eq $global:LASTEXITCODE) { 0 } else { $global:LASTEXITCODE }
+        [void]$process.Start()
+        $stdoutTask = $process.StandardOutput.ReadToEndAsync()
+        $stderrTask = $process.StandardError.ReadToEndAsync()
+        $process.WaitForExit()
+        $stdout = $stdoutTask.Result
+        $stderr = $stderrTask.Result
+        $exitCode = [int]$process.ExitCode
     }
     finally {
-        $ErrorActionPreference = $previousErrorActionPreference
-        Pop-Location
+        $process.Dispose()
     }
 
+    $stdoutText = $stdout.TrimEnd()
+    $stderrText = $stderr.TrimEnd()
+    $combined = (($stdoutText, $stderrText) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }) -join "`r`n"
     return [pscustomobject]@{
         ExitCode = [int]$exitCode
-        Output = (($output | Out-String).TrimEnd())
+        Output = $stdoutText
+        Error = $stderrText
+        CombinedOutput = $combined
     }
 }
 
@@ -407,13 +428,23 @@ function Get-WinQStepFileTail {
 function Get-JsonResult {
     param([Parameter(Mandatory = $true)]$Result)
     if ($Result.ExitCode -ne 0) {
-        throw $Result.Output
+        if (-not [string]::IsNullOrWhiteSpace([string]$Result.Output)) {
+            throw $Result.Output
+        }
+        throw $Result.Error
     }
     try {
         return ($Result.Output | ConvertFrom-Json)
     }
     catch {
-        throw "Command did not return JSON. Raw output:`n$($Result.Output)"
+        if ($Result.ExitCode -ne 0 -and -not [string]::IsNullOrWhiteSpace([string]$Result.Error)) {
+            throw $Result.Error
+        }
+        $raw = [string]$Result.Output
+        if (-not [string]::IsNullOrWhiteSpace([string]$Result.Error)) {
+            $raw = (($raw, [string]$Result.Error) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }) -join "`r`n"
+        }
+        throw "Command did not return JSON. Raw output:`n$raw"
     }
 }
 
