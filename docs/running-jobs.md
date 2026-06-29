@@ -40,7 +40,22 @@ This is useful for UI previews and command inspection.
 - `prepared`: input and metadata were written, but CP2K was not started.
 - `succeeded`: CP2K process returned `0`.
 - `failed`: CP2K or WSL returned a non-zero exit code.
+- `cancelled`: the GUI requested cancellation and marked the metadata after
+  stopping the wrapper process tree.
 
 Raw CP2K output is preserved. The runner does not parse scientific results yet.
 It only extracts diagnostic run markers such as warning count and whether CP2K
 printed `PROGRAM ENDED AT`.
+
+## GUI Lifecycle Smoke
+
+The GUI script has a non-interactive lifecycle smoke mode for the background
+process helpers:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\start_gui.ps1 -LifecycleSmokeTest
+```
+
+It starts a controlled sleeper process through the same helper used by `Run`,
+stops it through the same process-tree helper used by `Stop`, and emits JSON
+describing whether the process started and stopped.

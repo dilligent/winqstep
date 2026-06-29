@@ -90,8 +90,11 @@ responsive with timer-based log refresh. `Stop` requests cancellation by
 terminating the wrapper process tree, including child `wsl.exe` processes where
 Windows exposes them. The job metadata is then marked as `cancelled`.
 
-Future hardening should validate WSL-side process-group termination for MPI and
-long-running CP2K jobs, because child process behavior can vary by launcher.
+Round 15 keeps this Windows process-tree cancellation as the default because it
+is simple, works with the current direct `cp2k.ssmp` path, and preserves
+metadata consistently. A stronger WSL-side helper is deferred until MPI and
+long-running CP2K cancellation are validated, because launcher behavior can vary
+and killing only `wsl.exe` may not be sufficient for every process group.
 
 ## Error Handling
 

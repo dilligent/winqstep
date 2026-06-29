@@ -15,7 +15,14 @@ class GuiPrototypeTests(unittest.TestCase):
 
         self.assertIn("[System.Windows.Threading.DispatcherTimer]::new()", script_text)
         self.assertIn("Start-WinQStepPythonProcess", script_text)
+        self.assertIn("Save-WinQStepProcessOutput", script_text)
         self.assertIn("Stop-WinQStepProcessTree", script_text)
+        self.assertIn("JobStatusText", script_text)
+        self.assertIn("$window.Add_Closing({", script_text)
+        self.assertIn("Use Stop before closing WinQStep", script_text)
+        self.assertIn("job_dir=$($State[\"JobDir\"])", script_text)
+        self.assertIn("wrapper_stdout=$($State[\"WrapperStdoutPath\"])", script_text)
+        self.assertIn("$LifecycleSmokeTest", script_text)
         self.assertIn('$controls["RunButton"].Add_Click({\n        & $StartAsyncJob', script_text)
         self.assertIn('$controls["CancelJobButton"].Add_Click({\n        & $CancelAsyncJob', script_text)
 
@@ -49,6 +56,8 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertTrue(report["action_button_panel_wraps"])
         self.assertTrue(report["cancel_button_loaded"])
         self.assertTrue(report["cancel_button_initially_disabled"])
+        self.assertTrue(report["job_status_text_loaded"])
+        self.assertEqual(report["job_status_text_initial"], "")
         self.assertTrue(report["config_tab_loaded"])
         self.assertEqual(report["config_distro"], "Ubuntu")
         self.assertTrue(report["config_cp2k_command"].endswith("cp2k.ssmp"))
@@ -81,6 +90,35 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertEqual(report["history_first_warning_count"], 0)
         self.assertTrue(report["existing_mode_input_enabled"])
         self.assertFalse(report["existing_mode_import_enabled"])
+
+    @unittest.skipUnless(platform.system() == "Windows", "WPF prototype is Windows-only")
+    def test_lifecycle_smoke_can_stop_background_process(self) -> None:
+        powershell = shutil.which("powershell") or shutil.which("pwsh")
+        if not powershell:
+            self.skipTest("PowerShell is not available")
+
+        completed = subprocess.run(
+            [
+                powershell,
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                str(ROOT / "scripts" / "start_gui.ps1"),
+                "-LifecycleSmokeTest",
+            ],
+            capture_output=True,
+            check=False,
+        )
+
+        stderr = completed.stderr.decode("utf-8", errors="replace")
+        stdout = completed.stdout.decode("utf-8-sig", errors="replace")
+        self.assertEqual(completed.returncode, 0, stderr)
+        report = json.loads(stdout)
+        self.assertTrue(report["process_started"])
+        self.assertTrue(report["process_stopped"])
+        self.assertTrue(report["stdout_exists"])
+        self.assertTrue(report["stderr_exists"])
 
 
 if __name__ == "__main__":

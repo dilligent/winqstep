@@ -12,8 +12,8 @@ Each round should end with a focused commit.
 - Current docs: product scope, architecture, WSL execution rules, CP2K input
   model, workflow, GUI prototype, existing-input jobs, output summaries, job
   history, config editing, template editing, CP2K data inspection, and
-  asynchronous GUI job execution.
-- Next active round: Round 15, GUI job lifecycle hardening.
+  asynchronous GUI job execution and GUI job lifecycle hardening.
+- Next active round: Round 16, GUI output inspection hardening.
 - Known local facts:
   - WSL2 is available.
   - Default distro is `Ubuntu`.
@@ -472,7 +472,19 @@ Commit boundary:
 
 ## Round 15: GUI Job Lifecycle Hardening
 
+Status: implemented.
+
 Goal: make long-running and interrupted CP2K jobs easier to supervise.
+
+Local verification:
+
+- `scripts/start_gui.ps1 -SmokeTest` validates the background-job status bar
+  field and close-safe GUI shell without launching CP2K.
+- `scripts/start_gui.ps1 -LifecycleSmokeTest` starts and stops a controlled
+  background process through the same process helpers used by `Run` and `Stop`.
+- A real WSL CP2K existing-input run completed successfully in
+  `outputs\round15-cp2k-real` with `status=succeeded`, `returncode=0`, and
+  `warning_count=0`.
 
 Tasks:
 
@@ -489,6 +501,28 @@ Acceptance:
 Commit boundary:
 
 - One commit for lifecycle hardening, tests, and docs.
+
+## Round 16: GUI Output Inspection Hardening
+
+Goal: make completed CP2K jobs easier to inspect from the GUI.
+
+Tasks:
+
+- Add explicit buttons or actions to open the current input, output, metadata,
+  stdout, and stderr files.
+- Surface CP2K output summary fields in a compact, scan-friendly panel.
+- Make history selection restore the same current-job path/status display used
+  by active jobs.
+- Keep all file-opening actions read-only.
+
+Acceptance:
+
+- After a run or history selection, users can inspect all relevant job artifacts
+  without manually browsing the job folder.
+
+Commit boundary:
+
+- One commit for GUI output inspection controls, tests, and docs.
 
 ## Working Rules
 

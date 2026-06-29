@@ -77,6 +77,11 @@ refreshes the job log pane with metadata, CP2K output tails, and stdout/stderr
 tails. `Stop` terminates the Python/WSL wrapper process tree where possible and
 marks the metadata as `cancelled`.
 
+While a background job is active, the status bar shows the wrapper PID, job
+folder, and output path. Closing the window is blocked until the job exits or
+the user presses `Stop`, which prevents accidentally orphaning a WSL job from
+the GUI.
+
 Double-clicking a row in the CP2K data label table updates the corresponding
 `KindsText` entry, preferring MOLOPT basis labels and GTH-PBE potentials when
 available.
@@ -93,5 +98,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\start_gui.ps1 -Smo
 The Python unit suite runs the same smoke test on Windows. Smoke mode validates
 config loading, template loading, workflow preview, existing-input preview, and
 history scanning without launching CP2K. It also verifies that the asynchronous
-job controls are present. CP2K data inspection is covered by unit tests with
-fixture data and by manual/local WSL smoke runs.
+job controls and status bar are present. `-LifecycleSmokeTest` starts and stops
+a controlled background process through the same lifecycle helpers used by
+`Run` and `Stop`. CP2K data inspection is covered by unit tests with fixture
+data and by manual/local WSL smoke runs.

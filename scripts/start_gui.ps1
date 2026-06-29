@@ -1,7 +1,8 @@
 #requires -Version 5.1
 [CmdletBinding()]
 param(
-    [switch]$SmokeTest
+    [switch]$SmokeTest,
+    [switch]$LifecycleSmokeTest
 )
 
 Set-StrictMode -Version Latest
@@ -157,12 +158,56 @@ function Start-WinQStepPythonProcess {
     if (-not [string]::IsNullOrWhiteSpace($stderrParent)) {
         [System.IO.Directory]::CreateDirectory($stderrParent) | Out-Null
     }
-    return Start-Process -FilePath $python.Source -ArgumentList $argumentLine `
-        -WorkingDirectory $Script:RepoRoot `
-        -RedirectStandardOutput $StdoutPath `
-        -RedirectStandardError $StderrPath `
-        -WindowStyle Hidden `
-        -PassThru
+    [System.IO.File]::WriteAllText($StdoutPath, "", $Script:Utf8NoBomEncoding)
+    [System.IO.File]::WriteAllText($StderrPath, "", $Script:Utf8NoBomEncoding)
+    $startInfo = [System.Diagnostics.ProcessStartInfo]::new()
+    $startInfo.FileName = $python.Source
+    $startInfo.Arguments = $argumentLine
+    $startInfo.WorkingDirectory = $Script:RepoRoot
+    $startInfo.UseShellExecute = $false
+    $startInfo.CreateNoWindow = $true
+    $startInfo.RedirectStandardOutput = $true
+    $startInfo.RedirectStandardError = $true
+
+    $process = [System.Diagnostics.Process]::new()
+    $process.StartInfo = $startInfo
+
+    [void]$process.Start()
+    return $process
+}
+
+function Save-WinQStepProcessOutput {
+    param(
+        [Parameter(Mandatory = $true)][System.Diagnostics.Process]$Process,
+        [Parameter(Mandatory = $true)][string]$StdoutPath,
+        [Parameter(Mandatory = $true)][string]$StderrPath
+    )
+
+    $stdout = ""
+    $stderr = ""
+    try {
+        $stdout = $Process.StandardOutput.ReadToEnd()
+    }
+    catch {
+        $stdout = ""
+    }
+    try {
+        $stderr = $Process.StandardError.ReadToEnd()
+    }
+    catch {
+        $stderr = ""
+    }
+    try {
+        $Process.WaitForExit()
+    }
+    catch {
+    }
+    [System.IO.File]::WriteAllText($StdoutPath, $stdout, $Script:Utf8NoBomEncoding)
+    [System.IO.File]::WriteAllText($StderrPath, $stderr, $Script:Utf8NoBomEncoding)
+    return [pscustomobject]@{
+        Stdout = $stdout
+        Stderr = $stderr
+    }
 }
 
 function Stop-WinQStepProcessTree {
@@ -512,6 +557,10 @@ function New-WinQStepWindow {
       <StatusBarItem>
         <TextBlock x:Name="StatusText" Text="Ready"/>
       </StatusBarItem>
+      <Separator/>
+      <StatusBarItem HorizontalAlignment="Stretch">
+        <TextBlock x:Name="JobStatusText" Text="" TextTrimming="CharacterEllipsis"/>
+      </StatusBarItem>
     </StatusBar>
   </Grid>
 </Window>
@@ -531,7 +580,7 @@ function New-WinQStepWindow {
         "XcFunctionalBox", "ChargeBox", "MultiplicityBox", "CutoffBox", "RelCutoffBox",
         "EpsScfBox", "MaxScfBox", "GeoOptimizerBox", "GeoMaxIterBox", "KindsText",
         "DataLabelsGrid", "TemplateValidationText",
-        "EnvironmentText", "StructureText", "PreviewText", "LogText", "HistoryGrid", "StatusText",
+        "EnvironmentText", "StructureText", "PreviewText", "LogText", "HistoryGrid", "StatusText", "JobStatusText",
         "LoadConfigButton", "SaveConfigButton", "LoadTemplateButton", "SaveTemplateButton",
         "InspectDataButton", "DetectButton", "ImportButton",
         "PreviewButton", "RunButton", "CancelJobButton", "HistoryButton", "ClearButton",
@@ -694,6 +743,34 @@ function New-WinQStepWindow {
     $jobTimer = [System.Windows.Threading.DispatcherTimer]::new()
     $jobTimer.Interval = [TimeSpan]::FromSeconds(1)
 
+    $SetJobStatusText = {
+        param([string]$Text)
+        $controls["JobStatusText"].Text = $Text
+        $controls["JobStatusText"].ToolTip = $Text
+    }.GetNewClosure()
+
+    $FormatRunningJobStatus = {
+        param([Parameter(Mandatory = $true)][hashtable]$State)
+        $process = [System.Diagnostics.Process]$State["Process"]
+        return "Running PID $($process.Id) | job=$($State["JobDir"]) | output=$($State["OutputPath"])"
+    }.GetNewClosure()
+
+    $FormatFinishedJobStatus = {
+        param([Parameter(Mandatory = $true)]$Metadata, [string]$FallbackStatus)
+        $status = $FallbackStatus
+        if ($null -ne $Metadata.PSObject.Properties["status"] -and $null -ne $Metadata.status) {
+            $status = [string]$Metadata.status
+        }
+        $outputPath = ""
+        if ($null -ne $Metadata.files -and $null -ne $Metadata.files.output -and $null -ne $Metadata.files.output.PSObject.Properties["path"]) {
+            $outputPath = [string]$Metadata.files.output.path
+        }
+        if ([string]::IsNullOrWhiteSpace($outputPath)) {
+            return "Last job: status=$status"
+        }
+        return "Last job: status=$status | output=$outputPath"
+    }.GetNewClosure()
+
     $SetAsyncJobRunning = {
         param([bool]$IsRunning, [string]$Status)
         $controls["StatusText"].Text = $Status
@@ -740,7 +817,7 @@ function New-WinQStepWindow {
         param([Parameter(Mandatory = $true)][hashtable]$State)
         $process = [System.Diagnostics.Process]$State["Process"]
         $sections = @(
-            "CP2K job running asynchronously.`r`nPID=$($process.Id)`r`nmetadata=$($State["MetadataPath"])"
+            "CP2K job running asynchronously.`r`nPID=$($process.Id)`r`njob_dir=$($State["JobDir"])`r`ninput=$($State["InputPath"])`r`noutput=$($State["OutputPath"])`r`nmetadata=$($State["MetadataPath"])`r`nwrapper_stdout=$($State["WrapperStdoutPath"])`r`nwrapper_stderr=$($State["WrapperStderrPath"])"
         )
 
         $metadata = & $ReadMetadataFile ([string]$State["MetadataPath"])
@@ -776,8 +853,9 @@ function New-WinQStepWindow {
         $process = [System.Diagnostics.Process]$State["Process"]
         $process.Refresh()
         $exitCode = if ($process.HasExited) { [int]$process.ExitCode } else { $null }
-        $stdout = Read-WinQStepFileText ([string]$State["WrapperStdoutPath"])
-        $stderr = Read-WinQStepFileText ([string]$State["WrapperStderrPath"])
+        $captured = Save-WinQStepProcessOutput $process ([string]$State["WrapperStdoutPath"]) ([string]$State["WrapperStderrPath"])
+        $stdout = [string]$captured.Stdout
+        $stderr = [string]$captured.Stderr
         $metadata = $null
         if (-not [string]::IsNullOrWhiteSpace($stdout)) {
             try {
@@ -813,12 +891,13 @@ function New-WinQStepWindow {
         }
 
         if ($null -ne $metadata) {
+            $finalStatus = if ([bool]$State["Cancelled"]) { "Cancelled" } elseif ($exitCode -eq 0) { "Ready" } else { "Finished with errors" }
             $logText = & $FormatLogWithSummary $metadata $stdout
             if (-not [string]::IsNullOrWhiteSpace($stderr)) {
                 $logText = "$logText`r`n`r`n--- wrapper stderr ---`r`n$stderr"
             }
             $controls["LogText"].Text = & $AddMetadataTails $logText $metadata
-            $finalStatus = if ([bool]$State["Cancelled"]) { "Cancelled" } elseif ($exitCode -eq 0) { "Ready" } else { "Finished with errors" }
+            & $SetJobStatusText (& $FormatFinishedJobStatus $metadata $finalStatus)
         }
         else {
             $parts = @("CP2K wrapper exited without JSON metadata. exit_code=$exitCode")
@@ -830,6 +909,7 @@ function New-WinQStepWindow {
             }
             $controls["LogText"].Text = ($parts -join "`r`n`r`n")
             $finalStatus = if ([bool]$State["Cancelled"]) { "Cancelled" } else { "Finished with errors" }
+            & $SetJobStatusText "Last job: status=$finalStatus | metadata=$($State["MetadataPath"])"
         }
 
         $controls["LogText"].ScrollToEnd()
@@ -850,6 +930,7 @@ function New-WinQStepWindow {
             return
         }
 
+        & $SetJobStatusText (& $FormatRunningJobStatus $current)
         $controls["LogText"].Text = & $BuildAsyncJobLog $current
         $controls["LogText"].ScrollToEnd()
     }.GetNewClosure()
@@ -1257,6 +1338,8 @@ function New-WinQStepWindow {
 
             $jobState["Current"] = @{
                 Process = $process
+                JobDir = $jobDir
+                InputPath = [string]$preparedMetadata.files.input.path
                 MetadataPath = [string]$preparedMetadata.files.metadata.path
                 OutputPath = [string]$preparedMetadata.files.output.path
                 JobStdoutPath = [string]$preparedMetadata.files.stdout.path
@@ -1266,6 +1349,7 @@ function New-WinQStepWindow {
                 Cancelled = $false
             }
             $controls["LogText"].Text = & $BuildAsyncJobLog $jobState["Current"]
+            & $SetJobStatusText (& $FormatRunningJobStatus $jobState["Current"])
             & $SetAsyncJobRunning $true "Running CP2K (PID $($process.Id))"
             $jobTimer.Start()
         }
@@ -1294,6 +1378,25 @@ function New-WinQStepWindow {
         }
         & $RefreshAsyncJob
     }.GetNewClosure()
+
+    $window.Add_Closing({
+        param($sender, $eventArgs)
+        $current = $jobState["Current"]
+        if ($null -eq $current) {
+            return
+        }
+
+        $process = [System.Diagnostics.Process]$current["Process"]
+        if ($process.HasExited) {
+            return
+        }
+
+        $eventArgs.Cancel = $true
+        $message = "A CP2K job is still running.`r`n`r`nPID: $($process.Id)`r`nMetadata: $($current["MetadataPath"])`r`nOutput: $($current["OutputPath"])`r`n`r`nUse Stop before closing WinQStep."
+        & $SetJobStatusText (& $FormatRunningJobStatus $current)
+        & $AppendLog "Close blocked: CP2K job PID $($process.Id) is still running."
+        [System.Windows.MessageBox]::Show($window, $message, "WinQStep", "OK", "Warning") | Out-Null
+    }.GetNewClosure())
 
     $controls["LoadConfigButton"].Add_Click({
         & $InvokeGuiAction "Loading config" {
@@ -1427,6 +1530,50 @@ function New-WinQStepWindow {
     return $window
 }
 
+if ($LifecycleSmokeTest) {
+    $report = [ordered]@{
+        process_started = $false
+        process_stopped = $false
+        exit_code = $null
+        stdout_exists = $false
+        stderr_exists = $false
+    }
+    $process = $null
+    $smokeDir = Resolve-WinQStepPath "outputs\lifecycle-smoke"
+    [System.IO.Directory]::CreateDirectory($smokeDir) | Out-Null
+    $stamp = [DateTime]::UtcNow.ToString("yyyyMMddTHHmmssfffZ")
+    $stdoutPath = Join-Path $smokeDir "sleeper-$stamp.stdout.log"
+    $stderrPath = Join-Path $smokeDir "sleeper-$stamp.stderr.log"
+    try {
+        $process = Start-WinQStepPythonProcess -Arguments @(
+            "-c",
+            "import time; time.sleep(30)"
+        ) -StdoutPath $stdoutPath -StderrPath $stderrPath
+        Start-Sleep -Milliseconds 500
+        $report["process_started"] = (-not $process.HasExited)
+        Stop-WinQStepProcessTree $process
+        $report["process_stopped"] = $process.WaitForExit(3000)
+        if ($report["process_stopped"]) {
+            $null = Save-WinQStepProcessOutput $process $stdoutPath $stderrPath
+        }
+        if ($process.HasExited) {
+            $report["exit_code"] = [int]$process.ExitCode
+        }
+        $report["stdout_exists"] = [System.IO.File]::Exists($stdoutPath)
+        $report["stderr_exists"] = [System.IO.File]::Exists($stderrPath)
+    }
+    finally {
+        if ($null -ne $process -and -not $process.HasExited) {
+            Stop-WinQStepProcessTree $process
+        }
+    }
+    $report | ConvertTo-Json -Depth 5
+    if ($report["process_started"] -and $report["process_stopped"]) {
+        exit 0
+    }
+    exit 1
+}
+
 if ($SmokeTest) {
     $report = Test-WinQStepGuiPrerequisites
     $window = New-WinQStepWindow
@@ -1506,6 +1653,8 @@ if ($SmokeTest) {
     $report["action_button_panel_wraps"] = ($window.FindName("ActionButtonPanel") -is [System.Windows.Controls.WrapPanel])
     $report["cancel_button_loaded"] = ($window.FindName("CancelJobButton") -is [System.Windows.Controls.Button])
     $report["cancel_button_initially_disabled"] = (-not [bool]$window.FindName("CancelJobButton").IsEnabled)
+    $report["job_status_text_loaded"] = ($window.FindName("JobStatusText") -is [System.Windows.Controls.TextBlock])
+    $report["job_status_text_initial"] = [string]$window.FindName("JobStatusText").Text
     $report["config_tab_loaded"] = ($window.FindName("DistroBox") -is [System.Windows.Controls.TextBox])
     $report["config_distro"] = [string]$window.FindName("DistroBox").Text
     $report["config_cp2k_command"] = [string]$window.FindName("Cp2kCommandBox").Text
