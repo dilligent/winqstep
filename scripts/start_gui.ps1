@@ -3,6 +3,7 @@
 param(
     [switch]$SmokeTest,
     [switch]$LifecycleSmokeTest,
+    [switch]$ButtonSmokeTest,
     [switch]$Diagnostics,
     [switch]$SkipLiveProbes,
     [string]$Language = ""
@@ -190,6 +191,7 @@ function New-WinQStepWindow {
         stdout = $controls["ViewStdoutButton"]
         stderr = $controls["ViewStderrButton"]
     }
+    $artifactState = @{ Current = $null }
 
     $actionButtons = @(
         $controls["LoadConfigButton"], $controls["SaveConfigButton"],
@@ -250,6 +252,18 @@ function New-WinQStepWindow {
         $controls["ImportButton"].IsEnabled = -not $isExistingInputMode
     }.GetNewClosure()
 
+    $UpdateArtifactControls = {
+        $current = $artifactState["Current"]
+        foreach ($entry in $artifactButtons.GetEnumerator()) {
+            $enabled = $false
+            if ($null -ne $current -and $null -ne $current["paths"]) {
+                $path = [string]$current["paths"][$entry.Key]
+                $enabled = (-not [string]::IsNullOrWhiteSpace($path)) -and [System.IO.File]::Exists($path)
+            }
+            $entry.Value.IsEnabled = $enabled
+        }
+    }.GetNewClosure()
+
     $SetBusy = {
         param([bool]$IsBusy, [string]$Status)
         $controls["StatusText"].Text = $Status
@@ -276,7 +290,10 @@ function New-WinQStepWindow {
     }.GetNewClosure()
 
     $InvokeGuiAction = {
-        param([string]$Status, [scriptblock]$Action)
+        param(
+            [Parameter(Mandatory = $true)][string]$Status,
+            [Parameter(Mandatory = $true)][scriptblock]$Action
+        )
         & $SetBusy $true $Status
         try {
             & $Action
@@ -367,7 +384,6 @@ function New-WinQStepWindow {
     }.GetNewClosure()
 
     $jobState = @{ Current = $null }
-    $artifactState = @{ Current = $null }
     $jobTimer = [System.Windows.Threading.DispatcherTimer]::new()
     $jobTimer.Interval = [TimeSpan]::FromSeconds(1)
 
@@ -622,18 +638,6 @@ function New-WinQStepWindow {
             $lines += "$key=[$exists] $path"
         }
         return ($lines -join "`r`n")
-    }.GetNewClosure()
-
-    $UpdateArtifactControls = {
-        $current = $artifactState["Current"]
-        foreach ($entry in $artifactButtons.GetEnumerator()) {
-            $enabled = $false
-            if ($null -ne $current -and $null -ne $current["paths"]) {
-                $path = [string]$current["paths"][$entry.Key]
-                $enabled = (-not [string]::IsNullOrWhiteSpace($path)) -and [System.IO.File]::Exists($path)
-            }
-            $entry.Value.IsEnabled = $enabled
-        }
     }.GetNewClosure()
 
     $SetArtifactsFromMetadata = {
@@ -1357,44 +1361,44 @@ function New-WinQStepWindow {
     }.GetNewClosure())
 
     $controls["LoadConfigButton"].Add_Click({
-        & $InvokeGuiAction (Get-WinQStepText "status.loading_config") {
+        & $InvokeGuiAction -Status (Get-WinQStepText "status.loading_config") -Action {
             $null = & $LoadConfigFields $true
         }
     }.GetNewClosure())
 
     $controls["SaveConfigButton"].Add_Click({
-        & $InvokeGuiAction (Get-WinQStepText "status.saving_config") {
+        & $InvokeGuiAction -Status (Get-WinQStepText "status.saving_config") -Action {
             $null = & $SaveConfigFields $false $true
         }
     }.GetNewClosure())
 
     $controls["LoadTemplateButton"].Add_Click({
-        & $InvokeGuiAction (Get-WinQStepText "status.loading_template") {
+        & $InvokeGuiAction -Status (Get-WinQStepText "status.loading_template") -Action {
             $null = & $LoadTemplateFields $true
         }
     }.GetNewClosure())
 
     $controls["SaveTemplateButton"].Add_Click({
-        & $InvokeGuiAction (Get-WinQStepText "status.saving_template") {
+        & $InvokeGuiAction -Status (Get-WinQStepText "status.saving_template") -Action {
             $null = & $SaveTemplateFields $true
         }
     }.GetNewClosure())
 
     $controls["InspectDataButton"].Add_Click({
-        & $InvokeGuiAction (Get-WinQStepText "status.inspecting_cp2k_data") {
+        & $InvokeGuiAction -Status (Get-WinQStepText "status.inspecting_cp2k_data") -Action {
             $null = & $InspectCp2kData $true
         }
     }.GetNewClosure())
 
     $controls["BrowseConfigButton"].Add_Click({
         & $SelectFilePath $controls["ConfigPathBox"] "JSON files (*.json)|*.json|All files (*.*)|*.*"
-        & $InvokeGuiAction (Get-WinQStepText "status.loading_config") {
+        & $InvokeGuiAction -Status (Get-WinQStepText "status.loading_config") -Action {
             $null = & $LoadConfigFields $true
         }
     }.GetNewClosure())
     $controls["BrowseTemplateButton"].Add_Click({
         & $SelectFilePath $controls["TemplatePathBox"] "JSON files (*.json)|*.json|All files (*.*)|*.*"
-        & $InvokeGuiAction (Get-WinQStepText "status.loading_template") {
+        & $InvokeGuiAction -Status (Get-WinQStepText "status.loading_template") -Action {
             $null = & $LoadTemplateFields $true
         }
     }.GetNewClosure())
@@ -1405,7 +1409,7 @@ function New-WinQStepWindow {
     $controls["ExistingInputModeRadio"].Add_Checked({ & $UpdateModeControls }.GetNewClosure())
 
     $controls["DetectButton"].Add_Click({
-        & $InvokeGuiAction (Get-WinQStepText "status.detecting_environment") {
+        & $InvokeGuiAction -Status (Get-WinQStepText "status.detecting_environment") -Action {
             $null = & $SaveConfigFields $false $false
             $result = Invoke-WinQStepPython @("scripts\detect_environment.py", "--config", $controls["ConfigPathBox"].Text)
             $controls["EnvironmentText"].Text = $result.Output
@@ -1414,7 +1418,7 @@ function New-WinQStepWindow {
     }.GetNewClosure())
 
     $controls["ImportButton"].Add_Click({
-        & $InvokeGuiAction (Get-WinQStepText "status.importing_structure") {
+        & $InvokeGuiAction -Status (Get-WinQStepText "status.importing_structure") -Action {
             $result = Invoke-WinQStepPython @("scripts\import_structure.py", "--input", $controls["StructurePathBox"].Text)
             $controls["StructureText"].Text = $result.Output
             & $AppendLog "import_structure.py exited with code $($result.ExitCode)"
@@ -1423,7 +1427,7 @@ function New-WinQStepWindow {
 
     $controls["PreviewButton"].Add_Click({
         $status = if (& $TestIsExistingInputMode) { Get-WinQStepText "status.preparing_existing_input_preview" } else { Get-WinQStepText "status.preparing_workflow_input_preview" }
-        & $InvokeGuiAction $status {
+        & $InvokeGuiAction -Status $status -Action {
             $preflight = & $ValidateActiveInputs
             $preflightText = & $FormatPreflightValidation $preflight
             $result = Invoke-WinQStepPython (& $GetActiveJobArguments $true)
@@ -1449,37 +1453,37 @@ function New-WinQStepWindow {
     }.GetNewClosure())
 
     $controls["ViewInputButton"].Add_Click({
-        & $InvokeGuiAction (Get-WinQStepText "status.viewing_input_artifact") {
+        & $InvokeGuiAction -Status (Get-WinQStepText "status.viewing_input_artifact") -Action {
             & $ViewArtifact "input"
         }
     }.GetNewClosure())
 
     $controls["ViewOutputButton"].Add_Click({
-        & $InvokeGuiAction (Get-WinQStepText "status.viewing_output_artifact") {
+        & $InvokeGuiAction -Status (Get-WinQStepText "status.viewing_output_artifact") -Action {
             & $ViewArtifact "output"
         }
     }.GetNewClosure())
 
     $controls["ViewMetadataButton"].Add_Click({
-        & $InvokeGuiAction (Get-WinQStepText "status.viewing_metadata_artifact") {
+        & $InvokeGuiAction -Status (Get-WinQStepText "status.viewing_metadata_artifact") -Action {
             & $ViewArtifact "metadata"
         }
     }.GetNewClosure())
 
     $controls["ViewStdoutButton"].Add_Click({
-        & $InvokeGuiAction (Get-WinQStepText "status.viewing_stdout_artifact") {
+        & $InvokeGuiAction -Status (Get-WinQStepText "status.viewing_stdout_artifact") -Action {
             & $ViewArtifact "stdout"
         }
     }.GetNewClosure())
 
     $controls["ViewStderrButton"].Add_Click({
-        & $InvokeGuiAction (Get-WinQStepText "status.viewing_stderr_artifact") {
+        & $InvokeGuiAction -Status (Get-WinQStepText "status.viewing_stderr_artifact") -Action {
             & $ViewArtifact "stderr"
         }
     }.GetNewClosure())
 
     $controls["HistoryButton"].Add_Click({
-        & $InvokeGuiAction (Get-WinQStepText "status.loading_job_history") {
+        & $InvokeGuiAction -Status (Get-WinQStepText "status.loading_job_history") -Action {
             & $LoadHistory
         }
     }.GetNewClosure())
@@ -1572,6 +1576,97 @@ if ($LifecycleSmokeTest) {
     }
     $report | ConvertTo-Json -Depth 5
     if ($report["process_started"] -and $report["process_stopped"]) {
+        exit 0
+    }
+    exit 1
+}
+
+if ($ButtonSmokeTest) {
+    $report = Test-WinQStepGuiPrerequisites
+    $window = New-WinQStepWindow
+    $buttonReports = [ordered]@{}
+
+    $historySmokeDir = Resolve-WinQStepPath "outputs\gui-button-history-smoke"
+    [System.IO.Directory]::CreateDirectory($historySmokeDir) | Out-Null
+    $historyMetadataPath = Join-Path $historySmokeDir "button_history.winqstep.json"
+    $historyInputPath = Join-Path $historySmokeDir "button_history.inp"
+    $historyOutputPath = Join-Path $historySmokeDir "button_history.out"
+    $historyStdoutPath = Join-Path $historySmokeDir "button_history.stdout.log"
+    $historyStderrPath = Join-Path $historySmokeDir "button_history.stderr.log"
+    $historyMetadata = [ordered]@{
+        status = "succeeded"
+        created_at = "2026-06-29T00:00:00Z"
+        completed_at = "2026-06-29T00:01:00Z"
+        returncode = 0
+        job = [ordered]@{
+            mode = "existing_input"
+            input_stem = "button_history"
+        }
+        files = [ordered]@{
+            input = [ordered]@{ path = $historyInputPath }
+            output = [ordered]@{ path = $historyOutputPath }
+            stdout = [ordered]@{ path = $historyStdoutPath }
+            stderr = [ordered]@{ path = $historyStderrPath }
+            metadata = [ordered]@{ path = $historyMetadataPath }
+        }
+        cp2k_output = [ordered]@{
+            status = "completed"
+            warning_count = 0
+            program_ended = $true
+        }
+    }
+    [System.IO.File]::WriteAllText($historyInputPath, "&GLOBAL`n  PROJECT button_history`n&END GLOBAL`n", $Script:Utf8NoBomEncoding)
+    [System.IO.File]::WriteAllText($historyOutputPath, "The number of warnings for this run is : 0`nPROGRAM ENDED AT                 2026-06-29 00:01:00.000`n", $Script:Utf8NoBomEncoding)
+    [System.IO.File]::WriteAllText($historyStdoutPath, "", $Script:Utf8NoBomEncoding)
+    [System.IO.File]::WriteAllText($historyStderrPath, "", $Script:Utf8NoBomEncoding)
+    [System.IO.File]::WriteAllText(
+        $historyMetadataPath,
+        (($historyMetadata | ConvertTo-Json -Depth 8) + "`n"),
+        $Script:Utf8NoBomEncoding
+    )
+    $window.FindName("JobDirBox").Text = $historySmokeDir
+
+    $InvokeButtonSmokeClick = {
+        param([Parameter(Mandatory = $true)][string]$Name)
+        $button = $window.FindName($Name)
+        if ($null -eq $button) {
+            throw "Button was not found: $Name"
+        }
+        $eventArgs = [System.Windows.RoutedEventArgs]::new([System.Windows.Controls.Button]::ClickEvent)
+        $button.RaiseEvent($eventArgs)
+        [System.Windows.Forms.Application]::DoEvents()
+    }.GetNewClosure()
+
+    $buttonNames = @("ImportButton", "HistoryButton")
+    if (-not $SkipLiveProbes) {
+        $buttonNames = @("DetectButton", "InspectDataButton") + $buttonNames
+    }
+    foreach ($buttonName in $buttonNames) {
+        try {
+            & $InvokeButtonSmokeClick $buttonName
+            $buttonReports[$buttonName] = [ordered]@{
+                ok = $true
+                error = $null
+            }
+        }
+        catch {
+            $buttonReports[$buttonName] = [ordered]@{
+                ok = $false
+                error = $_.Exception.Message
+            }
+        }
+    }
+
+    $historyItems = @($window.FindName("HistoryGrid").ItemsSource)
+    $report["button_clicks"] = $buttonReports
+    $report["button_live_probes_skipped"] = [bool]$SkipLiveProbes
+    $report["import_text_has_atoms"] = ([string]$window.FindName("StructureText").Text).Contains("atoms")
+    $report["history_grid_count"] = $historyItems.Count
+    $report["history_log_has_jobs"] = ([string]$window.FindName("LogText").Text).Contains("History jobs:")
+    $report | ConvertTo-Json -Depth 6
+
+    $allButtonsOk = -not @($buttonReports.Values | Where-Object { -not [bool]$_.ok }).Count
+    if ($allButtonsOk -and $report["import_text_has_atoms"] -and $report["history_grid_count"] -gt 0 -and $report["history_log_has_jobs"]) {
         exit 0
     }
     exit 1
@@ -1739,5 +1834,19 @@ if ($SmokeTest) {
 
 [void](Test-WinQStepGuiPrerequisites)
 $app = [System.Windows.Application]::new()
+$window = $null
+$app.Add_DispatcherUnhandledException({
+    param($sender, $eventArgs)
+    $message = $eventArgs.Exception.Message
+    try {
+        $caption = Get-WinQStepText "message.error_caption"
+        $title = Get-WinQStepText "message.title"
+        [System.Windows.MessageBox]::Show($window, $message, $title, "OK", $caption) | Out-Null
+    }
+    catch {
+        Write-Error $message
+    }
+    $eventArgs.Handled = $true
+}.GetNewClosure())
 $window = New-WinQStepWindow
 [void]$app.Run($window)

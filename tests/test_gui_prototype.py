@@ -69,9 +69,14 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn("job_dir=$($State[\"JobDir\"])", script_text)
         self.assertIn("wrapper_stdout=$($State[\"WrapperStdoutPath\"])", script_text)
         self.assertIn("$LifecycleSmokeTest", script_text)
+        self.assertIn("$ButtonSmokeTest", script_text)
+        self.assertIn("Add_DispatcherUnhandledException", script_text)
         self.assertIn('$controls["RunButton"].Add_Click({\n        & $StartAsyncJob', script_text)
         self.assertIn('$controls["CancelJobButton"].Add_Click({\n        & $CancelAsyncJob', script_text)
-        self.assertIn('$controls["ViewOutputButton"].Add_Click({\n        & $InvokeGuiAction (Get-WinQStepText "status.viewing_output_artifact")', script_text)
+        self.assertIn('$controls["ViewOutputButton"].Add_Click({\n        & $InvokeGuiAction -Status (Get-WinQStepText "status.viewing_output_artifact") -Action', script_text)
+        self.assertIn('$InvokeGuiAction -Status (Get-WinQStepText "status.detecting_environment") -Action', script_text)
+        self.assertIn('$InvokeGuiAction -Status (Get-WinQStepText "status.importing_structure") -Action', script_text)
+        self.assertIn('$InvokeGuiAction -Status (Get-WinQStepText "status.loading_job_history") -Action', script_text)
 
     @unittest.skipUnless(platform.system() == "Windows", "WPF prototype is Windows-only")
     def test_wpf_smoke_test_loads_window(self) -> None:
@@ -228,6 +233,38 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertTrue(report["process_stopped"])
         self.assertTrue(report["stdout_exists"])
         self.assertTrue(report["stderr_exists"])
+
+    @unittest.skipUnless(platform.system() == "Windows", "WPF prototype is Windows-only")
+    def test_button_smoke_can_raise_common_click_handlers(self) -> None:
+        powershell = shutil.which("powershell") or shutil.which("pwsh")
+        if not powershell:
+            self.skipTest("PowerShell is not available")
+
+        completed = subprocess.run(
+            [
+                powershell,
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                str(ROOT / "scripts" / "start_gui.ps1"),
+                "-ButtonSmokeTest",
+                "-SkipLiveProbes",
+            ],
+            capture_output=True,
+            check=False,
+        )
+
+        stderr = completed.stderr.decode("utf-8", errors="replace")
+        stdout = completed.stdout.decode("utf-8-sig", errors="replace")
+        self.assertEqual(completed.returncode, 0, stderr)
+        report = json.loads(stdout)
+        self.assertTrue(report["button_live_probes_skipped"])
+        self.assertTrue(report["button_clicks"]["ImportButton"]["ok"])
+        self.assertTrue(report["button_clicks"]["HistoryButton"]["ok"])
+        self.assertTrue(report["import_text_has_atoms"])
+        self.assertGreaterEqual(report["history_grid_count"], 1)
+        self.assertTrue(report["history_log_has_jobs"])
 
 
 if __name__ == "__main__":
