@@ -12,8 +12,8 @@ ROOT = Path(__file__).resolve().parents[1]
 
 class RunChecksTests(unittest.TestCase):
     def test_normalize_profiles_expands_all_without_live(self) -> None:
-        self.assertEqual(normalize_profiles(["all"]), ["fast", "gui", "release"])
-        self.assertEqual(normalize_profiles(["all", "live"]), ["fast", "gui", "release", "live"])
+        self.assertEqual(normalize_profiles(["all"]), ["fast", "gui", "release", "rc"])
+        self.assertEqual(normalize_profiles(["all", "live"]), ["fast", "gui", "release", "rc", "live"])
 
     def test_fast_plan_contains_unit_and_offline_startup_checks(self) -> None:
         plan = build_check_plan(
@@ -38,8 +38,21 @@ class RunChecksTests(unittest.TestCase):
 
         self.assertIn("gui-button-smoke-offline", names)
         self.assertIn("release-install-smoke", names)
+        self.assertIn("release-candidate-walkthrough", names)
         self.assertNotIn("startup-diagnostics-live", names)
         self.assertNotIn("gui-button-smoke-live", names)
+
+    def test_rc_plan_runs_release_candidate_walkthrough(self) -> None:
+        plan = build_check_plan(
+            ROOT,
+            ["rc"],
+            python_executable="python",
+            powershell_executable="powershell",
+        )
+
+        self.assertEqual([check["name"] for check in plan], ["release-candidate-walkthrough"])
+        self.assertIn("scripts/release_candidate_walkthrough.py", plan[0]["command"])
+        self.assertIn("--compact", plan[0]["command"])
 
     def test_live_plan_uses_non_skipped_probe_commands_when_powershell_exists(self) -> None:
         plan = build_check_plan(

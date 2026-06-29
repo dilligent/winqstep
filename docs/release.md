@@ -93,3 +93,26 @@ Before handing off a release candidate from a development checkout, run:
 ```powershell
 python .\scripts\run_checks.py --profile all
 ```
+
+The `all` profile includes the release-candidate walkthrough:
+
+```powershell
+python .\scripts\release_candidate_walkthrough.py
+```
+
+That walkthrough uses a temporary workspace by default and exercises the main
+offline user path: startup diagnostics, config and template validation,
+`ENERGY_FORCE` workflow preview, existing-input preview, history scanning, and
+release dry-run planning. To keep the prepared walkthrough workspace for manual
+inspection:
+
+```powershell
+python .\scripts\release_candidate_walkthrough.py --keep-workspace
+```
+
+When WSL2 and the configured CP2K installation are available, the same script
+can run a real `ENERGY_FORCE` CP2K job and verify parsed energy/force results:
+
+```powershell
+python .\scripts\release_candidate_walkthrough.py --include-live --keep-workspace
+```

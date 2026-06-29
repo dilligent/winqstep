@@ -16,8 +16,8 @@ Each round should end with a focused commit.
   inspection, structured GUI result summaries, job input preflight validation,
   startup diagnostics, and GUI modularization, GUI localization, persisted GUI
   language preferences, local release packaging, release install smoke testing,
-  and user guide polish.
-- Next active round: Round 30, release candidate workflow walkthrough.
+  release-candidate workflow walkthrough, and user guide polish.
+- Next active round: Round 31, release candidate cleanup and handoff notes.
 - Known local facts:
   - WSL2 is available.
   - Default distro is `Ubuntu`.
@@ -1009,6 +1009,44 @@ Acceptance:
 Commit boundary:
 
 - One commit for result summary GUI controls, history fields, tests, and docs.
+
+## Round 30: Release-Candidate Workflow Walkthrough
+
+Status: implemented.
+
+Goal: make the release-candidate user path executable as a deterministic local
+check instead of relying on manual notes.
+
+Local verification:
+
+- `scripts/release_candidate_walkthrough.py --compact --keep-workspace` ran the
+  offline walkthrough successfully with 9 passed steps.
+- Targeted tests cover the new walkthrough CLI, `run_checks --profile rc`,
+  startup required files, release file inclusion, and GUI prerequisite checks.
+
+Tasks:
+
+- Add a standalone RC walkthrough script.
+- Validate startup, config, and the ENERGY_FORCE template.
+- Preflight and prepare an ENERGY_FORCE workflow job.
+- Preflight and prepare an existing-input job without rewriting the source
+  input.
+- Scan the walkthrough workspace history and verify both jobs appear.
+- Check the release dry-run plan includes the walkthrough script.
+- Add optional `--include-live` for a real CP2K ENERGY_FORCE walkthrough.
+- Add `rc` to `run_checks` and include it in `all`.
+
+Acceptance:
+
+- `python .\scripts\release_candidate_walkthrough.py` returns valid JSON and
+  exits zero offline.
+- `python .\scripts\run_checks.py --profile all` covers the RC walkthrough.
+- The release zip includes the walkthrough script.
+
+Commit boundary:
+
+- One commit for RC walkthrough script, check-runner integration, tests, and
+  docs.
 
 ## Working Rules
 

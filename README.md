@@ -63,7 +63,8 @@ python .\scripts\run_checks.py
 
 Use `python .\scripts\run_checks.py --profile all` before release handoff, and
 `--profile live` when WSL2 and the configured CP2K installation should be
-probed. See `docs/testing.md` for the full matrix.
+probed. The `all` profile includes a release-candidate walkthrough of the main
+offline user path. See `docs/testing.md` for the full matrix.
 
 The first utility is a standard-library Python probe:
 
@@ -198,6 +199,12 @@ To build, unpack, and smoke-test that release in a temporary directory:
 
 ```powershell
 python .\scripts\smoke_release_install.py
+```
+
+To run the release-candidate user-path walkthrough:
+
+```powershell
+python .\scripts\release_candidate_walkthrough.py
 ```
 
 ## License

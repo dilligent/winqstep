@@ -14,7 +14,7 @@ from typing import Any
 
 
 PROFILE_ALIASES = {
-    "all": ("fast", "gui", "release"),
+    "all": ("fast", "gui", "release", "rc"),
 }
 
 
@@ -110,6 +110,18 @@ def build_check_plan(
                         python,
                         ["scripts/smoke_release_install.py", "--compact"],
                         timeout=180,
+                    ),
+                ]
+            )
+        elif profile == "rc":
+            checks.extend(
+                [
+                    python_check(
+                        "release-candidate-walkthrough",
+                        profile,
+                        python,
+                        ["scripts/release_candidate_walkthrough.py", "--compact"],
+                        timeout=240,
                     ),
                 ]
             )
@@ -319,7 +331,7 @@ def main() -> int:
     parser.add_argument(
         "--profile",
         action="append",
-        choices=("fast", "gui", "release", "live", "all"),
+        choices=("fast", "gui", "release", "rc", "live", "all"),
         help="Verification profile to run. Repeat to combine profiles. Defaults to fast.",
     )
     parser.add_argument("--list", action="store_true", help="List the selected checks without running them.")
