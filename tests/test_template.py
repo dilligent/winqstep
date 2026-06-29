@@ -45,6 +45,28 @@ class TemplateTests(unittest.TestCase):
         self.assertEqual(normalized["geo_opt"]["max_iter"], 120)
         self.assertEqual(normalized["kinds"][1]["basis_set"], "TZVP-MOLOPT-GTH")
 
+    def test_merge_fields_updates_fallback_cell_transform(self) -> None:
+        template = load_template(ENERGY_TEMPLATE)
+        merged = merge_template_fields(
+            template,
+            {
+                "fallback_cell_periodic": "xy",
+                "fallback_cell_a": "12 0 0",
+                "fallback_cell_b": "0 11 0",
+                "fallback_cell_c": "0 0 14",
+                "center_atoms": "false",
+            },
+        )
+        validation = validate_template(merged)
+
+        self.assertTrue(validation["valid"], validation["errors"])
+        transform = validation["template"]["structure_transform"]
+        self.assertEqual(transform["fallback_cell"]["periodic"], "XY")
+        self.assertEqual(transform["fallback_cell"]["a"], [12.0, 0.0, 0.0])
+        self.assertEqual(transform["fallback_cell"]["b"], [0.0, 11.0, 0.0])
+        self.assertEqual(transform["fallback_cell"]["c"], [0.0, 0.0, 14.0])
+        self.assertFalse(transform["center_atoms"])
+
     def test_blank_geo_fields_do_not_break_energy_template(self) -> None:
         template = load_template(ENERGY_TEMPLATE)
         merged = merge_template_fields(template, {"optimizer": "", "geo_opt_max_iter": ""})

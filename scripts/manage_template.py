@@ -34,6 +34,11 @@ FIELD_ARGS = {
     "max_scf": "max_scf",
     "optimizer": "optimizer",
     "geo_opt_max_iter": "geo_opt_max_iter",
+    "fallback_cell_periodic": "fallback_cell_periodic",
+    "fallback_cell_a": "fallback_cell_a",
+    "fallback_cell_b": "fallback_cell_b",
+    "fallback_cell_c": "fallback_cell_c",
+    "center_atoms": "center_atoms",
 }
 
 
@@ -58,6 +63,11 @@ def main() -> int:
     parser.add_argument("--max-scf")
     parser.add_argument("--optimizer")
     parser.add_argument("--geo-opt-max-iter")
+    parser.add_argument("--fallback-cell-periodic")
+    parser.add_argument("--fallback-cell-a")
+    parser.add_argument("--fallback-cell-b")
+    parser.add_argument("--fallback-cell-c")
+    parser.add_argument("--center-atoms")
     parser.add_argument("--compact", action="store_true", help="Emit compact JSON.")
     args = parser.parse_args()
 

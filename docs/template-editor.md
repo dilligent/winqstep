@@ -24,6 +24,8 @@ Editable fields include:
 - DFT fields: basis file, potential file, XC functional, charge,
   multiplicity, cutoff, relative cutoff, EPS_SCF, and MAX_SCF
 - GEO_OPT fields: optimizer and max iterations
+- Structure transform fields: fallback periodicity, fallback cell A/B/C
+  vectors, and whether fallback-cell structures should be centered
 - `kinds_text`: one KIND per line as `element basis_set potential`
 
 The writer saves UTF-8 JSON with stable key order.
@@ -38,13 +40,14 @@ Single-line template fields are editable drop-down controls. Each field offers
 common CP2K/WinQStep choices, such as `ENERGY`, `ENERGY_FORCE`, and `GEO_OPT`
 for run type, common basis and potential file names, common XC functional
 shortcuts, typical SCF/MGRID numeric values, and `BFGS`, `LBFGS`, or `CG` for
-GEO_OPT optimizer.
+GEO_OPT optimizer. Fallback cell fields expose the supported CP2K periodicity
+labels and common cubic-cell vectors while still accepting direct typed values.
 The controls remain editable, so values not listed in the drop-down can still
 be typed directly and saved through the same template writer.
 The candidate lists are intentionally conservative and are based on the CP2K
 manual pages for `GLOBAL/RUN_TYPE`, `DFT/BASIS_SET_FILE_NAME`,
 `DFT/POTENTIAL_FILE_NAME`, `XC/XC_FUNCTIONAL`, `DFT/MGRID`, `DFT/SCF`, and
-`MOTION/GEO_OPT`.
+`MOTION/GEO_OPT`, plus `SUBSYS/CELL` and `DFT/POISSON` for periodicity.
 
 KIND entries are shown in an editable `Element`, `Basis Set`, `Potential` table
 instead of a raw text box. The GUI still serializes that table through

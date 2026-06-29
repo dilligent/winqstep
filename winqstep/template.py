@@ -7,10 +7,9 @@ import re
 from pathlib import Path
 from typing import Any
 
-from .quickstep import DftSettings, GeoOptSettings, RUN_TYPES
+from .quickstep import DftSettings, GeoOptSettings, PERIODIC_VALUES, RUN_TYPES
 
 
-PERIODIC_VALUES = {"NONE", "X", "Y", "Z", "XY", "XZ", "YZ", "XYZ"}
 TEMPLATE_KEY_ORDER = (
     "project_name",
     "run_type",
@@ -31,6 +30,12 @@ DFT_KEY_ORDER = (
     "max_scf",
 )
 GEO_OPT_KEY_ORDER = ("optimizer", "max_iter")
+FALLBACK_CELL_FIELD_KEYS = (
+    "fallback_cell_periodic",
+    "fallback_cell_a",
+    "fallback_cell_b",
+    "fallback_cell_c",
+)
 ELEMENT_RE = re.compile(r"^[A-Z][a-z]?$")
 
 
@@ -84,7 +89,7 @@ def validate_template(data: dict[str, Any]) -> dict[str, Any]:
 
     dft = _normalize_dft(_object_value(data.get("dft", {}), "dft", errors), errors)
     geo_opt = _normalize_geo_opt(_object_value(data.get("geo_opt", {}), "geo_opt", errors), errors)
-    structure_transform = _normalize_structure_transform(data.get("structure_transform", {}), errors)
+    structure_transform = _normalize_structure_transform(data.get("structure_transform", {}), errors, warnings)
     kinds = _normalize_kinds(data.get("kinds"), errors)
 
     if run_type == "GEO_OPT" and not data.get("geo_opt"):
@@ -136,6 +141,17 @@ def merge_template_fields(template: dict[str, Any], fields: dict[str, Any]) -> d
     if "center_atoms" in fields:
         transform = _ensure_object(merged, "structure_transform")
         transform["center_atoms"] = _bool_value(fields["center_atoms"])
+    if _should_merge_fallback_cell(merged, fields):
+        transform = _ensure_object(merged, "structure_transform")
+        fallback_cell = _ensure_object(transform, "fallback_cell")
+        if "fallback_cell_periodic" in fields:
+            fallback_cell["periodic"] = fields["fallback_cell_periodic"]
+        if "fallback_cell_a" in fields:
+            fallback_cell["a"] = fields["fallback_cell_a"]
+        if "fallback_cell_b" in fields:
+            fallback_cell["b"] = fields["fallback_cell_b"]
+        if "fallback_cell_c" in fields:
+            fallback_cell["c"] = fields["fallback_cell_c"]
     if "kinds_text" in fields:
         merged["kinds"] = parse_kinds_text(str(fields["kinds_text"]))
     if "kinds_json" in fields:
@@ -226,7 +242,7 @@ def _normalize_geo_opt(data: dict[str, Any], errors: list[str]) -> dict[str, Any
     return {key: geo_opt[key] for key in GEO_OPT_KEY_ORDER}
 
 
-def _normalize_structure_transform(value: Any, errors: list[str]) -> dict[str, Any]:
+def _normalize_structure_transform(value: Any, errors: list[str], warnings: list[str]) -> dict[str, Any]:
     data = _object_value(value, "structure_transform", errors)
     if not data:
         return {}
@@ -237,14 +253,21 @@ def _normalize_structure_transform(value: Any, errors: list[str]) -> dict[str, A
         periodic = _string_value(cell.get("periodic", "XYZ"), "structure_transform.fallback_cell.periodic", errors).upper()
         if periodic not in PERIODIC_VALUES:
             errors.append("structure_transform.fallback_cell.periodic has an unsupported value")
+        a = _vector_value(cell.get("a"), "structure_transform.fallback_cell.a", errors)
+        b = _vector_value(cell.get("b"), "structure_transform.fallback_cell.b", errors)
+        c = _vector_value(cell.get("c"), "structure_transform.fallback_cell.c", errors)
+        if periodic != "NONE" and any(_vector_norm(vector) == 0.0 for vector in (a, b, c)):
+            warnings.append("Periodic fallback cell has zero-length vectors; CP2K will need a usable CELL.")
         transform["fallback_cell"] = {
             "periodic": periodic,
-            "a": _vector_value(cell.get("a"), "structure_transform.fallback_cell.a", errors),
-            "b": _vector_value(cell.get("b"), "structure_transform.fallback_cell.b", errors),
-            "c": _vector_value(cell.get("c"), "structure_transform.fallback_cell.c", errors),
+            "a": a,
+            "b": b,
+            "c": c,
         }
     if "center_atoms" in data:
-        transform["center_atoms"] = _bool_value(data.get("center_atoms"))
+        center_atoms = _bool_value(data.get("center_atoms"))
+        if center_atoms or "fallback_cell" in transform:
+            transform["center_atoms"] = center_atoms
     return transform
 
 
@@ -282,6 +305,15 @@ def _ensure_object(data: dict[str, Any], key: str) -> dict[str, Any]:
         value = {}
         data[key] = value
     return value
+
+
+def _should_merge_fallback_cell(template: dict[str, Any], fields: dict[str, Any]) -> bool:
+    if not any(key in fields for key in FALLBACK_CELL_FIELD_KEYS):
+        return False
+    if any(_field_has_value(fields, key) for key in FALLBACK_CELL_FIELD_KEYS):
+        return True
+    transform = template.get("structure_transform")
+    return isinstance(transform, dict) and isinstance(transform.get("fallback_cell"), dict)
 
 
 def _field_has_value(fields: dict[str, Any], key: str) -> bool:
@@ -338,6 +370,8 @@ def _eps_value(value: Any, errors: list[str]) -> str:
 
 
 def _vector_value(value: Any, key: str, errors: list[str]) -> list[float]:
+    if isinstance(value, str):
+        value = [part for part in re.split(r"[\s,]+", value.strip()) if part]
     if not isinstance(value, list | tuple) or len(value) != 3:
         errors.append(f"{key} must be a 3-vector")
         return [0.0, 0.0, 0.0]
@@ -346,6 +380,10 @@ def _vector_value(value: Any, key: str, errors: list[str]) -> list[float]:
     except (TypeError, ValueError):
         errors.append(f"{key} must contain numeric values")
         return [0.0, 0.0, 0.0]
+
+
+def _vector_norm(vector: list[float]) -> float:
+    return sum(value * value for value in vector) ** 0.5
 
 
 def _normalize_element(value: str, errors: list[str]) -> str:

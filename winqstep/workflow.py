@@ -27,8 +27,11 @@ def build_quickstep_data(
     structure = _object(structure_data, "structure")
     atoms = _atoms(structure.get("atoms"))
     transform = _object(template.get("structure_transform", {}), "structure_transform")
-    cell = _resolved_cell(_object(structure.get("cell"), "structure.cell"), transform)
-    transformed_atoms = _center_atoms(atoms, cell) if bool(transform.get("center_atoms", False)) else atoms
+    structure_cell = _object(structure.get("cell"), "structure.cell")
+    uses_fallback_cell = _uses_fallback_cell(structure_cell, transform)
+    cell = _resolved_cell(structure_cell, transform)
+    should_center_atoms = bool(transform.get("center_atoms", False)) and uses_fallback_cell
+    transformed_atoms = _center_atoms(atoms, cell) if should_center_atoms else atoms
     kinds = _select_kinds(_kind_library(template), transformed_atoms)
 
     run_type = _optional_string(template, "run_type", "ENERGY").upper()
@@ -155,6 +158,10 @@ def _resolved_cell(structure_cell: dict[str, Any], transform: dict[str, Any]) ->
             return _cell_dict(structure_cell)
         return _cell_dict(_object(fallback, "structure_transform.fallback_cell"))
     return _cell_dict(structure_cell)
+
+
+def _uses_fallback_cell(structure_cell: dict[str, Any], transform: dict[str, Any]) -> bool:
+    return _needs_fallback_cell(structure_cell) and transform.get("fallback_cell") is not None
 
 
 def _needs_fallback_cell(cell: dict[str, Any]) -> bool:

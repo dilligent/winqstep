@@ -39,6 +39,7 @@ class QuickStepTests(unittest.TestCase):
         rendered = render_quickstep_input(quickstep_input_from_dict(data))
         self.assertIn("  RUN_TYPE ENERGY_FORCE\n", rendered)
         self.assertIn("    &FORCES ON\n", rendered)
+        self.assertIn("    &POISSON\n      PERIODIC XYZ\n    &END POISSON\n", rendered)
         self.assertNotIn("&GEO_OPT", rendered)
         self.assertNotIn("&MOTION", rendered)
 
@@ -54,6 +55,13 @@ class QuickStepTests(unittest.TestCase):
         data["structure"]["kinds"] = data["structure"]["kinds"][:1]
 
         with self.assertRaises(QuickStepInputError):
+            quickstep_input_from_dict(data)
+
+    def test_rejects_zero_vector_for_periodic_cell(self) -> None:
+        data = json.loads((ROOT / "examples" / "quickstep_energy.json").read_text(encoding="utf-8"))
+        data["structure"]["cell"]["a"] = [0.0, 0.0, 0.0]
+
+        with self.assertRaisesRegex(QuickStepInputError, "periodic cell vectors"):
             quickstep_input_from_dict(data)
 
     def test_cli_writes_output_file(self) -> None:

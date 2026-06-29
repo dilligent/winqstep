@@ -144,6 +144,9 @@ file and never overwrites a user-provided existing input file silently.
 
 The single-line fields on the `Template` tab are editable drop-down controls:
 users can select common values from the list or type a custom value directly.
+Fallback periodicity and fallback cell A/B/C vectors are edited there too, and
+`center_atoms` is a checkbox because it only applies when the fallback cell is
+used.
 Template KIND entries are shown in an editable `Element`, `Basis Set`,
 `Potential` table. The hidden `KindsText` backing field is kept only so the GUI
 can reuse the existing `kinds_text` JSON writer.

@@ -19,9 +19,8 @@ Each round should end with a focused commit.
   release-candidate workflow walkthrough, release handoff notes, final release
   artifact build, release install smoke, live CP2K release validation, and user
   guide polish, GUI async run completion hardening, and window-level GUI
-  overflow scrolling.
-- Next active round: Round 35, tester handoff feedback triage and packaging
-  decision.
+  overflow scrolling, and QuickStep CELL/PERIODIC template support.
+- Next active round: Round 36, QuickStep SCF control expansion.
 - Known local facts:
   - WSL2 is available.
   - Default distro is `Ubuntu`.
@@ -1206,6 +1205,41 @@ Acceptance:
 Commit boundary:
 
 - One commit for the XAML scroll fix, tests, docs, and plan update.
+
+## Round 35: QuickStep CELL/PERIODIC Support
+
+Status: implemented.
+
+Goal: make periodic cell handling a first-class QuickStep workflow feature
+instead of an implicit fallback hidden in template JSON.
+
+Tasks:
+
+- Render `DFT/&POISSON/PERIODIC` from the same resolved periodicity used by
+  `SUBSYS/&CELL/PERIODIC`.
+- Validate supported periodicity labels and reject periodic cells with
+  zero-length vectors before writing CP2K input.
+- Expose fallback cell periodicity, A/B/C vectors, and `center_atoms` in the
+  Template tab and in `scripts/manage_template.py`.
+- Keep fallback centering limited to structures that actually use the fallback
+  cell, so POSCAR/CIF periodic structures preserve imported coordinates.
+- Add tests for POISSON rendering, fallback cell editing, periodic POSCAR
+  workflow data, GUI template controls, and updated input snapshots.
+
+Acceptance:
+
+- Existing ENERGY, ENERGY_FORCE, and GEO_OPT snapshots render with matching
+  `POISSON PERIODIC` and `CELL PERIODIC` values.
+- XYZ workflows still use the configured fallback cell and can center atoms.
+- Periodic POSCAR/CIF workflows keep the imported cell instead of being replaced
+  by the fallback cell.
+- The GUI can load, edit, save, and smoke-test fallback periodicity and cell
+  vectors.
+
+Commit boundary:
+
+- One commit for CELL/PERIODIC model, renderer, template/GUI controls, tests,
+  and docs.
 
 ## Working Rules
 

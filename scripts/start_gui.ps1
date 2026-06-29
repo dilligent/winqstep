@@ -60,9 +60,12 @@ function New-WinQStepWindow {
         "TemplateProjectLabel", "RunTypeLabel", "BasisFileLabel", "PotentialFileLabel",
         "XcFunctionalLabel", "EpsScfLabel", "ChargeLabel", "MultiplicityLabel",
         "CutoffLabel", "RelCutoffLabel", "MaxScfLabel", "OptimizerLabel", "GeoMaxIterLabel",
+        "FallbackPeriodicLabel", "FallbackCellALabel", "FallbackCellBLabel", "FallbackCellCLabel",
         "TemplateProjectBox", "TemplateRunTypeBox", "BasisSetFileBox", "PotentialFileBox",
         "XcFunctionalBox", "ChargeBox", "MultiplicityBox", "CutoffBox", "RelCutoffBox",
-        "EpsScfBox", "MaxScfBox", "GeoOptimizerBox", "GeoMaxIterBox", "KindsText",
+        "EpsScfBox", "MaxScfBox", "GeoOptimizerBox", "GeoMaxIterBox",
+        "FallbackPeriodicBox", "FallbackCellABox", "FallbackCellBBox", "FallbackCellCBox",
+        "CenterAtomsBox", "KindsText",
         "KindEntriesGrid", "DataLabelsGrid", "TemplateValidationText",
         "EnvironmentText", "StructureText", "PreviewText", "LogText",
         "ArtifactSummaryText", "ArtifactText", "HistoryGrid", "StatusText", "JobStatusText",
@@ -107,6 +110,7 @@ function New-WinQStepWindow {
         ViewStderrButton = "button.stderr"
         WorkflowModeRadio = "mode.workflow"
         ExistingInputModeRadio = "mode.existing_input"
+        CenterAtomsBox = "label.center_atoms"
         }
         foreach ($entry in $contentLocalization.GetEnumerator()) {
             Set-WinQStepContent $controls[$entry.Key] $entry.Value
@@ -156,6 +160,10 @@ function New-WinQStepWindow {
         MaxScfLabel = "label.max_scf"
         OptimizerLabel = "label.optimizer"
         GeoMaxIterLabel = "label.geo_max_iter"
+        FallbackPeriodicLabel = "label.fallback_periodic"
+        FallbackCellALabel = "label.fallback_cell_a"
+        FallbackCellBLabel = "label.fallback_cell_b"
+        FallbackCellCLabel = "label.fallback_cell_c"
         StatusText = "status.ready"
         }
         foreach ($entry in $textLocalization.GetEnumerator()) {
@@ -567,6 +575,33 @@ function New-WinQStepWindow {
             return $Default
         }
         return [string]$property.Value
+    }.GetNewClosure()
+
+    $GetJsonVectorText = {
+        param($Object, [Parameter(Mandatory = $true)][string]$Name, [string]$Default = "")
+        if ($null -eq $Object) {
+            return $Default
+        }
+        $property = $Object.PSObject.Properties[$Name]
+        if ($null -eq $property -or $null -eq $property.Value) {
+            return $Default
+        }
+        $value = $property.Value
+        if ($value -is [string]) {
+            return $value
+        }
+        $items = @($value)
+        if ($items.Count -eq 3) {
+            return (($items | ForEach-Object {
+                try {
+                    "{0:g}" -f [double]$_
+                }
+                catch {
+                    [string]$_
+                }
+            }) -join " ")
+        }
+        return [string]$value
     }.GetNewClosure()
 
     $GetNestedPath = {
@@ -1250,6 +1285,11 @@ function New-WinQStepWindow {
         $template = $Payload.template
         $dft = $template.dft
         $geoOpt = $template.geo_opt
+        $structureTransform = $template.structure_transform
+        $fallbackCell = $null
+        if ($null -ne $structureTransform) {
+            $fallbackCell = $structureTransform.fallback_cell
+        }
         $controls["TemplateProjectBox"].Text = & $GetJsonProperty $template "project_name"
         $controls["TemplateRunTypeBox"].Text = & $GetJsonProperty $template "run_type"
         $controls["BasisSetFileBox"].Text = & $GetJsonProperty $dft "basis_set_file_name"
@@ -1263,6 +1303,12 @@ function New-WinQStepWindow {
         $controls["MaxScfBox"].Text = & $GetJsonProperty $dft "max_scf"
         $controls["GeoOptimizerBox"].Text = & $GetJsonProperty $geoOpt "optimizer"
         $controls["GeoMaxIterBox"].Text = & $GetJsonProperty $geoOpt "max_iter"
+        $controls["FallbackPeriodicBox"].Text = & $GetJsonProperty $fallbackCell "periodic"
+        $controls["FallbackCellABox"].Text = & $GetJsonVectorText $fallbackCell "a"
+        $controls["FallbackCellBBox"].Text = & $GetJsonVectorText $fallbackCell "b"
+        $controls["FallbackCellCBox"].Text = & $GetJsonVectorText $fallbackCell "c"
+        $centerAtomsText = (& $GetJsonProperty $structureTransform "center_atoms" "False").ToLowerInvariant()
+        $controls["CenterAtomsBox"].IsChecked = @("1", "true", "yes", "on").Contains($centerAtomsText)
         $kindsText = & $GetJsonProperty $Payload "kinds_text"
         $controls["KindsText"].Text = $kindsText
         & $SetKindEntriesFromText $kindsText
@@ -1308,6 +1354,11 @@ function New-WinQStepWindow {
             max_scf = $controls["MaxScfBox"].Text
             optimizer = $controls["GeoOptimizerBox"].Text
             geo_opt_max_iter = $controls["GeoMaxIterBox"].Text
+            fallback_cell_periodic = $controls["FallbackPeriodicBox"].Text
+            fallback_cell_a = $controls["FallbackCellABox"].Text
+            fallback_cell_b = $controls["FallbackCellBBox"].Text
+            fallback_cell_c = $controls["FallbackCellCBox"].Text
+            center_atoms = [bool]$controls["CenterAtomsBox"].IsChecked
             kinds_text = (& $SyncKindsTextFromGrid)
         }
         return ($fields | ConvertTo-Json -Compress)
@@ -2722,7 +2773,8 @@ if ($SmokeTest) {
     $templateComboNames = @(
         "TemplateProjectBox", "TemplateRunTypeBox", "BasisSetFileBox", "PotentialFileBox",
         "XcFunctionalBox", "EpsScfBox", "ChargeBox", "MultiplicityBox",
-        "CutoffBox", "RelCutoffBox", "MaxScfBox", "GeoOptimizerBox", "GeoMaxIterBox"
+        "CutoffBox", "RelCutoffBox", "MaxScfBox", "GeoOptimizerBox", "GeoMaxIterBox",
+        "FallbackPeriodicBox", "FallbackCellABox", "FallbackCellBBox", "FallbackCellCBox"
     )
     $report["template_tab_loaded"] = ($window.FindName("TemplateProjectBox") -is [System.Windows.Controls.ComboBox])
     $report["template_combo_fields_loaded"] = $templateComboNames.Where({ $window.FindName($_) -is [System.Windows.Controls.ComboBox] }).Count
@@ -2732,6 +2784,9 @@ if ($SmokeTest) {
     $report["template_project_name"] = [string]$window.FindName("TemplateProjectBox").Text
     $report["template_run_type"] = [string]$window.FindName("TemplateRunTypeBox").Text
     $report["template_cutoff"] = [string]$window.FindName("CutoffBox").Text
+    $report["template_fallback_periodic"] = [string]$window.FindName("FallbackPeriodicBox").Text
+    $report["template_fallback_cell_a"] = [string]$window.FindName("FallbackCellABox").Text
+    $report["template_center_atoms"] = [bool]$window.FindName("CenterAtomsBox").IsChecked
     $kindEntriesView = $window.FindName("KindEntriesGrid").ItemsSource
     $report["kind_entries_grid_loaded"] = ($window.FindName("KindEntriesGrid") -is [System.Windows.Controls.DataGrid])
     $report["kind_entries_grid_rows"] = if ($null -ne $kindEntriesView) { $kindEntriesView.Count } else { 0 }

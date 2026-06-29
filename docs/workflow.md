@@ -59,7 +59,12 @@ define calculation settings, optional structure transforms, and a KIND library:
 
 The fallback cell is used when the structure file has no usable cell, which is
 common for XYZ. `center_atoms` translates the imported coordinates into the
-middle of the selected cell.
+middle of the fallback cell only when that fallback cell is actually used.
+Periodic POSCAR and CIF imports keep their imported cell and coordinates.
+
+The resolved periodicity is rendered consistently in both `SUBSYS/&CELL` and
+`DFT/&POISSON`. Supported periodicity labels are `NONE`, `X`, `Y`, `Z`, `XY`,
+`XZ`, `YZ`, and `XYZ`; periodic cells must have non-zero A, B, and C vectors.
 
 The workflow selects only KIND entries needed by the imported elements. Missing
 KIND definitions fail before CP2K is started. The GUI runs the same preflight
@@ -76,6 +81,7 @@ python .\scripts\manage_template.py --template .\examples\templates\energy_pbe.j
 ```
 
 The GUI `Template` tab uses the same command. It exposes project name, run type,
-DFT settings, GEO_OPT settings, and KIND basis/potential entries. Supported
-QuickStep run types are `ENERGY`, `ENERGY_FORCE`, and `GEO_OPT`. Workflow preview
-and run actions save and validate the current template before rendering input.
+DFT settings, GEO_OPT settings, fallback cell/periodicity settings, centering,
+and KIND basis/potential entries. Supported QuickStep run types are `ENERGY`,
+`ENERGY_FORCE`, and `GEO_OPT`. Workflow preview and run actions save and
+validate the current template before rendering input.

@@ -57,6 +57,7 @@ def validate_workflow_preflight(
     if template:
         _validate_template_data_files(template, cache, warnings)
     if quickstep_data is not None:
+        _validate_resolved_cell(quickstep_data["structure"]["cell"], warnings)
         _validate_kind_labels(quickstep_data["structure"]["kinds"], cache, warnings)
 
     return {
@@ -217,6 +218,24 @@ def _validate_kind_labels(kinds: list[dict[str, Any]], cache: dict[str, Any] | N
             warnings.append(f"KIND {element} basis set is not present in CP2K data cache: {basis}")
         if potential_labels and potential not in potential_labels:
             warnings.append(f"KIND {element} potential is not present in CP2K data cache: {potential}")
+
+
+def _validate_resolved_cell(cell: dict[str, Any], warnings: list[str]) -> None:
+    periodic = str(cell.get("periodic") or "NONE").strip().upper()
+    if periodic == "NONE":
+        return
+    vectors = []
+    for axis in ("a", "b", "c"):
+        value = cell.get(axis)
+        if isinstance(value, list | tuple) and len(value) == 3:
+            try:
+                vectors.append([float(value[0]), float(value[1]), float(value[2])])
+            except (TypeError, ValueError):
+                return
+        else:
+            return
+    if any(sum(component * component for component in vector) == 0.0 for vector in vectors):
+        warnings.append("Resolved periodic cell has zero-length vectors; CP2K will need a usable CELL.")
 
 
 def _string_set(value: Any) -> set[str]:

@@ -8,6 +8,7 @@ from typing import Any, Iterable, Literal
 
 RunType = Literal["ENERGY", "ENERGY_FORCE", "GEO_OPT"]
 RUN_TYPES = {"ENERGY", "ENERGY_FORCE", "GEO_OPT"}
+PERIODIC_VALUES = {"NONE", "X", "Y", "Z", "XY", "XZ", "YZ", "XYZ"}
 
 
 class QuickStepInputError(ValueError):
@@ -182,8 +183,12 @@ def validate_quickstep_input(model: QuickStepInput) -> None:
     if missing_kinds:
         raise QuickStepInputError("missing KIND definitions for: " + ", ".join(missing_kinds))
 
-    if model.cell.periodic not in {"NONE", "X", "Y", "Z", "XY", "XZ", "YZ", "XYZ"}:
+    if model.cell.periodic not in PERIODIC_VALUES:
         raise QuickStepInputError("cell.periodic has an unsupported value")
+    if model.cell.periodic != "NONE" and any(
+        _vector_norm(vector) == 0.0 for vector in (model.cell.a, model.cell.b, model.cell.c)
+    ):
+        raise QuickStepInputError("periodic cell vectors must be non-zero")
     if model.dft.cutoff <= 0 or model.dft.rel_cutoff <= 0:
         raise QuickStepInputError("cutoff and rel_cutoff must be positive")
     if model.dft.max_scf <= 0:
@@ -213,6 +218,9 @@ def render_quickstep_input(model: QuickStepInput) -> str:
         f"      CUTOFF {model.dft.cutoff}",
         f"      REL_CUTOFF {model.dft.rel_cutoff}",
         "    &END MGRID",
+        "    &POISSON",
+        f"      PERIODIC {model.cell.periodic}",
+        "    &END POISSON",
         "    &SCF",
         f"      EPS_SCF {model.dft.eps_scf}",
         f"      MAX_SCF {model.dft.max_scf}",
@@ -266,6 +274,10 @@ def _render_force_eval_print(model: QuickStepInput) -> list[str]:
 
 def _format_vector(vector: tuple[float, float, float]) -> str:
     return " ".join(f"{value:.10g}" for value in vector)
+
+
+def _vector_norm(vector: tuple[float, float, float]) -> float:
+    return sum(value * value for value in vector) ** 0.5
 
 
 def _render_atoms(atoms: Iterable[Atom]) -> list[str]:

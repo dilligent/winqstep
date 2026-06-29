@@ -33,6 +33,19 @@ class WorkflowTests(unittest.TestCase):
             ["H", "O"],
         )
 
+    def test_builds_quickstep_data_from_periodic_poscar_without_fallback_cell(self) -> None:
+        imported = import_structure(STRUCTURES / "POSCAR")
+
+        quickstep_data = build_quickstep_data(self.template, imported, project_name="si_periodic")
+
+        self.assertEqual(quickstep_data["structure"]["cell"]["periodic"], "XYZ")
+        self.assertEqual(quickstep_data["structure"]["cell"]["a"], [5.43, 0.0, 0.0])
+        self.assertEqual(quickstep_data["structure"]["atoms"][0]["xyz"], [0.0, 0.0, 0.0])
+        self.assertEqual(
+            [kind["element"] for kind in quickstep_data["structure"]["kinds"]],
+            ["Si"],
+        )
+
     def test_builds_energy_force_workflow_data(self) -> None:
         imported = import_structure(STRUCTURES / "water.xyz")
         template = load_json_file(ROOT / "examples" / "templates" / "energy_force_pbe.json")
