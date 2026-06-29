@@ -58,6 +58,8 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn("Start-WinQStepPythonProcess", helper_text)
         self.assertIn("Save-WinQStepProcessOutput", helper_text)
         self.assertIn("Stop-WinQStepProcessTree", helper_text)
+        self.assertIn("energy_hartree", helper_text)
+        self.assertIn("total_atomic_force", helper_text)
         self.assertIn("JobStatusText", xaml_text)
         self.assertIn("ArtifactSummaryText", xaml_text)
         self.assertIn("ArtifactText", xaml_text)

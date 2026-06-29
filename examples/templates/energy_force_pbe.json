@@ -1,0 +1,63 @@
+{
+  "project_name": "workflow_energy_force",
+  "run_type": "ENERGY_FORCE",
+  "dft": {
+    "basis_set_file_name": "BASIS_MOLOPT",
+    "potential_file_name": "GTH_POTENTIALS",
+    "xc_functional": "PBE",
+    "charge": 0,
+    "multiplicity": 1,
+    "cutoff": 400,
+    "rel_cutoff": 40,
+    "eps_scf": "1.0E-6",
+    "max_scf": 50
+  },
+  "structure_transform": {
+    "fallback_cell": {
+      "periodic": "XYZ",
+      "a": [
+        10.0,
+        0.0,
+        0.0
+      ],
+      "b": [
+        0.0,
+        10.0,
+        0.0
+      ],
+      "c": [
+        0.0,
+        0.0,
+        10.0
+      ]
+    },
+    "center_atoms": true
+  },
+  "kinds": [
+    {
+      "element": "H",
+      "basis_set": "DZVP-MOLOPT-SR-GTH",
+      "potential": "GTH-PBE-q1"
+    },
+    {
+      "element": "O",
+      "basis_set": "DZVP-MOLOPT-SR-GTH",
+      "potential": "GTH-PBE-q6"
+    },
+    {
+      "element": "Si",
+      "basis_set": "DZVP-MOLOPT-SR-GTH",
+      "potential": "GTH-PBE-q4"
+    },
+    {
+      "element": "Na",
+      "basis_set": "DZVP-MOLOPT-SR-GTH",
+      "potential": "GTH-PBE-q9"
+    },
+    {
+      "element": "Cl",
+      "basis_set": "DZVP-MOLOPT-SR-GTH",
+      "potential": "GTH-PBE-q7"
+    }
+  ]
+}

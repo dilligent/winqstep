@@ -29,6 +29,7 @@ The first generator should target:
 - `&DFT`
 - `&SUBSYS`
 - `&SCF`
+- `FORCE_EVAL/&PRINT/&FORCES` for `ENERGY_FORCE`
 - `&MOTION` for `GEO_OPT`
 
 The first calculation types should be:
@@ -58,6 +59,9 @@ Top-level fields:
   multiplicity, MGRID cutoff, and SCF controls
 - `geo_opt`: optimizer and max iteration settings for `GEO_OPT`
 - `structure`: periodic cell, atoms, and per-element `KIND` definitions
+
+For `ENERGY_FORCE`, the renderer adds `FORCE_EVAL/&PRINT/&FORCES` so CP2K
+prints an atom-by-atom force table that WinQStep can summarize.
 
 Unsupported `run_type` values such as `MD` are rejected for now even if CP2K
 supports them. That is intentional: the first generator covers only a small

@@ -7,6 +7,8 @@ markers from CP2K `.out` files:
 - `The number of warnings for this run is : <n>`
 - `PROGRAM ENDED AT ...`
 - `PROGRAM STOPPED IN ...`
+- `ENERGY| Total FORCE_EVAL ... energy [hartree]`
+- `FORCES| Atomic forces [hartree/bohr]` for `ENERGY_FORCE`
 
 Example metadata:
 
@@ -19,10 +21,21 @@ Example metadata:
     "warning_count": 0,
     "program_ended": true,
     "ended_at": "2026-06-29 03:24:28.023",
-    "stopped_in": "/mnt/d/Library/winqstep/outputs/job"
+    "stopped_in": "/mnt/d/Library/winqstep/outputs/job",
+    "total_energy_hartree": -17.219350325303314,
+    "forces": {
+      "unit": "hartree/bohr",
+      "atoms": [
+        {"atom": 1, "x": -1.36343519e-10, "y": -4.64397561e-12, "z": -0.0135588799, "norm": 0.0135588799}
+      ],
+      "sum": {"x": -1.371556e-10, "y": -5.18303421e-11, "z": 0.00148299452},
+      "total_atomic_force": 0.00148299452
+    }
   }
 }
 ```
+
+`total_energy_hartree` and `forces` are `null` when those sections are absent.
 
 If the output file is not present, such as after `--prepare-only`, the summary
 uses:

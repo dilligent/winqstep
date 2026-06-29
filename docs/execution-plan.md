@@ -938,6 +938,42 @@ Commit boundary:
 
 - One commit for ENERGY_FORCE model, GUI, tests, and docs.
 
+## Round 28: ENERGY_FORCE End-to-End
+
+Status: implemented.
+
+Goal: make `ENERGY_FORCE` useful beyond input generation by adding examples,
+live validation, force printing, and force summary parsing.
+
+Local verification:
+
+- Generated `tests/fixtures/quickstep_energy_force.inp` from
+  `examples/quickstep_energy_force.json`.
+- Ran local WSL2 CP2K with `examples/templates/energy_force_pbe.json`; CP2K
+  completed successfully with `RUN_TYPE ENERGY_FORCE`.
+- Verified CP2K accepts `FORCE_EVAL/&PRINT/&FORCES` and emits `FORCES|` rows.
+- Unit tests parse total energy, per-atom forces, force sums, and total atomic
+  force from a compact ENERGY_FORCE output fixture.
+
+Tasks:
+
+- Add ENERGY_FORCE example JSON and workflow template.
+- Render `FORCE_EVAL/&PRINT/&FORCES` for ENERGY_FORCE inputs.
+- Parse `ENERGY| Total FORCE_EVAL ... energy [hartree]`.
+- Parse `FORCES| Atomic forces [hartree/bohr]` blocks into metadata.
+- Include total energy and total atomic force in the GUI CP2K summary line.
+
+Acceptance:
+
+- ENERGY_FORCE inputs run under local CP2K.
+- Job metadata includes energy and force summaries when CP2K prints them.
+- Existing ENERGY and GEO_OPT behavior remains unchanged.
+
+Commit boundary:
+
+- One commit for ENERGY_FORCE examples, force printing, force parsing, live
+  verification docs, and tests.
+
 ## Working Rules
 
 - Keep each round small enough to review.

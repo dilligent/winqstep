@@ -456,6 +456,20 @@ function Format-Cp2kSummary {
     }
     $summary = $Metadata.cp2k_output
     $warningCount = if ($null -eq $summary.warning_count) { "n/a" } else { [string]$summary.warning_count }
-    return "CP2K summary: status=$($summary.status), warnings=$warningCount, program_ended=$($summary.program_ended)"
+    $parts = @("CP2K summary: status=$($summary.status)", "warnings=$warningCount", "program_ended=$($summary.program_ended)")
+    if ($null -ne $summary.PSObject.Properties["total_energy_hartree"] -and $null -ne $summary.total_energy_hartree) {
+        $parts += "energy_hartree=$($summary.total_energy_hartree)"
+    }
+    if (
+        $null -ne $summary.PSObject.Properties["forces"] -and
+        $null -ne $summary.forces -and
+        $null -ne $summary.forces.PSObject.Properties["total_atomic_force"] -and
+        $null -ne $summary.forces.total_atomic_force
+    ) {
+        $unit = if ($null -ne $summary.forces.PSObject.Properties["unit"]) { [string]$summary.forces.unit } else { "" }
+        $suffix = if ([string]::IsNullOrWhiteSpace($unit)) { "" } else { " $unit" }
+        $parts += "total_atomic_force=$($summary.forces.total_atomic_force)$suffix"
+    }
+    return ($parts -join ", ")
 }
 

@@ -33,6 +33,16 @@ class WorkflowTests(unittest.TestCase):
             ["H", "O"],
         )
 
+    def test_builds_energy_force_workflow_data(self) -> None:
+        imported = import_structure(STRUCTURES / "water.xyz")
+        template = load_json_file(ROOT / "examples" / "templates" / "energy_force_pbe.json")
+
+        quickstep_data = build_quickstep_data(template, imported, project_name="water_force")
+
+        self.assertEqual(quickstep_data["project_name"], "water_force")
+        self.assertEqual(quickstep_data["run_type"], "ENERGY_FORCE")
+        self.assertNotIn("geo_opt", quickstep_data)
+
     def test_prepare_only_writes_workflow_metadata(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
             metadata = run_quickstep_workflow(

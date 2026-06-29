@@ -1,0 +1,21 @@
+ Some CP2K output above
+
+ ENERGY| Total FORCE_EVAL ( QS ) energy [hartree]            -17.219350325303314
+
+ FORCES| Atomic forces [hartree/bohr]
+ FORCES|   Atom     x               y               z               |f|
+ FORCES|      1 -1.36343519E-10 -4.64397561E-12 -1.35588799E-02   1.35588799E-02
+ FORCES|      2 -6.21460582E-12  1.00980024E-02  7.52093715E-03   1.25910344E-02
+ FORCES|      3  5.40252420E-12 -1.00980024E-02  7.52093722E-03   1.25910345E-02
+ FORCES| Sum    -1.37155600E-10 -5.18303421E-11  1.48299452E-03
+ FORCES| Total atomic force                                       1.48299452E-03
+
+ The number of warnings for this run is : 0
+
+ -------------------------------------------------------------------------------
+  **** **** ******  **  PROGRAM ENDED AT                 2026-06-29 18:28:53.921
+ ***** ** ***  *** **   PROGRAM RAN ON                           DESKTOP-4314MM2
+ **    ****   ******    PROGRAM RAN BY                                      teng
+ ***** **    ** ** **   PROGRAM PROCESS ID                                   817
+  **** **  *******  **  PROGRAM STOPPED IN /mnt/d/Library/winqstep/out
+                                           puts/energy-force-live-smoke

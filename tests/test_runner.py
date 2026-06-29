@@ -95,6 +95,32 @@ class RunnerTests(unittest.TestCase):
                 Path(metadata["files"]["metadata"]["path"]).stat().st_size,
             )
 
+    def test_energy_force_executor_updates_force_summary(self) -> None:
+        quickstep = load_json_file(ROOT / "examples" / "quickstep_energy_force.json")
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            job_dir = Path(tmp_dir)
+
+            def fake_executor(argv: list[str]) -> SimpleNamespace:
+                (job_dir / "water_energy_force.out").write_text(
+                    (ROOT / "tests" / "fixtures" / "cp2k_energy_force.out").read_text(encoding="utf-8"),
+                    encoding="utf-8",
+                )
+                (job_dir / "water_energy_force.stdout.log").write_text("", encoding="utf-8")
+                (job_dir / "water_energy_force.stderr.log").write_text("", encoding="utf-8")
+                return SimpleNamespace(returncode=0, stdout=b"", stderr=b"")
+
+            metadata = run_quickstep_job(
+                config=self.config,
+                quickstep_data=quickstep,
+                windows_job_dir=tmp_dir,
+                executor=fake_executor,
+            )
+
+            self.assertEqual(metadata["status"], "succeeded")
+            self.assertEqual(metadata["quickstep"]["run_type"], "ENERGY_FORCE")
+            self.assertAlmostEqual(metadata["cp2k_output"]["total_energy_hartree"], -17.219350325303314)
+            self.assertAlmostEqual(metadata["cp2k_output"]["forces"]["total_atomic_force"], 1.48299452e-3)
+
     def test_failed_executor_records_wrapper_stderr(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
 

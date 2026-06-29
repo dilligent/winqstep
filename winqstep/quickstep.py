@@ -203,6 +203,7 @@ def render_quickstep_input(model: QuickStepInput) -> str:
         "",
         "&FORCE_EVAL",
         "  METHOD QS",
+        *_render_force_eval_print(model),
         "  &DFT",
         f"    BASIS_SET_FILE_NAME {model.dft.basis_set_file_name}",
         f"    POTENTIAL_FILE_NAME {model.dft.potential_file_name}",
@@ -250,6 +251,17 @@ def render_quickstep_input(model: QuickStepInput) -> str:
         )
 
     return "\n".join(lines) + "\n"
+
+
+def _render_force_eval_print(model: QuickStepInput) -> list[str]:
+    if model.run_type != "ENERGY_FORCE":
+        return []
+    return [
+        "  &PRINT",
+        "    &FORCES ON",
+        "    &END FORCES",
+        "  &END PRINT",
+    ]
 
 
 def _format_vector(vector: tuple[float, float, float]) -> str:
