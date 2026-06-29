@@ -12,8 +12,9 @@ Each round should end with a focused commit.
 - Current docs: product scope, architecture, WSL execution rules, CP2K input
   model, workflow, GUI prototype, existing-input jobs, output summaries, job
   history, config editing, template editing, CP2K data inspection, and
-  asynchronous GUI job execution and GUI job lifecycle hardening.
-- Next active round: Round 16, GUI output inspection hardening.
+  asynchronous GUI job execution, GUI job lifecycle hardening, and GUI output
+  inspection.
+- Next active round: Round 17, input/template validation refinement.
 - Known local facts:
   - WSL2 is available.
   - Default distro is `Ubuntu`.
@@ -504,7 +505,16 @@ Commit boundary:
 
 ## Round 16: GUI Output Inspection Hardening
 
+Status: implemented.
+
 Goal: make completed CP2K jobs easier to inspect from the GUI.
+
+Local verification:
+
+- `scripts/start_gui.ps1 -SmokeTest` validates the `Artifacts` tab, summary
+  field, and five read-only artifact view buttons without launching CP2K.
+- Unit tests verify the run, history, and artifact button wiring in
+  `scripts/start_gui.ps1`.
 
 Tasks:
 
@@ -523,6 +533,28 @@ Acceptance:
 Commit boundary:
 
 - One commit for GUI output inspection controls, tests, and docs.
+
+## Round 17: Input/Template Validation Refinement
+
+Goal: catch common QuickStep input and template mistakes before CP2K starts.
+
+Tasks:
+
+- Validate that template KIND entries cover all imported structure elements.
+- Add GUI feedback for missing basis/potential selections before `Preview` or
+  `Run`.
+- Surface validation errors in the relevant tab instead of only in `Job Log`.
+- Keep existing-input mode permissive, but warn when referenced files are
+  obviously missing from the configured CP2K data directory.
+
+Acceptance:
+
+- Common template/input mistakes are visible before job launch and can be fixed
+  from the GUI without reading raw Python exceptions.
+
+Commit boundary:
+
+- One commit for validation changes, tests, and docs.
 
 ## Working Rules
 

@@ -46,5 +46,7 @@ Double-click a history row to load:
 
 - the selected metadata JSON into `Job Log`
 - the selected CP2K `.out` file into `Input Preview`, if present
+- the selected job's artifact paths and CP2K output summary into the
+  `Artifacts` tab
 
 This does not rerun CP2K or rewrite existing job files.

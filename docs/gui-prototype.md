@@ -82,6 +82,12 @@ folder, and output path. Closing the window is blocked until the job exits or
 the user presses `Stop`, which prevents accidentally orphaning a WSL job from
 the GUI.
 
+The `Artifacts` tab shows a compact summary for the current or selected job:
+job status, return code, CP2K output status, warning count, program-end marker,
+and the known input, output, metadata, stdout, and stderr paths. The tab has
+read-only `Input`, `Output`, `Metadata`, `Stdout`, and `Stderr` buttons that
+load those files into the GUI text pane without modifying or rerunning the job.
+
 Double-clicking a row in the CP2K data label table updates the corresponding
 `KindsText` entry, preferring MOLOPT basis labels and GTH-PBE potentials when
 available.
@@ -98,7 +104,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\start_gui.ps1 -Smo
 The Python unit suite runs the same smoke test on Windows. Smoke mode validates
 config loading, template loading, workflow preview, existing-input preview, and
 history scanning without launching CP2K. It also verifies that the asynchronous
-job controls and status bar are present. `-LifecycleSmokeTest` starts and stops
-a controlled background process through the same lifecycle helpers used by
-`Run` and `Stop`. CP2K data inspection is covered by unit tests with fixture
-data and by manual/local WSL smoke runs.
+job controls, status bar, and artifact inspection controls are present.
+`-LifecycleSmokeTest` starts and stops a controlled background process through
+the same lifecycle helpers used by `Run` and `Stop`. CP2K data inspection is
+covered by unit tests with fixture data and by manual/local WSL smoke runs.

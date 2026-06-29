@@ -97,7 +97,8 @@ common QuickStep template settings. It can also inspect CP2K data files and
 populate basis/potential choices for template KIND entries. CP2K runs start in
 the background so the window remains responsive, with a `Stop` action for
 best-effort cancellation, status-bar job paths, and a close-window guard while a
-job is active.
+job is active. The `Artifacts` tab gives read-only access to the current job's
+input, output, metadata, stdout, and stderr files.
 
 To render and run a minimal QuickStep job through WSL/CP2K:
 

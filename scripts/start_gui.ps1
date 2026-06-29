@@ -536,6 +536,32 @@ function New-WinQStepWindow {
                  AcceptsReturn="True" AcceptsTab="True" TextWrapping="Wrap"
                  HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"/>
       </TabItem>
+      <TabItem Header="Artifacts">
+        <Grid Margin="8">
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="120"/>
+            <RowDefinition Height="*"/>
+          </Grid.RowDefinitions>
+          <WrapPanel Grid.Row="0" Margin="0,0,0,6">
+            <Button x:Name="ViewInputButton" Content="Input"/>
+            <Button x:Name="ViewOutputButton" Content="Output"/>
+            <Button x:Name="ViewMetadataButton" Content="Metadata"/>
+            <Button x:Name="ViewStdoutButton" Content="Stdout"/>
+            <Button x:Name="ViewStderrButton" Content="Stderr"/>
+          </WrapPanel>
+          <TextBox x:Name="ArtifactSummaryText" Grid.Row="1"
+                   FontFamily="Cascadia Mono, Consolas, Microsoft YaHei UI, Microsoft YaHei, SimSun"
+                   FontSize="12" AcceptsReturn="True" TextWrapping="Wrap"
+                   HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
+                   IsReadOnly="True"/>
+          <TextBox x:Name="ArtifactText" Grid.Row="2"
+                   FontFamily="Cascadia Mono, Consolas, Microsoft YaHei UI, Microsoft YaHei, SimSun"
+                   FontSize="12" AcceptsReturn="True" AcceptsTab="True" TextWrapping="NoWrap"
+                   HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
+                   IsReadOnly="True"/>
+        </Grid>
+      </TabItem>
       <TabItem Header="History">
         <DataGrid x:Name="HistoryGrid" AutoGenerateColumns="False" IsReadOnly="True"
                   SelectionMode="Single" HeadersVisibility="Column" GridLinesVisibility="Horizontal"
@@ -580,10 +606,12 @@ function New-WinQStepWindow {
         "XcFunctionalBox", "ChargeBox", "MultiplicityBox", "CutoffBox", "RelCutoffBox",
         "EpsScfBox", "MaxScfBox", "GeoOptimizerBox", "GeoMaxIterBox", "KindsText",
         "DataLabelsGrid", "TemplateValidationText",
-        "EnvironmentText", "StructureText", "PreviewText", "LogText", "HistoryGrid", "StatusText", "JobStatusText",
+        "EnvironmentText", "StructureText", "PreviewText", "LogText",
+        "ArtifactSummaryText", "ArtifactText", "HistoryGrid", "StatusText", "JobStatusText",
         "LoadConfigButton", "SaveConfigButton", "LoadTemplateButton", "SaveTemplateButton",
         "InspectDataButton", "DetectButton", "ImportButton",
         "PreviewButton", "RunButton", "CancelJobButton", "HistoryButton", "ClearButton",
+        "ViewInputButton", "ViewOutputButton", "ViewMetadataButton", "ViewStdoutButton", "ViewStderrButton",
         "BrowseConfigButton", "BrowseTemplateButton", "BrowseStructureButton",
         "BrowseExistingInputButton", "BrowseJobDirButton"
     )
@@ -599,12 +627,22 @@ function New-WinQStepWindow {
     $controls["ProjectNameBox"].Text = "gui_preview"
     $controls["CancelJobButton"].IsEnabled = $false
 
+    $artifactButtons = @{
+        input = $controls["ViewInputButton"]
+        output = $controls["ViewOutputButton"]
+        metadata = $controls["ViewMetadataButton"]
+        stdout = $controls["ViewStdoutButton"]
+        stderr = $controls["ViewStderrButton"]
+    }
+
     $actionButtons = @(
         $controls["LoadConfigButton"], $controls["SaveConfigButton"],
         $controls["LoadTemplateButton"], $controls["SaveTemplateButton"],
         $controls["InspectDataButton"], $controls["DetectButton"], $controls["ImportButton"],
         $controls["PreviewButton"], $controls["RunButton"],
-        $controls["HistoryButton"], $controls["ClearButton"], $controls["BrowseConfigButton"],
+        $controls["HistoryButton"], $controls["ClearButton"],
+        $controls["ViewInputButton"], $controls["ViewOutputButton"], $controls["ViewMetadataButton"],
+        $controls["ViewStdoutButton"], $controls["ViewStderrButton"], $controls["BrowseConfigButton"],
         $controls["BrowseTemplateButton"], $controls["BrowseStructureButton"],
         $controls["BrowseExistingInputButton"], $controls["BrowseJobDirButton"]
     )
@@ -633,6 +671,7 @@ function New-WinQStepWindow {
         $window.Cursor = if ($IsBusy) { [System.Windows.Input.Cursors]::Wait } else { $null }
         if (-not $IsBusy) {
             & $UpdateModeControls
+            & $UpdateArtifactControls
         }
         [System.Windows.Forms.Application]::DoEvents()
     }.GetNewClosure()
@@ -740,6 +779,7 @@ function New-WinQStepWindow {
     }.GetNewClosure()
 
     $jobState = @{ Current = $null }
+    $artifactState = @{ Current = $null }
     $jobTimer = [System.Windows.Threading.DispatcherTimer]::new()
     $jobTimer.Interval = [TimeSpan]::FromSeconds(1)
 
@@ -781,6 +821,12 @@ function New-WinQStepWindow {
         $window.Cursor = $null
         if (-not $IsRunning) {
             & $UpdateModeControls
+            & $UpdateArtifactControls
+        }
+        else {
+            foreach ($button in $artifactButtons.Values) {
+                $button.IsEnabled = $false
+            }
         }
         [System.Windows.Forms.Application]::DoEvents()
     }.GetNewClosure()
@@ -897,7 +943,7 @@ function New-WinQStepWindow {
                 $logText = "$logText`r`n`r`n--- wrapper stderr ---`r`n$stderr"
             }
             $controls["LogText"].Text = & $AddMetadataTails $logText $metadata
-            & $SetJobStatusText (& $FormatFinishedJobStatus $metadata $finalStatus)
+            & $SetArtifactsFromMetadata $metadata
         }
         else {
             $parts = @("CP2K wrapper exited without JSON metadata. exit_code=$exitCode")
@@ -949,6 +995,137 @@ function New-WinQStepWindow {
             return $Default
         }
         return [string]$property.Value
+    }.GetNewClosure()
+
+    $GetNestedPath = {
+        param($Object, [Parameter(Mandatory = $true)][string[]]$Names)
+        $current = $Object
+        foreach ($name in $Names) {
+            if ($null -eq $current) {
+                return ""
+            }
+            $property = $current.PSObject.Properties[$name]
+            if ($null -eq $property -or $null -eq $property.Value) {
+                return ""
+            }
+            $current = $property.Value
+        }
+        return [string]$current
+    }.GetNewClosure()
+
+    $GetMetadataFilePath = {
+        param($Metadata, [Parameter(Mandatory = $true)][string]$Key)
+        return (& $GetNestedPath $Metadata @("files", $Key, "path"))
+    }.GetNewClosure()
+
+    $BuildArtifactSummary = {
+        param([Parameter(Mandatory = $true)][hashtable]$Artifacts)
+        $lines = @(
+            "status=$($Artifacts["status"])",
+            "returncode=$($Artifacts["returncode"])",
+            "cp2k_output=$($Artifacts["output_status"]), warnings=$($Artifacts["warning_count"]), program_ended=$($Artifacts["program_ended"])"
+        )
+        if (-not [string]::IsNullOrWhiteSpace([string]$Artifacts["ended_at"])) {
+            $lines += "ended_at=$($Artifacts["ended_at"])"
+        }
+        foreach ($key in @("input", "output", "metadata", "stdout", "stderr")) {
+            $path = [string]$Artifacts["paths"][$key]
+            $exists = if (-not [string]::IsNullOrWhiteSpace($path) -and [System.IO.File]::Exists($path)) { "exists" } else { "missing" }
+            $lines += "$key=[$exists] $path"
+        }
+        return ($lines -join "`r`n")
+    }.GetNewClosure()
+
+    $UpdateArtifactControls = {
+        $current = $artifactState["Current"]
+        foreach ($entry in $artifactButtons.GetEnumerator()) {
+            $enabled = $false
+            if ($null -ne $current -and $null -ne $current["paths"]) {
+                $path = [string]$current["paths"][$entry.Key]
+                $enabled = (-not [string]::IsNullOrWhiteSpace($path)) -and [System.IO.File]::Exists($path)
+            }
+            $entry.Value.IsEnabled = $enabled
+        }
+    }.GetNewClosure()
+
+    $SetArtifactsFromMetadata = {
+        param([Parameter(Mandatory = $true)]$Metadata)
+        $summary = $Metadata.cp2k_output
+        $artifacts = @{
+            status = (& $GetJsonProperty $Metadata "status" "")
+            returncode = (& $GetJsonProperty $Metadata "returncode" "")
+            output_status = (& $GetJsonProperty $summary "status" "")
+            warning_count = (& $GetJsonProperty $summary "warning_count" "")
+            program_ended = (& $GetJsonProperty $summary "program_ended" "")
+            ended_at = (& $GetJsonProperty $summary "ended_at" "")
+            paths = @{
+                input = (& $GetMetadataFilePath $Metadata "input")
+                output = (& $GetMetadataFilePath $Metadata "output")
+                metadata = (& $GetMetadataFilePath $Metadata "metadata")
+                stdout = (& $GetMetadataFilePath $Metadata "stdout")
+                stderr = (& $GetMetadataFilePath $Metadata "stderr")
+            }
+        }
+        $artifactState["Current"] = $artifacts
+        $controls["ArtifactSummaryText"].Text = & $BuildArtifactSummary $artifacts
+        & $UpdateArtifactControls
+        & $SetJobStatusText (& $FormatFinishedJobStatus $Metadata ([string]$artifacts["status"]))
+    }.GetNewClosure()
+
+    $SetArtifactsFromHistoryItem = {
+        param([Parameter(Mandatory = $true)]$Item)
+        $artifacts = @{
+            status = (& $GetJsonProperty $Item "status" "")
+            returncode = (& $GetJsonProperty $Item "returncode" "")
+            output_status = (& $GetJsonProperty $Item "output_status" "")
+            warning_count = (& $GetJsonProperty $Item "warning_count" "")
+            program_ended = (& $GetJsonProperty $Item "program_ended" "")
+            ended_at = ""
+            paths = @{
+                input = (& $GetJsonProperty $Item "input_path" "")
+                output = (& $GetJsonProperty $Item "output_path" "")
+                metadata = (& $GetJsonProperty $Item "metadata_path" "")
+                stdout = (& $GetJsonProperty $Item "stdout_path" "")
+                stderr = (& $GetJsonProperty $Item "stderr_path" "")
+            }
+        }
+        $artifactState["Current"] = $artifacts
+        $controls["ArtifactSummaryText"].Text = & $BuildArtifactSummary $artifacts
+        & $UpdateArtifactControls
+        & $SetJobStatusText "Selected job: status=$($artifacts["status"]) | output=$($artifacts["paths"]["output"])"
+    }.GetNewClosure()
+
+    $ReadMetadataArtifact = {
+        param([string]$MetadataPath)
+        if ([string]::IsNullOrWhiteSpace($MetadataPath) -or -not [System.IO.File]::Exists($MetadataPath)) {
+            return $null
+        }
+        try {
+            return ([System.IO.File]::ReadAllText($MetadataPath, [System.Text.Encoding]::UTF8) | ConvertFrom-Json)
+        }
+        catch {
+            return $null
+        }
+    }.GetNewClosure()
+
+    $ViewArtifact = {
+        param([Parameter(Mandatory = $true)][string]$Key)
+        $current = $artifactState["Current"]
+        if ($null -eq $current -or $null -eq $current["paths"]) {
+            throw "No job artifact is selected."
+        }
+        $path = [string]$current["paths"][$Key]
+        if ([string]::IsNullOrWhiteSpace($path) -or -not [System.IO.File]::Exists($path)) {
+            throw "Artifact is not available: $Key"
+        }
+        $text = [System.IO.File]::ReadAllText($path, [System.Text.Encoding]::UTF8)
+        $controls["ArtifactText"].Text = "--- ${Key}: $path ---`r`n$text"
+        if ($Key -in @("input", "output")) {
+            $controls["PreviewText"].Text = $text
+        }
+        else {
+            $controls["LogText"].Text = $text
+        }
     }.GetNewClosure()
 
     $FormatConfigValidation = {
@@ -1288,9 +1465,14 @@ function New-WinQStepWindow {
             return
         }
 
+        & $SetArtifactsFromHistoryItem $item
         $metadataPath = [string]$item.metadata_path
         if (-not [string]::IsNullOrWhiteSpace($metadataPath) -and [System.IO.File]::Exists($metadataPath)) {
             $controls["LogText"].Text = [System.IO.File]::ReadAllText($metadataPath, [System.Text.Encoding]::UTF8)
+            $metadata = & $ReadMetadataArtifact $metadataPath
+            if ($null -ne $metadata) {
+                & $SetArtifactsFromMetadata $metadata
+            }
         }
         else {
             $controls["LogText"].Text = "Metadata file was not found: $metadataPath"
@@ -1326,6 +1508,7 @@ function New-WinQStepWindow {
             if ([System.IO.File]::Exists($inputPath)) {
                 $controls["PreviewText"].Text = [System.IO.File]::ReadAllText($inputPath, [System.Text.Encoding]::UTF8)
             }
+            & $SetArtifactsFromMetadata $preparedMetadata
 
             $jobDir = [string]$preparedMetadata.dry_run.windows.job_dir
             [System.IO.Directory]::CreateDirectory($jobDir) | Out-Null
@@ -1480,6 +1663,7 @@ function New-WinQStepWindow {
                 $controls["PreviewText"].Text = "Input file was not written: $inputPath"
             }
             $controls["LogText"].Text = & $FormatLogWithSummary $metadata $result.Output
+            & $SetArtifactsFromMetadata $metadata
         }
     }.GetNewClosure())
 
@@ -1489,6 +1673,36 @@ function New-WinQStepWindow {
 
     $controls["CancelJobButton"].Add_Click({
         & $CancelAsyncJob
+    }.GetNewClosure())
+
+    $controls["ViewInputButton"].Add_Click({
+        & $InvokeGuiAction "Viewing input artifact" {
+            & $ViewArtifact "input"
+        }
+    }.GetNewClosure())
+
+    $controls["ViewOutputButton"].Add_Click({
+        & $InvokeGuiAction "Viewing output artifact" {
+            & $ViewArtifact "output"
+        }
+    }.GetNewClosure())
+
+    $controls["ViewMetadataButton"].Add_Click({
+        & $InvokeGuiAction "Viewing metadata artifact" {
+            & $ViewArtifact "metadata"
+        }
+    }.GetNewClosure())
+
+    $controls["ViewStdoutButton"].Add_Click({
+        & $InvokeGuiAction "Viewing stdout artifact" {
+            & $ViewArtifact "stdout"
+        }
+    }.GetNewClosure())
+
+    $controls["ViewStderrButton"].Add_Click({
+        & $InvokeGuiAction "Viewing stderr artifact" {
+            & $ViewArtifact "stderr"
+        }
     }.GetNewClosure())
 
     $controls["HistoryButton"].Add_Click({
@@ -1510,8 +1724,13 @@ function New-WinQStepWindow {
         $controls["StructureText"].Clear()
         $controls["PreviewText"].Clear()
         $controls["LogText"].Clear()
+        $controls["ArtifactSummaryText"].Clear()
+        $controls["ArtifactText"].Clear()
         $controls["HistoryGrid"].ItemsSource = $null
         $controls["DataLabelsGrid"].ItemsSource = $null
+        $artifactState["Current"] = $null
+        & $SetJobStatusText ""
+        & $UpdateArtifactControls
     }.GetNewClosure())
 
     try {
@@ -1527,6 +1746,7 @@ function New-WinQStepWindow {
         $controls["TemplateValidationText"].Text = $_.Exception.Message
     }
     & $UpdateModeControls
+    & $UpdateArtifactControls
     return $window
 }
 
@@ -1609,6 +1829,8 @@ if ($SmokeTest) {
     $historyMetadataPath = Join-Path $historySmokeDir "history_smoke.winqstep.json"
     $historyInputPath = Join-Path $historySmokeDir "history_smoke.inp"
     $historyOutputPath = Join-Path $historySmokeDir "history_smoke.out"
+    $historyStdoutPath = Join-Path $historySmokeDir "history_smoke.stdout.log"
+    $historyStderrPath = Join-Path $historySmokeDir "history_smoke.stderr.log"
     $historyMetadata = [ordered]@{
         status = "succeeded"
         created_at = "2026-06-29T00:00:00Z"
@@ -1621,8 +1843,8 @@ if ($SmokeTest) {
         files = [ordered]@{
             input = [ordered]@{ path = $historyInputPath }
             output = [ordered]@{ path = $historyOutputPath }
-            stdout = [ordered]@{ path = (Join-Path $historySmokeDir "history_smoke.stdout.log") }
-            stderr = [ordered]@{ path = (Join-Path $historySmokeDir "history_smoke.stderr.log") }
+            stdout = [ordered]@{ path = $historyStdoutPath }
+            stderr = [ordered]@{ path = $historyStderrPath }
             metadata = [ordered]@{ path = $historyMetadataPath }
         }
         cp2k_output = [ordered]@{
@@ -1631,6 +1853,10 @@ if ($SmokeTest) {
             program_ended = $true
         }
     }
+    [System.IO.File]::WriteAllText($historyInputPath, "&GLOBAL`n  PROJECT history_smoke`n&END GLOBAL`n", $Script:Utf8NoBomEncoding)
+    [System.IO.File]::WriteAllText($historyOutputPath, "The number of warnings for this run is : 0`nPROGRAM ENDED AT                 2026-06-29 00:01:00.000`n", $Script:Utf8NoBomEncoding)
+    [System.IO.File]::WriteAllText($historyStdoutPath, "", $Script:Utf8NoBomEncoding)
+    [System.IO.File]::WriteAllText($historyStderrPath, "", $Script:Utf8NoBomEncoding)
     [System.IO.File]::WriteAllText(
         $historyMetadataPath,
         (($historyMetadata | ConvertTo-Json -Depth 8) + "`n"),
@@ -1655,6 +1881,14 @@ if ($SmokeTest) {
     $report["cancel_button_initially_disabled"] = (-not [bool]$window.FindName("CancelJobButton").IsEnabled)
     $report["job_status_text_loaded"] = ($window.FindName("JobStatusText") -is [System.Windows.Controls.TextBlock])
     $report["job_status_text_initial"] = [string]$window.FindName("JobStatusText").Text
+    $report["artifact_summary_loaded"] = ($window.FindName("ArtifactSummaryText") -is [System.Windows.Controls.TextBox])
+    $report["artifact_text_loaded"] = ($window.FindName("ArtifactText") -is [System.Windows.Controls.TextBox])
+    $report["artifact_view_buttons_loaded"] = @(
+        "ViewInputButton", "ViewOutputButton", "ViewMetadataButton", "ViewStdoutButton", "ViewStderrButton"
+    ).Where({ $window.FindName($_) -is [System.Windows.Controls.Button] }).Count
+    $report["artifact_view_buttons_initially_disabled"] = @(
+        "ViewInputButton", "ViewOutputButton", "ViewMetadataButton", "ViewStdoutButton", "ViewStderrButton"
+    ).Where({ [bool]$window.FindName($_).IsEnabled }).Count -eq 0
     $report["config_tab_loaded"] = ($window.FindName("DistroBox") -is [System.Windows.Controls.TextBox])
     $report["config_distro"] = [string]$window.FindName("DistroBox").Text
     $report["config_cp2k_command"] = [string]$window.FindName("Cp2kCommandBox").Text

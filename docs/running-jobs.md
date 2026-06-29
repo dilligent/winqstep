@@ -47,6 +47,14 @@ Raw CP2K output is preserved. The runner does not parse scientific results yet.
 It only extracts diagnostic run markers such as warning count and whether CP2K
 printed `PROGRAM ENDED AT`.
 
+## GUI Artifacts
+
+After a preview, run, or history selection, the GUI `Artifacts` tab lists the
+known input, output, metadata, stdout, and stderr files. The artifact buttons
+read those files into the GUI without opening them for editing. Missing files
+remain disabled, which is expected for prepare-only jobs before CP2K writes
+output.
+
 ## GUI Lifecycle Smoke
 
 The GUI script has a non-interactive lifecycle smoke mode for the background
