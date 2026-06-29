@@ -151,9 +151,13 @@ function New-WinQStepWindow {
       <RowDefinition Height="Auto"/>
     </Grid.RowDefinitions>
 
-    <DockPanel Grid.Row="0">
-      <TextBlock Text="WinQStep" FontSize="22" FontWeight="SemiBold" DockPanel.Dock="Left"/>
-      <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
+    <Grid Grid.Row="0">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="Auto"/>
+        <ColumnDefinition Width="*"/>
+      </Grid.ColumnDefinitions>
+      <TextBlock Grid.Column="0" Text="WinQStep" FontSize="22" FontWeight="SemiBold" Margin="0,4,16,4"/>
+      <WrapPanel x:Name="ActionButtonPanel" Grid.Column="1" HorizontalAlignment="Right">
         <Button x:Name="LoadConfigButton" Content="Load Config"/>
         <Button x:Name="SaveConfigButton" Content="Save Config"/>
         <Button x:Name="LoadTemplateButton" Content="Load Template"/>
@@ -165,8 +169,8 @@ function New-WinQStepWindow {
         <Button x:Name="RunButton" Content="Run"/>
         <Button x:Name="HistoryButton" Content="History"/>
         <Button x:Name="ClearButton" Content="Clear"/>
-      </StackPanel>
-    </DockPanel>
+      </WrapPanel>
+    </Grid>
 
     <GroupBox Grid.Row="1" Header="Job Inputs" Padding="10" Margin="0,10,0,10">
       <Grid>
@@ -1142,6 +1146,7 @@ if ($SmokeTest) {
     $configWorkspace = [string]$window.FindName("DefaultWorkspaceBox").Text
     $report["xaml_loaded"] = ($window -is [System.Windows.Window])
     $report["title"] = $window.Title
+    $report["action_button_panel_wraps"] = ($window.FindName("ActionButtonPanel") -is [System.Windows.Controls.WrapPanel])
     $report["config_tab_loaded"] = ($window.FindName("DistroBox") -is [System.Windows.Controls.TextBox])
     $report["config_distro"] = [string]$window.FindName("DistroBox").Text
     $report["config_cp2k_command"] = [string]$window.FindName("Cp2kCommandBox").Text

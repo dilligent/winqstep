@@ -37,6 +37,7 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertTrue(report["wpf_available"])
         self.assertTrue(report["xaml_loaded"])
         self.assertEqual(report["title"], "WinQStep")
+        self.assertTrue(report["action_button_panel_wraps"])
         self.assertTrue(report["config_tab_loaded"])
         self.assertEqual(report["config_distro"], "Ubuntu")
         self.assertTrue(report["config_cp2k_command"].endswith("cp2k.ssmp"))

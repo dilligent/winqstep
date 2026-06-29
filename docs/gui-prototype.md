@@ -48,6 +48,9 @@ same scripts used by tests:
 - `Load Template` and `Save Template`: `scripts/manage_template.py`
 - `Inspect Data`: `scripts/inspect_cp2k_data.py`
 
+The top action buttons wrap onto additional rows when the window is too narrow,
+so every action remains reachable without maximizing the window.
+
 The GUI does not parse or generate CP2K input itself. It displays JSON, rendered
 input text, job metadata, and CP2K output summaries produced by the core
 commands.
