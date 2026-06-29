@@ -13,8 +13,8 @@ Each round should end with a focused commit.
   model, workflow, GUI prototype, existing-input jobs, output summaries, job
   history, config editing, template editing, CP2K data inspection, and
   asynchronous GUI job execution, GUI job lifecycle hardening, GUI output
-  inspection, and job input preflight validation.
-- Next active round: Round 18, Windows launcher and packaging polish.
+  inspection, job input preflight validation, and startup diagnostics.
+- Next active round: Round 19, GUI modularization.
 - Known local facts:
   - WSL2 is available.
   - Default distro is `Ubuntu`.
@@ -569,8 +569,20 @@ Commit boundary:
 
 ## Round 18: Windows Launcher and Packaging Polish
 
+Status: implemented.
+
 Goal: make WinQStep easier to start and diagnose from a normal Windows desktop
 session.
+
+Local verification:
+
+- `WinQStep.ps1` and `WinQStep.cmd` launch `scripts/start_gui.ps1` with a local
+  process-scoped execution policy bypass.
+- `scripts/check_startup.py --skip-live-probes` reports required files, config
+  validity, launch prerequisites, and release exclusions without opening the
+  GUI.
+- `scripts/start_gui.ps1 -Diagnostics -SkipLiveProbes` returns startup
+  diagnostics JSON without loading the WPF window.
 
 Tasks:
 
@@ -589,6 +601,29 @@ Acceptance:
 Commit boundary:
 
 - One commit for launcher, packaging notes, tests, and docs.
+
+## Round 19: GUI Modularization
+
+Goal: reduce the maintenance risk in the PowerShell-hosted WPF prototype.
+
+Tasks:
+
+- Split reusable PowerShell helpers out of `scripts/start_gui.ps1`.
+- Move the XAML layout into a separate resource file while keeping smoke tests
+  deterministic.
+- Keep GUI actions routed through CLI/core commands rather than duplicating
+  CP2K behavior in PowerShell.
+- Add tests that verify the split files are loaded and the current smoke paths
+  still work.
+
+Acceptance:
+
+- The GUI remains functionally equivalent, but layout, startup, process, and
+  artifact/history helper code can be edited independently.
+
+Commit boundary:
+
+- One commit for GUI file split, tests, and docs.
 
 ## Working Rules
 

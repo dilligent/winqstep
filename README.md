@@ -94,7 +94,13 @@ python .\scripts\run_workflow.py --config .\examples\winqstep.config.json --temp
 To open the Windows GUI prototype:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\start_gui.ps1
+.\WinQStep.ps1
+```
+
+To run startup diagnostics without opening the GUI:
+
+```powershell
+.\WinQStep.ps1 -Diagnostics
 ```
 
 The GUI can run either the structure/template workflow or an existing `.inp`
@@ -129,6 +135,9 @@ To list previous WinQStep jobs from metadata:
 ```powershell
 python .\scripts\list_job_history.py --workspace .\outputs --limit 10
 ```
+
+Launcher, prerequisite, and release-hygiene notes are in
+`docs/startup.md`.
 
 ## License
 

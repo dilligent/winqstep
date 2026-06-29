@@ -2,7 +2,9 @@
 [CmdletBinding()]
 param(
     [switch]$SmokeTest,
-    [switch]$LifecycleSmokeTest
+    [switch]$LifecycleSmokeTest,
+    [switch]$Diagnostics,
+    [switch]$SkipLiveProbes
 )
 
 Set-StrictMode -Version Latest
@@ -42,6 +44,9 @@ function Test-WinQStepGuiPrerequisites {
     }
 
     $requiredFiles = @(
+        "WinQStep.cmd",
+        "WinQStep.ps1",
+        "scripts\check_startup.py",
         "scripts\detect_environment.py",
         "scripts\import_structure.py",
         "scripts\run_workflow.py",
@@ -98,6 +103,20 @@ function Invoke-WinQStepPython {
         ExitCode = [int]$exitCode
         Output = (($output | Out-String).TrimEnd())
     }
+}
+
+function Invoke-WinQStepStartupDiagnostics {
+    param([bool]$SkipLive)
+
+    $arguments = @(
+        "scripts\check_startup.py",
+        "--config", "examples\winqstep.config.json",
+        "--compact"
+    )
+    if ($SkipLive) {
+        $arguments += "--skip-live-probes"
+    }
+    return Invoke-WinQStepPython $arguments
 }
 
 function ConvertTo-WinQStepCommandLineArgument {
@@ -1861,6 +1880,14 @@ function New-WinQStepWindow {
     & $UpdateModeControls
     & $UpdateArtifactControls
     return $window
+}
+
+if ($Diagnostics) {
+    $result = Invoke-WinQStepStartupDiagnostics ([bool]$SkipLiveProbes)
+    if (-not [string]::IsNullOrWhiteSpace($result.Output)) {
+        Write-Output $result.Output
+    }
+    exit $result.ExitCode
 }
 
 if ($LifecycleSmokeTest) {

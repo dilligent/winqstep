@@ -32,10 +32,26 @@ Round 17 adds job input preflight validation. Before `Preview` or `Run`, the GUI
 calls `scripts/validate_job_inputs.py` to catch missing workflow KIND entries
 and obvious CP2K data-file mismatches before CP2K starts.
 
+Round 18 adds `WinQStep.ps1` and `WinQStep.cmd` launchers plus a startup
+diagnostics mode that can check repository files, config, release hygiene, and
+optional WSL/CP2K availability before opening the main window.
+
 ## Start
 
 ```powershell
+.\WinQStep.ps1
+```
+
+The lower-level command remains available:
+
+```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\start_gui.ps1
+```
+
+Run startup diagnostics without showing the GUI:
+
+```powershell
+.\WinQStep.ps1 -Diagnostics
 ```
 
 The window defaults to the repository sample config, the PBE energy template,
