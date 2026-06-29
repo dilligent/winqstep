@@ -96,6 +96,9 @@ same scripts used by tests:
 
 The top action buttons wrap onto additional rows when the window is too narrow,
 so every action remains reachable without maximizing the window.
+The main window content is hosted in a vertical scroll viewer, so if wrapped
+buttons, job inputs, or tab content exceed the current window height, users can
+scroll instead of maximizing the window.
 
 The main tab order follows the common workflow path: `Config`, `Template`,
 `Input Preview`, `Structure`, `Environment`, `Job Log`, `Artifacts`, and

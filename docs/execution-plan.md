@@ -18,8 +18,9 @@ Each round should end with a focused commit.
   language preferences, local release packaging, release install smoke testing,
   release-candidate workflow walkthrough, release handoff notes, final release
   artifact build, release install smoke, live CP2K release validation, and user
-  guide polish, and GUI async run completion hardening.
-- Next active round: Round 34, tester handoff feedback triage and packaging
+  guide polish, GUI async run completion hardening, and window-level GUI
+  overflow scrolling.
+- Next active round: Round 35, tester handoff feedback triage and packaging
   decision.
 - Known local facts:
   - WSL2 is available.
@@ -1177,6 +1178,34 @@ Acceptance:
 Commit boundary:
 
 - One commit for the async run crash fix, live smoke coverage, tests, and docs.
+
+## Round 34: Window-Level GUI Overflow Scrolling
+
+Status: implemented.
+
+Goal: keep all GUI content reachable when vertical content exceeds the current
+window height, especially after action buttons wrap or form-heavy tabs need more
+vertical space.
+
+Tasks:
+
+- Add a root `ScrollViewer` around the main GUI layout with automatic vertical
+  scrolling and disabled horizontal scrolling.
+- Keep existing text-pane and grid scrollbars available for logs, artifacts,
+  previews, and tables.
+- Extend smoke reports and static tests to verify the root scroll viewer exists.
+- Document the overflow behavior for users.
+
+Acceptance:
+
+- The GUI exposes a right-side vertical scrollbar when the main content is
+  taller than the window.
+- Users can reach lower controls without maximizing the window.
+- Smoke/static tests fail if the root scroll viewer is removed.
+
+Commit boundary:
+
+- One commit for the XAML scroll fix, tests, docs, and plan update.
 
 ## Working Rules
 

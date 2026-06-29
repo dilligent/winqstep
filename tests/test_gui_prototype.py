@@ -26,6 +26,9 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn("Get-WinQStepText", helper_text)
         self.assertIn("Set-WinQStepContent", helper_text)
         self.assertIn("UiLanguageBox", xaml_text)
+        self.assertIn('ScrollViewer x:Name="MainScrollViewer"', xaml_text)
+        self.assertIn('VerticalScrollBarVisibility="Auto"', xaml_text)
+        self.assertIn('HorizontalScrollBarVisibility="Disabled"', xaml_text)
         self.assertIn('TabControl x:Name="MainTabs"', xaml_text)
         self.assertEqual(
             re.findall(r'<TabItem x:Name="([^"]+)"', xaml_text),
@@ -168,6 +171,9 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn("scripts\\validate_job_inputs.py", report["checked_files"])
         self.assertTrue(report["xaml_loaded"])
         self.assertEqual(report["title"], "WinQStep")
+        self.assertTrue(report["main_scroll_viewer_loaded"])
+        self.assertTrue(report["main_scroll_vertical_auto"])
+        self.assertTrue(report["main_scroll_horizontal_disabled"])
         self.assertTrue(report["action_button_panel_wraps"])
         self.assertTrue(report["cancel_button_loaded"])
         self.assertTrue(report["cancel_button_initially_disabled"])

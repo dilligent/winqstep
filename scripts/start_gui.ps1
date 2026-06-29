@@ -44,7 +44,7 @@ function New-WinQStepWindow {
 
     $controls = @{}
     $names = @(
-        "MainTabs",
+        "MainScrollViewer", "MainTabs",
         "WorkflowModeRadio", "ExistingInputModeRadio",
         "JobInputsGroup",
         "ModeLabel", "ConfigPathLabel", "TemplatePathLabel", "StructurePathLabel",
@@ -2673,6 +2673,15 @@ if ($SmokeTest) {
     $report["xaml_loaded"] = ($window -is [System.Windows.Window])
     $report["title"] = $window.Title
     $report["ui_language"] = Get-WinQStepLanguage
+    $report["main_scroll_viewer_loaded"] = ($window.FindName("MainScrollViewer") -is [System.Windows.Controls.ScrollViewer])
+    $report["main_scroll_vertical_auto"] = (
+        $window.FindName("MainScrollViewer").VerticalScrollBarVisibility -eq
+        [System.Windows.Controls.ScrollBarVisibility]::Auto
+    )
+    $report["main_scroll_horizontal_disabled"] = (
+        $window.FindName("MainScrollViewer").HorizontalScrollBarVisibility -eq
+        [System.Windows.Controls.ScrollBarVisibility]::Disabled
+    )
     $report["action_button_panel_wraps"] = ($window.FindName("ActionButtonPanel") -is [System.Windows.Controls.WrapPanel])
     $report["preview_button_text"] = [string]$window.FindName("PreviewButton").Content
     $report["config_tab_header"] = [string]$window.FindName("ConfigTab").Header
