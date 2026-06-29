@@ -4,6 +4,7 @@ param(
     [switch]$SmokeTest,
     [switch]$LifecycleSmokeTest,
     [switch]$ButtonSmokeTest,
+    [switch]$EditedPreviewSmokeTest,
     [switch]$PythonInvokeSmokeTest,
     [switch]$Diagnostics,
     [switch]$SkipLiveProbes,
@@ -17,7 +18,11 @@ $Script:RepoRoot = Split-Path -Parent $PSScriptRoot
 $Script:PythonCommand = "python"
 $Script:Utf8NoBomEncoding = New-Object System.Text.UTF8Encoding($false)
 $Script:RequestedLanguage = $Language
-$Script:SuppressGuiMessageBoxes = [bool]$ButtonSmokeTest
+$SuppressGuiMessageBoxes = [bool]($ButtonSmokeTest -or $EditedPreviewSmokeTest)
+$EditedPreviewSmokeTestEnabled = [bool]$EditedPreviewSmokeTest
+$EditedPreviewSmokeState = @{ Report = $null }
+$Script:SuppressGuiMessageBoxes = $SuppressGuiMessageBoxes
+$Script:EditedPreviewSmokeStartAsyncJob = $null
 
 . (Join-Path $PSScriptRoot "gui\WinQStep.GuiHost.ps1")
 function New-WinQStepWindow {
@@ -195,6 +200,7 @@ function New-WinQStepWindow {
         stderr = $controls["ViewStderrButton"]
     }
     $artifactState = @{ Current = $null }
+    $previewState = @{ Current = $null }
 
     $actionButtons = @(
         $controls["LoadConfigButton"], $controls["SaveConfigButton"],
@@ -304,7 +310,7 @@ function New-WinQStepWindow {
         catch {
             $message = $_.Exception.Message
             & $AppendLog "ERROR: $message"
-            if ($Script:SuppressGuiMessageBoxes) {
+            if ($SuppressGuiMessageBoxes) {
                 throw
             }
             [System.Windows.MessageBox]::Show(
@@ -359,18 +365,26 @@ function New-WinQStepWindow {
         return $arguments
     }.GetNewClosure()
 
-    $GetExistingInputArguments = {
-        param([bool]$PrepareOnly)
+    $GetExistingInputArgumentsForPath = {
+        param(
+            [Parameter(Mandatory = $true)][string]$InputPath,
+            [bool]$PrepareOnly
+        )
         $arguments = @(
             "scripts\run_existing_input.py",
             "--config", $controls["ConfigPathBox"].Text,
-            "--input", $controls["ExistingInputPathBox"].Text,
+            "--input", $InputPath,
             "--job-dir", $controls["JobDirBox"].Text
         )
         if ($PrepareOnly) {
             $arguments += "--prepare-only"
         }
         return $arguments
+    }.GetNewClosure()
+
+    $GetExistingInputArguments = {
+        param([bool]$PrepareOnly)
+        return (& $GetExistingInputArgumentsForPath $controls["ExistingInputPathBox"].Text $PrepareOnly)
     }.GetNewClosure()
 
     $GetActiveJobArguments = {
@@ -384,6 +398,23 @@ function New-WinQStepWindow {
     $GetActiveInputPreviewPath = {
         param([Parameter(Mandatory = $true)]$Metadata)
         return [string]$Metadata.files.input.path
+    }.GetNewClosure()
+
+    $ClearInputPreviewState = {
+        $previewState["Current"] = $null
+    }.GetNewClosure()
+
+    $SetInputPreviewState = {
+        param(
+            [Parameter(Mandatory = $true)]$Metadata,
+            [Parameter(Mandatory = $true)][AllowEmptyString()][string]$Text,
+            [Parameter(Mandatory = $true)][string]$SourceMode
+        )
+        $previewState["Current"] = [ordered]@{
+            InputPath = (& $GetActiveInputPreviewPath $Metadata)
+            Text = $Text
+            SourceMode = $SourceMode
+        }
     }.GetNewClosure()
 
     $FormatLogWithSummary = {
@@ -725,6 +756,7 @@ function New-WinQStepWindow {
         $text = [System.IO.File]::ReadAllText($path, [System.Text.Encoding]::UTF8)
         $controls["ArtifactText"].Text = "--- ${Key}: $path ---`r`n$text"
         if ($Key -in @("input", "output")) {
+            & $ClearInputPreviewState
             $controls["PreviewText"].Text = $text
         }
         else {
@@ -767,7 +799,10 @@ function New-WinQStepWindow {
     }.GetNewClosure()
 
     $SetConfigFieldsFromPayload = {
-        param([Parameter(Mandatory = $true)]$Payload)
+        param(
+            [Parameter(Mandatory = $true)]$Payload,
+            [bool]$UpdateJobDirFromWorkspace = $true
+        )
         $config = $Payload.config
         $controls["DistroBox"].Text = & $GetJsonProperty $config "distro"
         $controls["Cp2kCommandBox"].Text = & $GetJsonProperty $config "cp2k_command"
@@ -780,14 +815,17 @@ function New-WinQStepWindow {
         & $SetUiLanguageSelection $uiLanguage
         & $ApplyConfiguredLanguage $uiLanguage
         $workspace = $controls["DefaultWorkspaceBox"].Text
-        if (-not [string]::IsNullOrWhiteSpace($workspace)) {
+        if ($UpdateJobDirFromWorkspace -and -not [string]::IsNullOrWhiteSpace($workspace)) {
             $controls["JobDirBox"].Text = & $ResolveWindowsWorkspacePath $workspace
         }
         $controls["ConfigValidationText"].Text = & $FormatConfigValidation $Payload
     }.GetNewClosure()
 
     $ReadConfigManagerResult = {
-        param([Parameter(Mandatory = $true)]$Result)
+        param(
+            [Parameter(Mandatory = $true)]$Result,
+            [bool]$UpdateJobDirFromWorkspace = $true
+        )
         try {
             $payload = $Result.Output | ConvertFrom-Json
         }
@@ -802,7 +840,7 @@ function New-WinQStepWindow {
             throw "Command did not return JSON. Raw output:`n$raw"
         }
         if ($null -ne $payload.config) {
-            & $SetConfigFieldsFromPayload $payload
+            & $SetConfigFieldsFromPayload $payload $UpdateJobDirFromWorkspace
         }
         if ($Result.ExitCode -ne 0) {
             throw (& $FormatConfigValidation $payload)
@@ -831,7 +869,7 @@ function New-WinQStepWindow {
             "--config", $controls["ConfigPathBox"].Text,
             "--compact"
         )
-        $payload = & $ReadConfigManagerResult $result
+        $payload = & $ReadConfigManagerResult $result $true
         if ($WriteLog) {
             $controls["LogText"].Text = $result.Output
         }
@@ -851,7 +889,7 @@ function New-WinQStepWindow {
             $arguments += "--require-execution"
         }
         $result = Invoke-WinQStepPython $arguments
-        $payload = & $ReadConfigManagerResult $result
+        $payload = & $ReadConfigManagerResult $result $false
         if ($WriteLog) {
             $controls["LogText"].Text = $result.Output
         }
@@ -1147,6 +1185,7 @@ function New-WinQStepWindow {
             $controls["StructureText"].Text = $text
         }
         else {
+            & $ClearInputPreviewState
             $controls["PreviewText"].Text = $text
             $controls["LogText"].Text = $text
         }
@@ -1190,6 +1229,100 @@ function New-WinQStepWindow {
         $message = & $SetPreflightValidationText $payload
         if ($result.ExitCode -ne 0 -or -not [bool]$payload.valid) {
             throw $message
+        }
+        return $payload
+    }.GetNewClosure()
+
+    $NormalizeInputPreviewText = {
+        param([AllowEmptyString()][string]$Text)
+        return (($Text -replace "`r`n", "`n") -replace "`r", "`n")
+    }.GetNewClosure()
+
+    $GetEditedInputPreview = {
+        $current = $previewState["Current"]
+        if ($null -eq $current) {
+            return $null
+        }
+        $previewText = [string]$controls["PreviewText"].Text
+        if ([string]::IsNullOrWhiteSpace($previewText)) {
+            throw "Edited input preview is empty."
+        }
+        $originalText = [string]$current["Text"]
+        if ((& $NormalizeInputPreviewText $previewText) -eq (& $NormalizeInputPreviewText $originalText)) {
+            return $null
+        }
+        return [ordered]@{
+            InputPath = [string]$current["InputPath"]
+            Text = $previewText
+            SourceMode = [string]$current["SourceMode"]
+        }
+    }.GetNewClosure()
+
+    $GetSafeInputStem = {
+        param([AllowEmptyString()][string]$Candidate)
+        $stem = ([regex]::Replace($Candidate.Trim(), "[^A-Za-z0-9_.-]+", "_")).Trim([char[]]@(".", "_"))
+        if ([string]::IsNullOrWhiteSpace($stem)) {
+            return "preview"
+        }
+        return $stem
+    }.GetNewClosure()
+
+    $SaveEditedInputPreview = {
+        param([Parameter(Mandatory = $true)]$EditedPreview)
+        $jobDirText = $controls["JobDirBox"].Text
+        $jobDir = & $ResolveWindowsWorkspacePath $jobDirText
+        if ([string]::IsNullOrWhiteSpace($jobDir)) {
+            throw "Job folder is required before running an edited preview input."
+        }
+        [System.IO.Directory]::CreateDirectory($jobDir) | Out-Null
+
+        $sourcePath = [string]$EditedPreview["InputPath"]
+        $sourceStem = if (-not [string]::IsNullOrWhiteSpace($sourcePath)) {
+            [System.IO.Path]::GetFileNameWithoutExtension($sourcePath)
+        }
+        else {
+            [string]$controls["ProjectNameBox"].Text
+        }
+        $safeStem = & $GetSafeInputStem $sourceStem
+        $editedPath = Join-Path $jobDir "${safeStem}_edited.inp"
+        $editedText = [string]$EditedPreview["Text"]
+        # Windows PowerShell 5.1 writes a UTF-8 BOM; CP2K inputs should stay BOM-free.
+        Set-Content -LiteralPath $editedPath -Value $editedText -Encoding UTF8 -NoNewline
+        $bytes = [System.IO.File]::ReadAllBytes($editedPath)
+        if ($bytes.Length -ge 3 -and $bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF) {
+            if ($bytes.Length -eq 3) {
+                [System.IO.File]::WriteAllBytes($editedPath, [byte[]]@())
+            }
+            else {
+                [System.IO.File]::WriteAllBytes($editedPath, [byte[]]$bytes[3..($bytes.Length - 1)])
+            }
+        }
+        return $editedPath
+    }.GetNewClosure()
+
+    $ValidateExistingInputPath = {
+        param([Parameter(Mandatory = $true)][string]$InputPath)
+        $null = & $SaveConfigFields $true $false
+        $cachePath = & $GetDataInspectionCachePath
+        $arguments = @(
+            "scripts\validate_job_inputs.py",
+            "--mode", "existing_input",
+            "--config", $controls["ConfigPathBox"].Text,
+            "--input", $InputPath,
+            "--cache", $cachePath,
+            "--compact"
+        )
+        $result = Invoke-WinQStepPython $arguments
+        try {
+            $payload = $result.Output | ConvertFrom-Json
+        }
+        catch {
+            throw "Preflight did not return JSON. Raw output:`n$($result.Output)"
+        }
+        $text = & $FormatPreflightValidation $payload
+        $controls["LogText"].Text = $text
+        if ($result.ExitCode -ne 0 -or -not [bool]$payload.valid) {
+            throw $text
         }
         return $payload
     }.GetNewClosure()
@@ -1287,9 +1420,11 @@ function New-WinQStepWindow {
 
         $outputPath = [string]$item.output_path
         if (-not [string]::IsNullOrWhiteSpace($outputPath) -and [System.IO.File]::Exists($outputPath)) {
+            & $ClearInputPreviewState
             $controls["PreviewText"].Text = [System.IO.File]::ReadAllText($outputPath, [System.Text.Encoding]::UTF8)
         }
         else {
+            & $ClearInputPreviewState
             $controls["PreviewText"].Text = "CP2K output was not found: $outputPath"
         }
     }.GetNewClosure()
@@ -1302,16 +1437,30 @@ function New-WinQStepWindow {
 
         & $SetBusy $true (Get-WinQStepText "status.preparing_cp2k_job")
         try {
-            $preflight = & $ValidateActiveInputs
-            $preflightText = & $FormatPreflightValidation $preflight
-
-            $prepareArguments = @(& $GetActiveJobArguments $true)
+            $editedPreview = & $GetEditedInputPreview
+            $editedInputPath = ""
+            if ($null -ne $editedPreview) {
+                $editedInputPath = & $SaveEditedInputPreview $editedPreview
+                $preflight = & $ValidateExistingInputPath $editedInputPath
+                $preflightText = & $FormatPreflightValidation $preflight
+                $prepareArguments = @(& $GetExistingInputArgumentsForPath $editedInputPath $true)
+                $runArguments = @(& $GetExistingInputArgumentsForPath $editedInputPath $false)
+            }
+            else {
+                $preflight = & $ValidateActiveInputs
+                $preflightText = & $FormatPreflightValidation $preflight
+                $prepareArguments = @(& $GetActiveJobArguments $true)
+                $runArguments = @(& $GetActiveJobArguments $false)
+            }
             $prepareArguments += "--compact"
             $prepareResult = Invoke-WinQStepPython $prepareArguments
             $preparedMetadata = Get-JsonResult $prepareResult
             $inputPath = & $GetActiveInputPreviewPath $preparedMetadata
             if ([System.IO.File]::Exists($inputPath)) {
-                $controls["PreviewText"].Text = [System.IO.File]::ReadAllText($inputPath, [System.Text.Encoding]::UTF8)
+                $inputText = [System.IO.File]::ReadAllText($inputPath, [System.Text.Encoding]::UTF8)
+                $controls["PreviewText"].Text = $inputText
+                $previewMode = if ($null -ne $editedPreview) { "edited_input" } elseif (& $TestIsExistingInputMode) { "existing_input" } else { "workflow" }
+                & $SetInputPreviewState $preparedMetadata $inputText $previewMode
             }
             & $SetArtifactsFromMetadata $preparedMetadata
 
@@ -1320,8 +1469,28 @@ function New-WinQStepWindow {
             $stamp = [DateTime]::UtcNow.ToString("yyyyMMddTHHmmssfffZ")
             $wrapperStdoutPath = Join-Path $jobDir "winqstep-gui-$stamp.stdout.json"
             $wrapperStderrPath = Join-Path $jobDir "winqstep-gui-$stamp.stderr.log"
-            $runArguments = @(& $GetActiveJobArguments $false)
             $runArguments += "--compact"
+            if ($EditedPreviewSmokeTestEnabled) {
+                $preparedInputText = if ([System.IO.File]::Exists($inputPath)) {
+                    [System.IO.File]::ReadAllText($inputPath, [System.Text.Encoding]::UTF8)
+                }
+                else {
+                    ""
+                }
+                $EditedPreviewSmokeState["Report"] = [ordered]@{
+                    edited_preview_used = ($null -ne $editedPreview)
+                    original_preview_input_path = if ($null -ne $editedPreview) { [string]$editedPreview["InputPath"] } else { "" }
+                    edited_input_path = $editedInputPath
+                    prepared_input_path = [string]$preparedMetadata.files.input.path
+                    prepared_metadata_path = [string]$preparedMetadata.files.metadata.path
+                    prepared_job_mode = if ($null -ne $preparedMetadata.job) { [string]$preparedMetadata.job.mode } else { "" }
+                    prepared_input_text = $preparedInputText
+                    run_arguments = $runArguments
+                }
+                $controls["LogText"].Text = "$preflightText`r`n`r`nEdited preview run preparation smoke stopped before starting CP2K."
+                & $SetBusy $false (Get-WinQStepText "status.ready")
+                return
+            }
             $process = Start-WinQStepPythonProcess -Arguments $runArguments -StdoutPath $wrapperStdoutPath -StderrPath $wrapperStderrPath
 
             $jobState["Current"] = @{
@@ -1336,7 +1505,12 @@ function New-WinQStepWindow {
                 WrapperStderrPath = $wrapperStderrPath
                 Cancelled = $false
             }
-            $controls["LogText"].Text = "$preflightText`r`n`r`n$(& $BuildAsyncJobLog $jobState["Current"])"
+            $logSections = @($preflightText)
+            if (-not [string]::IsNullOrWhiteSpace($editedInputPath)) {
+                $logSections += "Edited preview input saved: $editedInputPath"
+            }
+            $logSections += (& $BuildAsyncJobLog $jobState["Current"])
+            $controls["LogText"].Text = ($logSections -join "`r`n`r`n")
             & $SetJobStatusText (& $FormatRunningJobStatus $jobState["Current"])
             & $SetAsyncJobRunning $true (Format-WinQStepText "status.running_cp2k_pid" @($process.Id))
             $jobTimer.Start()
@@ -1344,6 +1518,10 @@ function New-WinQStepWindow {
         catch {
             $message = $_.Exception.Message
             & $AppendLog "ERROR: $message"
+            if ($SuppressGuiMessageBoxes) {
+                & $SetBusy $false (Get-WinQStepText "status.ready")
+                throw
+            }
             [System.Windows.MessageBox]::Show(
                 $window,
                 $message,
@@ -1472,9 +1650,13 @@ function New-WinQStepWindow {
             $metadata = Get-JsonResult $result
             $inputPath = & $GetActiveInputPreviewPath $metadata
             if ([System.IO.File]::Exists($inputPath)) {
-                $controls["PreviewText"].Text = [System.IO.File]::ReadAllText($inputPath, [System.Text.Encoding]::UTF8)
+                $inputText = [System.IO.File]::ReadAllText($inputPath, [System.Text.Encoding]::UTF8)
+                $controls["PreviewText"].Text = $inputText
+                $previewMode = if (& $TestIsExistingInputMode) { "existing_input" } else { "workflow" }
+                & $SetInputPreviewState $metadata $inputText $previewMode
             }
             else {
+                & $ClearInputPreviewState
                 $controls["PreviewText"].Text = "Input file was not written: $inputPath"
             }
             $controls["LogText"].Text = "$preflightText`r`n`r`n$(& $FormatLogWithSummary $metadata $result.Output)"
@@ -1485,6 +1667,7 @@ function New-WinQStepWindow {
     $controls["RunButton"].Add_Click({
         & $StartAsyncJob
     }.GetNewClosure())
+    $Script:EditedPreviewSmokeStartAsyncJob = $StartAsyncJob
 
     $controls["CancelJobButton"].Add_Click({
         & $CancelAsyncJob
@@ -1545,6 +1728,7 @@ function New-WinQStepWindow {
         $controls["KindEntriesGrid"].ItemsSource = (& $NewKindEntriesTable).DefaultView
         $controls["DataLabelsGrid"].ItemsSource = $null
         $controls["DataLabelsGrid"].Visibility = [System.Windows.Visibility]::Collapsed
+        & $ClearInputPreviewState
         $artifactState["Current"] = $null
         & $SetJobStatusText ""
         & $UpdateArtifactControls
@@ -1655,6 +1839,98 @@ if ($LifecycleSmokeTest) {
     }
     $report | ConvertTo-Json -Depth 5
     if ($report["process_started"] -and $report["process_stopped"]) {
+        exit 0
+    }
+    exit 1
+}
+
+if ($EditedPreviewSmokeTest) {
+    $report = Test-WinQStepGuiPrerequisites
+    $window = New-WinQStepWindow
+    $smokeDir = Resolve-WinQStepPath "outputs\gui-edited-preview-smoke"
+    [System.IO.Directory]::CreateDirectory($smokeDir) | Out-Null
+    $smokeConfigPath = Join-Path $smokeDir "edited_preview.config.json"
+    $smokeTemplatePath = Join-Path $smokeDir "edited_preview.template.json"
+    [System.IO.File]::Copy((Resolve-WinQStepPath "examples\winqstep.config.json"), $smokeConfigPath, $true)
+    [System.IO.File]::Copy((Resolve-WinQStepPath "examples\templates\energy_pbe.json"), $smokeTemplatePath, $true)
+    $window.FindName("ConfigPathBox").Text = $smokeConfigPath
+    $window.FindName("TemplatePathBox").Text = $smokeTemplatePath
+    $window.FindName("JobDirBox").Text = $smokeDir
+    $window.FindName("ProjectNameBox").Text = "edited_preview_smoke"
+    $window.FindName("WorkflowModeRadio").IsChecked = $true
+
+    $InvokeEditedPreviewSmokeClick = {
+        param([Parameter(Mandatory = $true)][string]$Name)
+        $button = $window.FindName($Name)
+        if ($null -eq $button) {
+            throw "Button was not found: $Name"
+        }
+        if (-not [bool]$button.IsEnabled) {
+            throw "Button is disabled: $Name"
+        }
+        $eventArgs = [System.Windows.RoutedEventArgs]::new([System.Windows.Controls.Button]::ClickEvent)
+        $button.RaiseEvent($eventArgs)
+        [System.Windows.Forms.Application]::DoEvents()
+    }.GetNewClosure()
+
+    $marker = "! edited preview smoke marker"
+    & $InvokeEditedPreviewSmokeClick "LoadConfigButton"
+    & $InvokeEditedPreviewSmokeClick "LoadTemplateButton"
+    $window.FindName("JobDirBox").Text = $smokeDir
+    $window.FindName("ProjectNameBox").Text = "edited_preview_smoke"
+    $window.FindName("WorkflowModeRadio").IsChecked = $true
+    & $InvokeEditedPreviewSmokeClick "PreviewButton"
+    $window.FindName("JobDirBox").Text = $smokeDir
+    $window.FindName("ProjectNameBox").Text = "edited_preview_smoke"
+    $originalPreviewText = [string]$window.FindName("PreviewText").Text
+    $window.FindName("PreviewText").Text = "$originalPreviewText`r`n$marker`r`n"
+    $startAsyncJob = $Script:EditedPreviewSmokeStartAsyncJob
+    if ($null -eq $startAsyncJob) {
+        throw "StartAsyncJob smoke hook was not found."
+    }
+    & $startAsyncJob
+
+    $runReport = $EditedPreviewSmokeState["Report"]
+    $editedInputText = ""
+    $originalInputText = ""
+    if ($null -ne $runReport) {
+        if ([System.IO.File]::Exists([string]$runReport["edited_input_path"])) {
+            $editedInputText = [System.IO.File]::ReadAllText([string]$runReport["edited_input_path"], [System.Text.Encoding]::UTF8)
+        }
+        if ([System.IO.File]::Exists([string]$runReport["original_preview_input_path"])) {
+            $originalInputText = [System.IO.File]::ReadAllText([string]$runReport["original_preview_input_path"], [System.Text.Encoding]::UTF8)
+        }
+    }
+
+    $report["mode"] = "edited_preview_smoke"
+    $report["preview_original_has_global"] = $originalPreviewText.Contains("&GLOBAL")
+    $report["edited_preview_reported"] = ($null -ne $runReport)
+    $report["edited_preview_used"] = if ($null -ne $runReport) { [bool]$runReport["edited_preview_used"] } else { $false }
+    $report["edited_input_path"] = if ($null -ne $runReport) { [string]$runReport["edited_input_path"] } else { "" }
+    $report["prepared_input_path"] = if ($null -ne $runReport) { [string]$runReport["prepared_input_path"] } else { "" }
+    $report["prepared_job_mode"] = if ($null -ne $runReport) { [string]$runReport["prepared_job_mode"] } else { "" }
+    $report["run_arguments"] = if ($null -ne $runReport) { @($runReport["run_arguments"]) } else { @() }
+    $report["edited_input_contains_marker"] = $editedInputText.Contains($marker)
+    $report["prepared_input_contains_marker"] = if ($null -ne $runReport) { ([string]$runReport["prepared_input_text"]).Contains($marker) } else { $false }
+    $report["original_input_contains_marker"] = $originalInputText.Contains($marker)
+    $report["edited_input_separate_from_original"] = if ($null -ne $runReport) {
+        [string]$runReport["edited_input_path"] -ne [string]$runReport["original_preview_input_path"]
+    } else {
+        $false
+    }
+    $report | ConvertTo-Json -Depth 6
+
+    if (
+        $report["preview_original_has_global"] -and
+        $report["edited_preview_reported"] -and
+        $report["edited_preview_used"] -and
+        $report["prepared_job_mode"] -eq "existing_input" -and
+        $report["edited_input_contains_marker"] -and
+        $report["prepared_input_contains_marker"] -and
+        $report["edited_input_separate_from_original"] -and
+        -not $report["original_input_contains_marker"] -and
+        (@($report["run_arguments"]) -contains [string]$report["edited_input_path"])
+    ) {
         exit 0
     }
     exit 1

@@ -876,6 +876,38 @@ Commit boundary:
 
 - One commit for GUI tab order, smoke assertions, and docs.
 
+## Round 26: Editable Preview Run Path
+
+Status: implemented.
+
+Goal: make manual edits in the `Input Preview` pane affect subsequent runs
+without silently overwriting user input files.
+
+Local verification:
+
+- `-EditedPreviewSmokeTest` generates a workflow preview, edits the preview
+  text, presses `Run`, and stops before starting CP2K after verifying the edited
+  input copy and run arguments.
+- GUI unit tests cover the edited-preview smoke report.
+
+Tasks:
+
+- Track the last true input preview text and path in GUI state.
+- Detect changed preview text when `Run` is pressed.
+- Save edited preview text as `*_edited.inp` in the selected job folder.
+- Run that saved copy through the existing-input path.
+- Keep original generated or user-provided input files unchanged.
+
+Acceptance:
+
+- Manual preview edits are preserved in the input file passed to CP2K.
+- Running an edited preview does not modify the original existing input file.
+- Tests fail if edited preview text no longer feeds the prepared run arguments.
+
+Commit boundary:
+
+- One commit for editable preview run plumbing, smoke coverage, and docs.
+
 ## Working Rules
 
 - Keep each round small enough to review.

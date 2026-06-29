@@ -86,9 +86,14 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn("wrapper_stdout=$($State[\"WrapperStdoutPath\"])", script_text)
         self.assertIn("$LifecycleSmokeTest", script_text)
         self.assertIn("$ButtonSmokeTest", script_text)
+        self.assertIn("$EditedPreviewSmokeTest", script_text)
         self.assertIn("$PythonInvokeSmokeTest", script_text)
         self.assertIn("Add_DispatcherUnhandledException", script_text)
         self.assertIn("$Script:SuppressGuiMessageBoxes", script_text)
+        self.assertIn("SaveEditedInputPreview", script_text)
+        self.assertIn("GetEditedInputPreview", script_text)
+        self.assertIn("ValidateExistingInputPath", script_text)
+        self.assertIn("edited_preview_used", script_text)
         self.assertIn("stderr_has_native_wrapper", script_text)
         self.assertIn("PreviewWorkflowButton", script_text)
         self.assertIn("PreviewExistingInputButton", script_text)
@@ -340,6 +345,50 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertTrue(report["clear_emptied_text_fields"])
         self.assertTrue(report["clear_disabled_artifact_buttons"])
         self.assertTrue(report["clear_removed_history_items"])
+
+    @unittest.skipUnless(platform.system() == "Windows", "WPF prototype is Windows-only")
+    def test_edited_preview_smoke_runs_saved_input_copy(self) -> None:
+        powershell = shutil.which("powershell") or shutil.which("pwsh")
+        if not powershell:
+            self.skipTest("PowerShell is not available")
+
+        completed = subprocess.run(
+            [
+                powershell,
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                str(ROOT / "scripts" / "start_gui.ps1"),
+                "-EditedPreviewSmokeTest",
+            ],
+            capture_output=True,
+            check=False,
+        )
+
+        stderr = completed.stderr.decode("utf-8", errors="replace")
+        stdout = completed.stdout.decode("utf-8-sig", errors="replace")
+        self.assertEqual(completed.returncode, 0, stderr)
+        report = json.loads(stdout)
+        self.assertEqual(report["mode"], "edited_preview_smoke")
+        self.assertTrue(report["preview_original_has_global"])
+        self.assertTrue(report["edited_preview_reported"])
+        self.assertTrue(report["edited_preview_used"])
+        self.assertEqual(report["prepared_job_mode"], "existing_input")
+        self.assertTrue(report["edited_input_path"].endswith("_edited.inp"))
+        self.assertEqual(report["edited_input_path"], report["prepared_input_path"])
+        self.assertTrue(report["edited_input_contains_marker"])
+        self.assertTrue(report["prepared_input_contains_marker"])
+        self.assertTrue(report["edited_input_separate_from_original"])
+        self.assertFalse(report["original_input_contains_marker"])
+        self.assertIn(report["edited_input_path"], report["run_arguments"])
+        run_arguments = report["run_arguments"]
+        self.assertIn("--job-dir", run_arguments)
+        self.assertEqual(
+            Path(report["edited_input_path"]).parent,
+            Path(run_arguments[run_arguments.index("--job-dir") + 1]),
+        )
+        self.assertFalse(Path(report["edited_input_path"]).read_bytes().startswith(b"\xef\xbb\xbf"))
 
     @unittest.skipUnless(platform.system() == "Windows", "WPF prototype is Windows-only")
     def test_python_invoke_smoke_keeps_stderr_separate(self) -> None:
