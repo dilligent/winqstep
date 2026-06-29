@@ -749,6 +749,31 @@ Commit boundary:
 
 - One commit for release builder, tests, docs, and startup diagnostics updates.
 
+## Interlude: Template Drop-Down Editing
+
+Status: implemented before Round 23.
+
+Goal: make the GUI template editor faster to use by adding selectable choices
+for every single-line template field while preserving direct text entry.
+
+Notes:
+
+- The Template tab now uses editable drop-down controls for project name,
+  run type, basis file, potential file, XC functional, charge, multiplicity,
+  cutoff, relative cutoff, EPS_SCF, MAX_SCF, GEO_OPT optimizer, and GEO_OPT
+  max iterations.
+- Run type choices stay within the current WinQStep QuickStep model:
+  `ENERGY` and `GEO_OPT`.
+- `KindsText` remains a multi-line text area because each line has structured
+  `element basis_set potential` content and is already assisted by the CP2K data
+  label table.
+- GUI smoke tests verify that all single-line template fields are editable
+  drop-down controls and that core option lists are present.
+
+Commit boundary:
+
+- One commit for GUI template drop-down controls, smoke assertions, and docs.
+
 ## Working Rules
 
 - Keep each round small enough to review.

@@ -173,37 +173,104 @@
           </Grid.RowDefinitions>
 
           <TextBlock x:Name="TemplateProjectLabel" Grid.Row="0" Grid.Column="0" Text="Project"/>
-          <TextBox x:Name="TemplateProjectBox" Grid.Row="0" Grid.Column="1"/>
+          <ComboBox x:Name="TemplateProjectBox" Grid.Row="0" Grid.Column="1" IsEditable="True">
+            <ComboBoxItem Content="workflow_energy"/>
+            <ComboBoxItem Content="workflow_geo_opt"/>
+            <ComboBoxItem Content="quickstep_energy"/>
+            <ComboBoxItem Content="quickstep_geo_opt"/>
+          </ComboBox>
           <TextBlock x:Name="RunTypeLabel" Grid.Row="0" Grid.Column="2" Text="Run Type"/>
-          <TextBox x:Name="TemplateRunTypeBox" Grid.Row="0" Grid.Column="3"/>
+          <ComboBox x:Name="TemplateRunTypeBox" Grid.Row="0" Grid.Column="3" IsEditable="True">
+            <ComboBoxItem Content="ENERGY"/>
+            <ComboBoxItem Content="GEO_OPT"/>
+          </ComboBox>
 
           <TextBlock x:Name="BasisFileLabel" Grid.Row="1" Grid.Column="0" Text="Basis File"/>
-          <TextBox x:Name="BasisSetFileBox" Grid.Row="1" Grid.Column="1"/>
+          <ComboBox x:Name="BasisSetFileBox" Grid.Row="1" Grid.Column="1" IsEditable="True">
+            <ComboBoxItem Content="BASIS_MOLOPT"/>
+            <ComboBoxItem Content="BASIS_SET"/>
+            <ComboBoxItem Content="BASIS_MOLOPT_UCL"/>
+            <ComboBoxItem Content="GTH_BASIS_SETS"/>
+          </ComboBox>
           <TextBlock x:Name="PotentialFileLabel" Grid.Row="1" Grid.Column="2" Text="Potential File"/>
-          <TextBox x:Name="PotentialFileBox" Grid.Row="1" Grid.Column="3"/>
+          <ComboBox x:Name="PotentialFileBox" Grid.Row="1" Grid.Column="3" IsEditable="True">
+            <ComboBoxItem Content="GTH_POTENTIALS"/>
+            <ComboBoxItem Content="POTENTIAL"/>
+            <ComboBoxItem Content="POTENTIAL_UCL"/>
+          </ComboBox>
 
           <TextBlock x:Name="XcFunctionalLabel" Grid.Row="2" Grid.Column="0" Text="XC Functional"/>
-          <TextBox x:Name="XcFunctionalBox" Grid.Row="2" Grid.Column="1"/>
+          <ComboBox x:Name="XcFunctionalBox" Grid.Row="2" Grid.Column="1" IsEditable="True">
+            <ComboBoxItem Content="PBE"/>
+            <ComboBoxItem Content="BLYP"/>
+            <ComboBoxItem Content="BP"/>
+            <ComboBoxItem Content="PADE"/>
+            <ComboBoxItem Content="PBE0"/>
+            <ComboBoxItem Content="B3LYP"/>
+            <ComboBoxItem Content="TPSS"/>
+            <ComboBoxItem Content="NO_SHORTCUT"/>
+          </ComboBox>
           <TextBlock x:Name="EpsScfLabel" Grid.Row="2" Grid.Column="2" Text="EPS SCF"/>
-          <TextBox x:Name="EpsScfBox" Grid.Row="2" Grid.Column="3"/>
+          <ComboBox x:Name="EpsScfBox" Grid.Row="2" Grid.Column="3" IsEditable="True">
+            <ComboBoxItem Content="1.0E-5"/>
+            <ComboBoxItem Content="1.0E-6"/>
+            <ComboBoxItem Content="1.0E-7"/>
+            <ComboBoxItem Content="1.0E-8"/>
+          </ComboBox>
 
           <TextBlock x:Name="ChargeLabel" Grid.Row="3" Grid.Column="0" Text="Charge"/>
-          <TextBox x:Name="ChargeBox" Grid.Row="3" Grid.Column="1"/>
+          <ComboBox x:Name="ChargeBox" Grid.Row="3" Grid.Column="1" IsEditable="True">
+            <ComboBoxItem Content="-2"/>
+            <ComboBoxItem Content="-1"/>
+            <ComboBoxItem Content="0"/>
+            <ComboBoxItem Content="1"/>
+            <ComboBoxItem Content="2"/>
+          </ComboBox>
           <TextBlock x:Name="MultiplicityLabel" Grid.Row="3" Grid.Column="2" Text="Multiplicity"/>
-          <TextBox x:Name="MultiplicityBox" Grid.Row="3" Grid.Column="3"/>
+          <ComboBox x:Name="MultiplicityBox" Grid.Row="3" Grid.Column="3" IsEditable="True">
+            <ComboBoxItem Content="1"/>
+            <ComboBoxItem Content="2"/>
+            <ComboBoxItem Content="3"/>
+            <ComboBoxItem Content="4"/>
+          </ComboBox>
 
           <TextBlock x:Name="CutoffLabel" Grid.Row="4" Grid.Column="0" Text="Cutoff"/>
-          <TextBox x:Name="CutoffBox" Grid.Row="4" Grid.Column="1"/>
+          <ComboBox x:Name="CutoffBox" Grid.Row="4" Grid.Column="1" IsEditable="True">
+            <ComboBoxItem Content="300"/>
+            <ComboBoxItem Content="400"/>
+            <ComboBoxItem Content="500"/>
+            <ComboBoxItem Content="600"/>
+            <ComboBoxItem Content="800"/>
+          </ComboBox>
           <TextBlock x:Name="RelCutoffLabel" Grid.Row="4" Grid.Column="2" Text="Rel Cutoff"/>
-          <TextBox x:Name="RelCutoffBox" Grid.Row="4" Grid.Column="3"/>
+          <ComboBox x:Name="RelCutoffBox" Grid.Row="4" Grid.Column="3" IsEditable="True">
+            <ComboBoxItem Content="30"/>
+            <ComboBoxItem Content="40"/>
+            <ComboBoxItem Content="50"/>
+            <ComboBoxItem Content="60"/>
+          </ComboBox>
 
           <TextBlock x:Name="MaxScfLabel" Grid.Row="5" Grid.Column="0" Text="Max SCF"/>
-          <TextBox x:Name="MaxScfBox" Grid.Row="5" Grid.Column="1"/>
+          <ComboBox x:Name="MaxScfBox" Grid.Row="5" Grid.Column="1" IsEditable="True">
+            <ComboBoxItem Content="30"/>
+            <ComboBoxItem Content="50"/>
+            <ComboBoxItem Content="100"/>
+            <ComboBoxItem Content="200"/>
+          </ComboBox>
           <TextBlock x:Name="OptimizerLabel" Grid.Row="5" Grid.Column="2" Text="Optimizer"/>
-          <TextBox x:Name="GeoOptimizerBox" Grid.Row="5" Grid.Column="3"/>
+          <ComboBox x:Name="GeoOptimizerBox" Grid.Row="5" Grid.Column="3" IsEditable="True">
+            <ComboBoxItem Content="BFGS"/>
+            <ComboBoxItem Content="LBFGS"/>
+            <ComboBoxItem Content="CG"/>
+          </ComboBox>
 
           <TextBlock x:Name="GeoMaxIterLabel" Grid.Row="6" Grid.Column="0" Text="GEO Max Iter"/>
-          <TextBox x:Name="GeoMaxIterBox" Grid.Row="6" Grid.Column="1"/>
+          <ComboBox x:Name="GeoMaxIterBox" Grid.Row="6" Grid.Column="1" IsEditable="True">
+            <ComboBoxItem Content="50"/>
+            <ComboBoxItem Content="100"/>
+            <ComboBoxItem Content="150"/>
+            <ComboBoxItem Content="200"/>
+          </ComboBox>
 
           <TextBox x:Name="KindsText" Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="4"
                    FontFamily="Cascadia Mono, Consolas, Microsoft YaHei UI, Microsoft YaHei, SimSun"

@@ -126,6 +126,11 @@ Existing-input mode skips template handling but still validates that the input
 file exists and warns in the preview/log panes when referenced basis or
 potential files are obviously missing from the cached CP2K data inspection.
 
+The single-line fields on the `Template` tab are editable drop-down controls:
+users can select common values from the list or type a custom value directly.
+The `KindsText` area remains a multi-line text editor because each line carries
+an element, basis-set label, and potential label.
+
 `Run` first performs a prepare-only pass to write input and metadata, then starts
 the real CP2K job asynchronously. The GUI remains responsive while a timer
 refreshes the job log pane with metadata, CP2K output tails, and stdout/stderr

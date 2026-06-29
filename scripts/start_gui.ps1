@@ -1614,7 +1614,16 @@ if ($SmokeTest) {
     $report["config_workspace_path"] = $configWorkspace
     $report["config_workspace_encoding_ok"] = $configWorkspace.Contains($chineseFolderName)
     $report["config_validation_text"] = [string]$window.FindName("ConfigValidationText").Text
-    $report["template_tab_loaded"] = ($window.FindName("TemplateProjectBox") -is [System.Windows.Controls.TextBox])
+    $templateComboNames = @(
+        "TemplateProjectBox", "TemplateRunTypeBox", "BasisSetFileBox", "PotentialFileBox",
+        "XcFunctionalBox", "EpsScfBox", "ChargeBox", "MultiplicityBox",
+        "CutoffBox", "RelCutoffBox", "MaxScfBox", "GeoOptimizerBox", "GeoMaxIterBox"
+    )
+    $report["template_tab_loaded"] = ($window.FindName("TemplateProjectBox") -is [System.Windows.Controls.ComboBox])
+    $report["template_combo_fields_loaded"] = $templateComboNames.Where({ $window.FindName($_) -is [System.Windows.Controls.ComboBox] }).Count
+    $report["template_combo_fields_editable"] = $templateComboNames.Where({ [bool]$window.FindName($_).IsEditable }).Count
+    $report["template_run_type_options"] = @($window.FindName("TemplateRunTypeBox").Items | ForEach-Object { [string]$_.Content })
+    $report["template_optimizer_options"] = @($window.FindName("GeoOptimizerBox").Items | ForEach-Object { [string]$_.Content })
     $report["template_project_name"] = [string]$window.FindName("TemplateProjectBox").Text
     $report["template_run_type"] = [string]$window.FindName("TemplateRunTypeBox").Text
     $report["template_cutoff"] = [string]$window.FindName("CutoffBox").Text

@@ -34,6 +34,17 @@ The PowerShell WPF prototype has a `Template` tab plus `Load Template` and
 `Save Template` buttons. The tab exposes conservative fields already supported
 by the renderer and workflow layer.
 
+Single-line template fields are editable drop-down controls. Each field offers
+common CP2K/WinQStep choices, such as `ENERGY` and `GEO_OPT` for run type,
+common basis and potential file names, common XC functional shortcuts, typical
+SCF/MGRID numeric values, and `BFGS`, `LBFGS`, or `CG` for GEO_OPT optimizer.
+The controls remain editable, so values not listed in the drop-down can still
+be typed directly and saved through the same template writer.
+The candidate lists are intentionally conservative and are based on the CP2K
+manual pages for `GLOBAL/RUN_TYPE`, `DFT/BASIS_SET_FILE_NAME`,
+`DFT/POTENTIAL_FILE_NAME`, `XC/XC_FUNCTIONAL`, `DFT/MGRID`, `DFT/SCF`, and
+`MOTION/GEO_OPT`.
+
 For workflow mode, `Preview` and `Run` save and validate the current template
 fields before preparing the CP2K input. Existing-input mode does not use the
 template editor.
