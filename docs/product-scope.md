@@ -30,7 +30,7 @@ The first MVP is complete when a user can:
 2. Detect `cp2k.psmp`, `cp2k`, or another configured CP2K command.
 3. Detect `CP2K_DATA_DIR` and common basis/potential files.
 4. Import a simple periodic structure.
-5. Generate a QuickStep `ENERGY` or `GEO_OPT` input.
+5. Generate a QuickStep `ENERGY`, `ENERGY_FORCE`, or `GEO_OPT` input.
 6. Run CP2K and save `.inp`, `.out`, and related outputs in a Windows folder.
 
 ## Product Rule

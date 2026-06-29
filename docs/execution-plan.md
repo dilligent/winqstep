@@ -908,6 +908,36 @@ Commit boundary:
 
 - One commit for editable preview run plumbing, smoke coverage, and docs.
 
+## Round 27: ENERGY_FORCE Run Type
+
+Status: implemented.
+
+Goal: allow QuickStep templates and generated inputs to use CP2K
+`RUN_TYPE ENERGY_FORCE`.
+
+Local verification:
+
+- QuickStep unit tests render `ENERGY_FORCE` and verify it does not add
+  `&MOTION/&GEO_OPT`.
+- Template tests validate lowercase input normalization to `ENERGY_FORCE`.
+- GUI tests assert the run type drop-down includes `ENERGY_FORCE`.
+
+Tasks:
+
+- Add `ENERGY_FORCE` to the typed QuickStep model and template validator.
+- Add `ENERGY_FORCE` to the GUI run type drop-down.
+- Update current docs that list supported run types.
+
+Acceptance:
+
+- `ENERGY_FORCE` templates validate and render `RUN_TYPE ENERGY_FORCE`.
+- Unsupported run types such as `MD` remain rejected.
+- GUI smoke/static tests fail if the option disappears from the drop-down.
+
+Commit boundary:
+
+- One commit for ENERGY_FORCE model, GUI, tests, and docs.
+
 ## Working Rules
 
 - Keep each round small enough to review.

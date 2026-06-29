@@ -6,7 +6,8 @@ from dataclasses import dataclass
 from typing import Any, Iterable, Literal
 
 
-RunType = Literal["ENERGY", "GEO_OPT"]
+RunType = Literal["ENERGY", "ENERGY_FORCE", "GEO_OPT"]
+RUN_TYPES = {"ENERGY", "ENERGY_FORCE", "GEO_OPT"}
 
 
 class QuickStepInputError(ValueError):
@@ -138,8 +139,8 @@ def _parse_geo_opt(data: dict[str, Any]) -> GeoOptSettings:
 
 def quickstep_input_from_dict(data: dict[str, Any]) -> QuickStepInput:
     run_type = _required_string(data, "run_type").upper()
-    if run_type not in {"ENERGY", "GEO_OPT"}:
-        raise QuickStepInputError("run_type must be ENERGY or GEO_OPT")
+    if run_type not in RUN_TYPES:
+        raise QuickStepInputError("run_type must be ENERGY, ENERGY_FORCE, or GEO_OPT")
 
     structure = data.get("structure")
     if not isinstance(structure, dict):

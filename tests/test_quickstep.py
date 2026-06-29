@@ -28,6 +28,16 @@ class QuickStepTests(unittest.TestCase):
 
         self.assertEqual(render_quickstep_input(quickstep_input_from_dict(data)), expected)
 
+    def test_renders_energy_force_without_geo_opt_section(self) -> None:
+        data = json.loads((ROOT / "examples" / "quickstep_energy.json").read_text(encoding="utf-8"))
+        data["run_type"] = "energy_force"
+
+        rendered = render_quickstep_input(quickstep_input_from_dict(data))
+
+        self.assertIn("  RUN_TYPE ENERGY_FORCE\n", rendered)
+        self.assertNotIn("&GEO_OPT", rendered)
+        self.assertNotIn("&MOTION", rendered)
+
     def test_rejects_non_quickstep_run_type(self) -> None:
         data = json.loads((ROOT / "examples" / "quickstep_energy.json").read_text(encoding="utf-8"))
         data["run_type"] = "MD"

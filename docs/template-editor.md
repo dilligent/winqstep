@@ -20,7 +20,7 @@ python .\scripts\manage_template.py --template .\examples\templates\energy_pbe.j
 Editable fields include:
 
 - `project_name`
-- `run_type`: `ENERGY` or `GEO_OPT`
+- `run_type`: `ENERGY`, `ENERGY_FORCE`, or `GEO_OPT`
 - DFT fields: basis file, potential file, XC functional, charge,
   multiplicity, cutoff, relative cutoff, EPS_SCF, and MAX_SCF
 - GEO_OPT fields: optimizer and max iterations
@@ -35,9 +35,10 @@ The PowerShell WPF prototype has a `Template` tab plus `Load Template` and
 by the renderer and workflow layer.
 
 Single-line template fields are editable drop-down controls. Each field offers
-common CP2K/WinQStep choices, such as `ENERGY` and `GEO_OPT` for run type,
-common basis and potential file names, common XC functional shortcuts, typical
-SCF/MGRID numeric values, and `BFGS`, `LBFGS`, or `CG` for GEO_OPT optimizer.
+common CP2K/WinQStep choices, such as `ENERGY`, `ENERGY_FORCE`, and `GEO_OPT`
+for run type, common basis and potential file names, common XC functional
+shortcuts, typical SCF/MGRID numeric values, and `BFGS`, `LBFGS`, or `CG` for
+GEO_OPT optimizer.
 The controls remain editable, so values not listed in the drop-down can still
 be typed directly and saved through the same template writer.
 The candidate lists are intentionally conservative and are based on the CP2K

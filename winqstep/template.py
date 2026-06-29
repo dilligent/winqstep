@@ -7,10 +7,9 @@ import re
 from pathlib import Path
 from typing import Any
 
-from .quickstep import DftSettings, GeoOptSettings
+from .quickstep import DftSettings, GeoOptSettings, RUN_TYPES
 
 
-RUN_TYPES = {"ENERGY", "GEO_OPT"}
 PERIODIC_VALUES = {"NONE", "X", "Y", "Z", "XY", "XZ", "YZ", "XYZ"}
 TEMPLATE_KEY_ORDER = (
     "project_name",
@@ -81,7 +80,7 @@ def validate_template(data: dict[str, Any]) -> dict[str, Any]:
     project_name = _required_string(data.get("project_name"), "project_name", errors)
     run_type = _string_value(data.get("run_type", "ENERGY"), "run_type", errors).upper()
     if run_type and run_type not in RUN_TYPES:
-        errors.append("run_type must be ENERGY or GEO_OPT")
+        errors.append("run_type must be ENERGY, ENERGY_FORCE, or GEO_OPT")
 
     dft = _normalize_dft(_object_value(data.get("dft", {}), "dft", errors), errors)
     geo_opt = _normalize_geo_opt(_object_value(data.get("geo_opt", {}), "geo_opt", errors), errors)

@@ -34,6 +34,7 @@ The first generator should target:
 The first calculation types should be:
 
 - `ENERGY`
+- `ENERGY_FORCE`
 - `GEO_OPT`
 
 The first chemistry defaults should be conservative:
@@ -52,7 +53,7 @@ and renders CP2K input through `scripts/render_quickstep_input.py`.
 Top-level fields:
 
 - `project_name`
-- `run_type`: `ENERGY` or `GEO_OPT`
+- `run_type`: `ENERGY`, `ENERGY_FORCE`, or `GEO_OPT`
 - `dft`: basis/potential file names, PBE-style functional, charge,
   multiplicity, MGRID cutoff, and SCF controls
 - `geo_opt`: optimizer and max iteration settings for `GEO_OPT`

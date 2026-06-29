@@ -53,6 +53,15 @@ class TemplateTests(unittest.TestCase):
         self.assertTrue(validation["valid"], validation["errors"])
         self.assertNotIn("geo_opt", validation["template"])
 
+    def test_validate_accepts_energy_force_template(self) -> None:
+        template = load_template(ENERGY_TEMPLATE)
+        merged = merge_template_fields(template, {"run_type": "energy_force"})
+        validation = validate_template(merged)
+
+        self.assertTrue(validation["valid"], validation["errors"])
+        self.assertEqual(validation["template"]["run_type"], "ENERGY_FORCE")
+        self.assertNotIn("geo_opt", validation["template"])
+
     def test_validate_rejects_duplicate_kinds(self) -> None:
         template = load_json_file(ENERGY_TEMPLATE)
         template["kinds"].append({"element": "H", "basis_set": "DZVP", "potential": "GTH-PBE-q1"})
