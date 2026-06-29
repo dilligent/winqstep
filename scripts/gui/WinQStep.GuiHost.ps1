@@ -16,6 +16,25 @@ function Resolve-WinQStepPath {
     return [System.IO.Path]::GetFullPath((Join-Path $Script:RepoRoot $RelativePath))
 }
 
+function Read-WinQStepConfigLanguage {
+    param([Parameter(Mandatory = $true)][string]$ConfigPath)
+
+    try {
+        if (-not [System.IO.File]::Exists($ConfigPath)) {
+            return ""
+        }
+        $payload = [System.IO.File]::ReadAllText($ConfigPath, [System.Text.Encoding]::UTF8) | ConvertFrom-Json
+        $property = $payload.PSObject.Properties["ui_language"]
+        if ($null -eq $property) {
+            return ""
+        }
+        return [string]$property.Value
+    }
+    catch {
+        return ""
+    }
+}
+
 function Resolve-WinQStepLanguage {
     param([string]$Language)
 

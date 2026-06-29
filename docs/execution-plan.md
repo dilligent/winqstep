@@ -14,8 +14,8 @@ Each round should end with a focused commit.
   history, config editing, template editing, CP2K data inspection, and
   asynchronous GUI job execution, GUI job lifecycle hardening, GUI output
   inspection, job input preflight validation, startup diagnostics, and GUI
-  modularization, and GUI localization.
-- Next active round: Round 21, localization coverage and preferences.
+  modularization, GUI localization, and persisted GUI language preferences.
+- Next active round: Round 22, release packaging and distribution pass.
 - Known local facts:
   - WSL2 is available.
   - Default distro is `Ubuntu`.
@@ -677,15 +677,29 @@ Commit boundary:
 
 ## Round 21: Localization Coverage and Preferences
 
+Status: implemented.
+
 Goal: make localization selection more ergonomic and broaden coverage without
 changing CP2K-facing interfaces.
+
+Round 21 implementation note: this round intentionally did not add new
+languages. It focused on persisted preference plumbing for the existing `en-US`
+and `zh-CN` resources.
+
+Local verification:
+
+- `ui_language` is a validated WinQStep config key with stable save order.
+- The GUI `Config` tab exposes a language selector and saves it through
+  `scripts/manage_config.py`.
+- `-Language` remains a temporary launcher override and wins over config.
+- Resource key completeness checks still compare `en-US` and `zh-CN` key-for-key.
 
 Tasks:
 
 - Decide whether `ui_language` belongs in the WinQStep config schema.
 - Add a GUI language selector or documented config override if useful.
-- Continue moving high-value GUI status text and common user-facing diagnostics
-  into resource files.
+- Defer broader localization coverage to a later round; do not add new
+  languages in this pass.
 - Add resource completeness checks that compare supported languages key-for-key.
 
 Acceptance:

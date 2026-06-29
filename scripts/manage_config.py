@@ -20,6 +20,7 @@ FIELD_ARGS = {
     "cp2k_data_dir": "cp2k_data_dir",
     "default_windows_workspace": "default_windows_workspace",
     "wsl_shell_prelude": "wsl_shell_prelude",
+    "ui_language": "ui_language",
     "timeout": "timeout",
 }
 
@@ -39,6 +40,7 @@ def main() -> int:
     parser.add_argument("--cp2k-data-dir")
     parser.add_argument("--default-windows-workspace")
     parser.add_argument("--wsl-shell-prelude")
+    parser.add_argument("--ui-language")
     parser.add_argument("--timeout")
     parser.add_argument("--compact", action="store_true", help="Emit compact JSON.")
     args = parser.parse_args()

@@ -57,6 +57,7 @@ class DetectEnvironmentTests(unittest.TestCase):
                         "cp2k_data_dir": "/opt/cp2k/data",
                         "default_windows_workspace": "D:\\Jobs",
                         "wsl_shell_prelude": "conda deactivate >/dev/null 2>&1 || true",
+                        "ui_language": "zh-CN",
                     }
                 ),
                 encoding="utf-8",
@@ -64,6 +65,7 @@ class DetectEnvironmentTests(unittest.TestCase):
 
             self.assertEqual(load_config(str(config_path))["cp2k_command"], "cp2k.ssmp")
             self.assertIn("conda deactivate", load_config(str(config_path))["wsl_shell_prelude"])
+            self.assertEqual(load_config(str(config_path))["ui_language"], "zh-CN")
 
     def test_load_config_rejects_unknown_keys(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:

@@ -19,7 +19,13 @@ $Script:RequestedLanguage = $Language
 . (Join-Path $PSScriptRoot "gui\WinQStep.GuiHost.ps1")
 function New-WinQStepWindow {
     Add-WinQStepWpfAssemblies
-    $localization = Initialize-WinQStepLocalization $Script:RequestedLanguage
+    $defaultConfigPath = Resolve-WinQStepPath "examples\winqstep.config.json"
+    $hasLanguageOverride = -not [string]::IsNullOrWhiteSpace($Script:RequestedLanguage)
+    $initialLanguage = $Script:RequestedLanguage
+    if ([string]::IsNullOrWhiteSpace($initialLanguage)) {
+        $initialLanguage = Read-WinQStepConfigLanguage $defaultConfigPath
+    }
+    $localization = Initialize-WinQStepLocalization $initialLanguage
 
     $xamlPath = Resolve-WinQStepPath "scripts\gui\WinQStep.xaml"
     [xml]$xaml = [System.IO.File]::ReadAllText($xamlPath, [System.Text.Encoding]::UTF8)
@@ -38,9 +44,9 @@ function New-WinQStepWindow {
         "ConfigTab", "TemplateTab", "EnvironmentTab", "StructureTab",
         "InputPreviewTab", "JobLogTab", "ArtifactsTab", "HistoryTab",
         "DistroLabel", "Cp2kCommandLabel", "Cp2kDataDirLabel", "MpiCommandLabel",
-        "WorkspaceLabel", "WslPreludeLabel", "TimeoutLabel",
+        "WorkspaceLabel", "WslPreludeLabel", "TimeoutLabel", "UiLanguageLabel",
         "DistroBox", "Cp2kCommandBox", "Cp2kDataDirBox", "MpirunCommandBox",
-        "DefaultWorkspaceBox", "WslPreludeBox", "TimeoutBox", "ConfigValidationText",
+        "DefaultWorkspaceBox", "WslPreludeBox", "TimeoutBox", "UiLanguageBox", "ConfigValidationText",
         "TemplateProjectLabel", "RunTypeLabel", "BasisFileLabel", "PotentialFileLabel",
         "XcFunctionalLabel", "EpsScfLabel", "ChargeLabel", "MultiplicityLabel",
         "CutoffLabel", "RelCutoffLabel", "MaxScfLabel", "OptimizerLabel", "GeoMaxIterLabel",
@@ -61,8 +67,9 @@ function New-WinQStepWindow {
         $controls[$name] = $window.FindName($name)
     }
 
-    $window.Title = Get-WinQStepText "app.title"
-    $contentLocalization = @{
+    $ApplyLocalizationToControls = {
+        $window.Title = Get-WinQStepText "app.title"
+        $contentLocalization = @{
         LoadConfigButton = "button.load_config"
         SaveConfigButton = "button.save_config"
         LoadTemplateButton = "button.load_template"
@@ -87,12 +94,12 @@ function New-WinQStepWindow {
         ViewStderrButton = "button.stderr"
         WorkflowModeRadio = "mode.workflow"
         ExistingInputModeRadio = "mode.existing_input"
-    }
-    foreach ($entry in $contentLocalization.GetEnumerator()) {
-        Set-WinQStepContent $controls[$entry.Key] $entry.Value
-    }
+        }
+        foreach ($entry in $contentLocalization.GetEnumerator()) {
+            Set-WinQStepContent $controls[$entry.Key] $entry.Value
+        }
 
-    $headerLocalization = @{
+        $headerLocalization = @{
         JobInputsGroup = "group.job_inputs"
         ConfigTab = "tab.config"
         TemplateTab = "tab.template"
@@ -102,12 +109,12 @@ function New-WinQStepWindow {
         JobLogTab = "tab.job_log"
         ArtifactsTab = "tab.artifacts"
         HistoryTab = "tab.history"
-    }
-    foreach ($entry in $headerLocalization.GetEnumerator()) {
-        Set-WinQStepHeader $controls[$entry.Key] $entry.Value
-    }
+        }
+        foreach ($entry in $headerLocalization.GetEnumerator()) {
+            Set-WinQStepHeader $controls[$entry.Key] $entry.Value
+        }
 
-    $textLocalization = @{
+        $textLocalization = @{
         ModeLabel = "label.mode"
         ConfigPathLabel = "label.config"
         TemplatePathLabel = "label.template"
@@ -122,6 +129,7 @@ function New-WinQStepWindow {
         WorkspaceLabel = "label.workspace"
         WslPreludeLabel = "label.wsl_prelude"
         TimeoutLabel = "label.timeout"
+        UiLanguageLabel = "label.ui_language"
         TemplateProjectLabel = "label.project"
         RunTypeLabel = "label.run_type"
         BasisFileLabel = "label.basis_file"
@@ -136,27 +144,38 @@ function New-WinQStepWindow {
         OptimizerLabel = "label.optimizer"
         GeoMaxIterLabel = "label.geo_max_iter"
         StatusText = "status.ready"
-    }
-    foreach ($entry in $textLocalization.GetEnumerator()) {
-        Set-WinQStepText $controls[$entry.Key] $entry.Value
-    }
+        }
+        foreach ($entry in $textLocalization.GetEnumerator()) {
+            Set-WinQStepText $controls[$entry.Key] $entry.Value
+        }
 
-    if ($controls["DataLabelsGrid"].Columns.Count -ge 3) {
-        $controls["DataLabelsGrid"].Columns[0].Header = Get-WinQStepText "column.element"
-        $controls["DataLabelsGrid"].Columns[1].Header = Get-WinQStepText "column.basis_sets"
-        $controls["DataLabelsGrid"].Columns[2].Header = Get-WinQStepText "column.potentials"
-    }
-    if ($controls["HistoryGrid"].Columns.Count -ge 7) {
-        $controls["HistoryGrid"].Columns[0].Header = Get-WinQStepText "column.completed"
-        $controls["HistoryGrid"].Columns[1].Header = Get-WinQStepText "column.mode"
-        $controls["HistoryGrid"].Columns[2].Header = Get-WinQStepText "column.status"
-        $controls["HistoryGrid"].Columns[3].Header = Get-WinQStepText "column.code"
-        $controls["HistoryGrid"].Columns[4].Header = Get-WinQStepText "column.warnings"
-        $controls["HistoryGrid"].Columns[5].Header = Get-WinQStepText "column.project_input"
-        $controls["HistoryGrid"].Columns[6].Header = Get-WinQStepText "column.output"
-    }
+        if ($controls["UiLanguageBox"].Items.Count -ge 3) {
+            $controls["UiLanguageBox"].Items[0].Content = Get-WinQStepText "language.system_default"
+            $controls["UiLanguageBox"].Items[0].Tag = ""
+            $controls["UiLanguageBox"].Items[1].Content = Get-WinQStepText "language.en_us"
+            $controls["UiLanguageBox"].Items[1].Tag = "en-US"
+            $controls["UiLanguageBox"].Items[2].Content = Get-WinQStepText "language.zh_cn"
+            $controls["UiLanguageBox"].Items[2].Tag = "zh-CN"
+        }
 
-    $controls["ConfigPathBox"].Text = Resolve-WinQStepPath "examples\winqstep.config.json"
+        if ($controls["DataLabelsGrid"].Columns.Count -ge 3) {
+            $controls["DataLabelsGrid"].Columns[0].Header = Get-WinQStepText "column.element"
+            $controls["DataLabelsGrid"].Columns[1].Header = Get-WinQStepText "column.basis_sets"
+            $controls["DataLabelsGrid"].Columns[2].Header = Get-WinQStepText "column.potentials"
+        }
+        if ($controls["HistoryGrid"].Columns.Count -ge 7) {
+            $controls["HistoryGrid"].Columns[0].Header = Get-WinQStepText "column.completed"
+            $controls["HistoryGrid"].Columns[1].Header = Get-WinQStepText "column.mode"
+            $controls["HistoryGrid"].Columns[2].Header = Get-WinQStepText "column.status"
+            $controls["HistoryGrid"].Columns[3].Header = Get-WinQStepText "column.code"
+            $controls["HistoryGrid"].Columns[4].Header = Get-WinQStepText "column.warnings"
+            $controls["HistoryGrid"].Columns[5].Header = Get-WinQStepText "column.project_input"
+            $controls["HistoryGrid"].Columns[6].Header = Get-WinQStepText "column.output"
+        }
+    }.GetNewClosure()
+    & $ApplyLocalizationToControls
+
+    $controls["ConfigPathBox"].Text = $defaultConfigPath
     $controls["TemplatePathBox"].Text = Resolve-WinQStepPath "examples\templates\energy_pbe.json"
     $controls["StructurePathBox"].Text = Resolve-WinQStepPath "tests\fixtures\structures\water.xyz"
     $controls["ExistingInputPathBox"].Text = Resolve-WinQStepPath "tests\fixtures\quickstep_energy.inp"
@@ -183,6 +202,38 @@ function New-WinQStepWindow {
         $controls["BrowseTemplateButton"], $controls["BrowseStructureButton"],
         $controls["BrowseExistingInputButton"], $controls["BrowseJobDirButton"]
     )
+
+    $GetUiLanguageSelection = {
+        $item = $controls["UiLanguageBox"].SelectedItem
+        if ($null -eq $item -or $null -eq $item.Tag) {
+            return ""
+        }
+        return [string]$item.Tag
+    }.GetNewClosure()
+
+    $SetUiLanguageSelection = {
+        param([string]$Language)
+        $target = ""
+        if (-not [string]::IsNullOrWhiteSpace($Language)) {
+            $target = Resolve-WinQStepLanguage $Language
+        }
+        foreach ($item in @($controls["UiLanguageBox"].Items)) {
+            if ([string]$item.Tag -eq $target) {
+                $controls["UiLanguageBox"].SelectedItem = $item
+                return
+            }
+        }
+        $controls["UiLanguageBox"].SelectedIndex = 0
+    }.GetNewClosure()
+
+    $ApplyConfiguredLanguage = {
+        param([string]$Language)
+        if ($hasLanguageOverride) {
+            return
+        }
+        $null = Initialize-WinQStepLocalization $Language
+        & $ApplyLocalizationToControls
+    }.GetNewClosure()
 
     $TestIsExistingInputMode = {
         return [bool]$controls["ExistingInputModeRadio"].IsChecked
@@ -698,6 +749,9 @@ function New-WinQStepWindow {
         $controls["DefaultWorkspaceBox"].Text = & $GetJsonProperty $config "default_windows_workspace"
         $controls["WslPreludeBox"].Text = & $GetJsonProperty $config "wsl_shell_prelude"
         $controls["TimeoutBox"].Text = & $GetJsonProperty $config "timeout"
+        $uiLanguage = & $GetJsonProperty $config "ui_language"
+        & $SetUiLanguageSelection $uiLanguage
+        & $ApplyConfiguredLanguage $uiLanguage
         $workspace = $controls["DefaultWorkspaceBox"].Text
         if (-not [string]::IsNullOrWhiteSpace($workspace)) {
             $controls["JobDirBox"].Text = $workspace
@@ -730,6 +784,7 @@ function New-WinQStepWindow {
             cp2k_data_dir = $controls["Cp2kDataDirBox"].Text
             default_windows_workspace = $controls["DefaultWorkspaceBox"].Text
             wsl_shell_prelude = $controls["WslPreludeBox"].Text
+            ui_language = & $GetUiLanguageSelection
             timeout = $controls["TimeoutBox"].Text
         }
         return ($fields | ConvertTo-Json -Compress)
@@ -1554,6 +1609,8 @@ if ($SmokeTest) {
     $report["config_distro"] = [string]$window.FindName("DistroBox").Text
     $report["config_cp2k_command"] = [string]$window.FindName("Cp2kCommandBox").Text
     $report["config_data_dir"] = [string]$window.FindName("Cp2kDataDirBox").Text
+    $report["config_ui_language"] = [string]$window.FindName("UiLanguageBox").SelectedItem.Tag
+    $report["config_ui_language_text"] = [string]$window.FindName("UiLanguageBox").SelectedItem.Content
     $report["config_workspace_path"] = $configWorkspace
     $report["config_workspace_encoding_ok"] = $configWorkspace.Contains($chineseFolderName)
     $report["config_validation_text"] = [string]$window.FindName("ConfigValidationText").Text

@@ -26,6 +26,7 @@ class ConfigTests(unittest.TestCase):
                     "mpirun_command": "",
                     "cp2k_command": "/home/teng/cp2k/exe/local/cp2k.ssmp",
                     "distro": "Ubuntu",
+                    "ui_language": "zh-CN",
                 },
             )
 
@@ -39,9 +40,11 @@ class ConfigTests(unittest.TestCase):
                 "cp2k_data_dir",
                 "default_windows_workspace",
                 "wsl_shell_prelude",
+                "ui_language",
                 "timeout",
             ])
             self.assertEqual(load_config(config_path)["timeout"], 20)
+            self.assertEqual(load_config(config_path)["ui_language"], "zh-CN")
 
     def test_validate_requires_execution_fields_when_requested(self) -> None:
         validation = validate_config({"distro": "Ubuntu"}, require_execution=True)
@@ -63,6 +66,12 @@ class ConfigTests(unittest.TestCase):
         self.assertFalse(validation["valid"])
         self.assertIn("not a Windows path", "\n".join(validation["errors"]))
 
+    def test_validate_rejects_unknown_ui_language(self) -> None:
+        validation = validate_config({"ui_language": "fr-FR"})
+
+        self.assertFalse(validation["valid"])
+        self.assertIn("ui_language must be one of", "\n".join(validation["errors"]))
+
     def test_cli_writes_config_from_fields_json(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
             config_path = Path(tmp_dir) / "winqstep.config.json"
@@ -73,6 +82,7 @@ class ConfigTests(unittest.TestCase):
                 "cp2k_data_dir": "/home/teng/cp2k/data",
                 "default_windows_workspace": "D:\\Library\\自制品\\winqstep\\outputs",
                 "wsl_shell_prelude": "conda deactivate >/dev/null 2>&1 || true",
+                "ui_language": "en-US",
                 "timeout": "20",
             }
 
@@ -97,6 +107,7 @@ class ConfigTests(unittest.TestCase):
             self.assertTrue(payload["written"])
             self.assertTrue(payload["validation"]["valid"])
             self.assertEqual(load_config(config_path)["default_windows_workspace"], fields["default_windows_workspace"])
+            self.assertEqual(load_config(config_path)["ui_language"], "en-US")
 
     def test_cli_reports_validation_errors_as_json(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:

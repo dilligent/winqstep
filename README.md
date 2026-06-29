@@ -109,6 +109,9 @@ To force a GUI language:
 .\WinQStep.ps1 -Language zh-CN
 ```
 
+For a persistent preference, set `ui_language` from the GUI `Config` tab and
+save the config. An empty value follows Windows UI culture.
+
 The GUI can run either the structure/template workflow or an existing `.inp`
 file through the same command-line core. It can also browse previous job
 metadata from the selected job folder, edit the active WinQStep config, and edit

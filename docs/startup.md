@@ -28,6 +28,9 @@ Force a GUI language when needed:
 .\WinQStep.ps1 -Language zh-CN
 ```
 
+Without `-Language`, the GUI uses `ui_language` from the config when set, then
+falls back to Windows UI culture.
+
 ## Startup Diagnostics
 
 Run diagnostics without opening the GUI:

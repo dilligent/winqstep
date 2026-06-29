@@ -15,9 +15,11 @@ CONFIG_KEY_ORDER = (
     "cp2k_data_dir",
     "default_windows_workspace",
     "wsl_shell_prelude",
+    "ui_language",
     "timeout",
 )
 CONFIG_KEYS = set(CONFIG_KEY_ORDER)
+SUPPORTED_UI_LANGUAGES = ("en-US", "zh-CN")
 WINDOWS_DRIVE_RE = re.compile(r"^[A-Za-z]:[\\/]")
 
 
@@ -91,6 +93,11 @@ def validate_config(
             if normalized_timeout is not None:
                 normalized[key] = normalized_timeout
             continue
+        if key == "ui_language":
+            normalized_language = _normalize_ui_language(value, errors)
+            if normalized_language is not None:
+                normalized[key] = normalized_language
+            continue
         normalized[key] = _normalize_string(key, value, errors)
 
     _validate_cp2k_paths(normalized, errors, require_execution=require_execution)
@@ -145,6 +152,16 @@ def _normalize_timeout(value: Any, errors: list[str]) -> int | None:
         errors.append("timeout must be a positive integer")
         return None
     return timeout
+
+
+def _normalize_ui_language(value: Any, errors: list[str]) -> str | None:
+    language = _normalize_string("ui_language", value, errors)
+    if not language:
+        return ""
+    if language not in SUPPORTED_UI_LANGUAGES:
+        errors.append("ui_language must be one of: " + ", ".join(SUPPORTED_UI_LANGUAGES))
+        return ""
+    return language
 
 
 def _validate_cp2k_paths(

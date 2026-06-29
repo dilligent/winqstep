@@ -110,6 +110,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
           </Grid.RowDefinitions>
 
@@ -136,7 +137,14 @@
           <TextBlock x:Name="TimeoutLabel" Grid.Row="6" Grid.Column="0" Text="Timeout"/>
           <TextBox x:Name="TimeoutBox" Grid.Row="6" Grid.Column="1"/>
 
-          <TextBox x:Name="ConfigValidationText" Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="2"
+          <TextBlock x:Name="UiLanguageLabel" Grid.Row="7" Grid.Column="0" Text="UI Language"/>
+          <ComboBox x:Name="UiLanguageBox" Grid.Row="7" Grid.Column="1" IsEditable="False" SelectedIndex="0">
+            <ComboBoxItem Tag="" Content="System default"/>
+            <ComboBoxItem Tag="en-US" Content="English (en-US)"/>
+            <ComboBoxItem Tag="zh-CN" Content="中文 (zh-CN)"/>
+          </ComboBox>
+
+          <TextBox x:Name="ConfigValidationText" Grid.Row="8" Grid.Column="0" Grid.ColumnSpan="2"
                    FontFamily="Cascadia Mono, Consolas, Microsoft YaHei UI, Microsoft YaHei, SimSun"
                    FontSize="12" AcceptsReturn="True" TextWrapping="Wrap"
                    HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"

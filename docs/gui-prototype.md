@@ -45,6 +45,11 @@ Round 20 adds GUI localization resources for `en-US` and `zh-CN`. The GUI
 defaults from Windows UI culture, and `-Language` can force a specific language
 for local testing or daily use.
 
+Round 21 adds a `UI Language` field to the `Config` tab. Saving the config
+persists `ui_language` as `en-US`, `zh-CN`, or an empty system-default value.
+The launcher `-Language` option remains a temporary override and does not write
+the config.
+
 ## Start
 
 ```powershell
@@ -56,6 +61,9 @@ Force a language when needed:
 ```powershell
 .\WinQStep.ps1 -Language zh-CN
 ```
+
+Persist a language preference from the `Config` tab by choosing `UI Language`
+and pressing `Save Config`.
 
 The lower-level command remains available:
 
