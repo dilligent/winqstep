@@ -53,6 +53,14 @@ The diagnostics path calls `scripts/check_startup.py` and returns JSON covering:
 - release hygiene checks for generated outputs and local caches;
 - optional live WSL/CP2K probing through `scripts/detect_environment.py`.
 
+For routine development checks, use the consolidated runner:
+
+```powershell
+python .\scripts\run_checks.py --profile fast
+```
+
+See `docs/testing.md` for GUI, release, and live profiles.
+
 ## Prerequisites
 
 - Windows with Windows PowerShell 5.1 and WPF desktop assemblies.

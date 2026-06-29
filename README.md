@@ -55,6 +55,16 @@ the GUI `Config` tab or with `scripts/manage_config.py` for your own CP2K paths.
 
 ## Development
 
+Run the standard local verification profile with:
+
+```powershell
+python .\scripts\run_checks.py
+```
+
+Use `python .\scripts\run_checks.py --profile all` before release handoff, and
+`--profile live` when WSL2 and the configured CP2K installation should be
+probed. See `docs/testing.md` for the full matrix.
+
 The first utility is a standard-library Python probe:
 
 ```powershell
@@ -176,6 +186,7 @@ Launcher, prerequisite, and release-hygiene notes are in
 `docs/startup.md`.
 GUI localization notes are in `docs/localization.md`.
 Release packaging notes are in `docs/release.md`.
+Testing matrix notes are in `docs/testing.md`.
 
 To build a local source-release zip:
 

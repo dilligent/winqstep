@@ -812,6 +812,41 @@ Commit boundary:
 - One commit for release install smoke, tests, portable config defaults, and
   user-facing docs.
 
+## Round 24: Consolidated Test Runner
+
+Status: implemented.
+
+Goal: make the expected local verification matrix executable instead of relying
+on manually remembered commands.
+
+Local verification:
+
+- `scripts/run_checks.py` exposes `fast`, `gui`, `release`, `live`, and `all`
+  profiles as JSON-returning commands.
+- The default `fast` profile runs unit tests and offline startup diagnostics.
+- The `gui` profile runs WPF smoke checks without WSL/CP2K.
+- The `release` profile runs release planning and unpacked release smoke.
+- The `live` profile is explicit and probes WSL/CP2K through the configured
+  local environment.
+
+Tasks:
+
+- Add a consolidated check runner with a list-only mode for inspecting commands.
+- Include the runner in startup diagnostics, GUI prerequisite checks, and release
+  install smoke required-file lists.
+- Document routine, GUI, release, and live verification paths.
+
+Acceptance:
+
+- A developer can run one command for the default local checks and one profile
+  command for GUI, release, or live verification.
+- Release artifacts include the same check runner used by the development
+  checkout.
+
+Commit boundary:
+
+- One commit for check runner, tests, diagnostics/release wiring, and docs.
+
 ## Working Rules
 
 - Keep each round small enough to review.

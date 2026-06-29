@@ -57,6 +57,12 @@ To test the release artifact exactly as a user would receive it, run:
 python .\scripts\smoke_release_install.py
 ```
 
+The same release checks are available through the consolidated runner:
+
+```powershell
+python .\scripts\run_checks.py --profile release
+```
+
 By default this builds a release zip in a temporary directory, extracts it,
 checks for required files and excluded paths, and runs:
 
@@ -80,4 +86,10 @@ Then run the full diagnostics when WSL2 and CP2K are available:
 
 ```powershell
 .\WinQStep.ps1 -Diagnostics
+```
+
+Before handing off a release candidate from a development checkout, run:
+
+```powershell
+python .\scripts\run_checks.py --profile all
 ```
