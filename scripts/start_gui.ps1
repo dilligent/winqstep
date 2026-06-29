@@ -301,7 +301,13 @@ function New-WinQStepWindow {
         catch {
             $message = $_.Exception.Message
             & $AppendLog "ERROR: $message"
-            [System.Windows.MessageBox]::Show($window, $message, (Get-WinQStepText "message.title"), "OK", (Get-WinQStepText "message.error_caption")) | Out-Null
+            [System.Windows.MessageBox]::Show(
+                $window,
+                $message,
+                (Get-WinQStepText "message.error_caption"),
+                [System.Windows.MessageBoxButton]::OK,
+                [System.Windows.MessageBoxImage]::Error
+            ) | Out-Null
         }
         finally {
             & $SetBusy $false (Get-WinQStepText "status.ready")
@@ -1318,7 +1324,13 @@ function New-WinQStepWindow {
         catch {
             $message = $_.Exception.Message
             & $AppendLog "ERROR: $message"
-            [System.Windows.MessageBox]::Show($window, $message, (Get-WinQStepText "message.title"), "OK", (Get-WinQStepText "message.error_caption")) | Out-Null
+            [System.Windows.MessageBox]::Show(
+                $window,
+                $message,
+                (Get-WinQStepText "message.error_caption"),
+                [System.Windows.MessageBoxButton]::OK,
+                [System.Windows.MessageBoxImage]::Error
+            ) | Out-Null
             & $SetBusy $false (Get-WinQStepText "status.ready")
         }
     }.GetNewClosure()
@@ -1357,7 +1369,13 @@ function New-WinQStepWindow {
         $message = Format-WinQStepText "message.close_blocked" @($process.Id, [string]$current["MetadataPath"], [string]$current["OutputPath"])
         & $SetJobStatusText (& $FormatRunningJobStatus $current)
         & $AppendLog "Close blocked: CP2K job PID $($process.Id) is still running."
-        [System.Windows.MessageBox]::Show($window, $message, (Get-WinQStepText "message.title"), "OK", (Get-WinQStepText "message.warning_caption")) | Out-Null
+        [System.Windows.MessageBox]::Show(
+            $window,
+            $message,
+            (Get-WinQStepText "message.warning_caption"),
+            [System.Windows.MessageBoxButton]::OK,
+            [System.Windows.MessageBoxImage]::Warning
+        ) | Out-Null
     }.GetNewClosure())
 
     $controls["LoadConfigButton"].Add_Click({
@@ -1840,8 +1858,13 @@ $app.Add_DispatcherUnhandledException({
     $message = $eventArgs.Exception.Message
     try {
         $caption = Get-WinQStepText "message.error_caption"
-        $title = Get-WinQStepText "message.title"
-        [System.Windows.MessageBox]::Show($window, $message, $title, "OK", $caption) | Out-Null
+        [System.Windows.MessageBox]::Show(
+            $window,
+            $message,
+            $caption,
+            [System.Windows.MessageBoxButton]::OK,
+            [System.Windows.MessageBoxImage]::Error
+        ) | Out-Null
     }
     catch {
         Write-Error $message
