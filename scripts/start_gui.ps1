@@ -50,6 +50,7 @@ function Test-WinQStepGuiPrerequisites {
         "scripts\manage_config.py",
         "scripts\manage_template.py",
         "scripts\inspect_cp2k_data.py",
+        "scripts\validate_job_inputs.py",
         "scripts\mark_job_cancelled.py",
         "examples\winqstep.config.json",
         "examples\templates\energy_pbe.json",
@@ -1389,6 +1390,122 @@ function New-WinQStepWindow {
         return $payload
     }.GetNewClosure()
 
+    $GetPreflightArrayText = {
+        param($Object, [Parameter(Mandatory = $true)][string]$Name)
+        if ($null -eq $Object) {
+            return ""
+        }
+        $property = $Object.PSObject.Properties[$Name]
+        if ($null -eq $property -or $null -eq $property.Value) {
+            return ""
+        }
+        return ((@($property.Value) | ForEach-Object { [string]$_ }) -join ", ")
+    }.GetNewClosure()
+
+    $AddPreflightMessages = {
+        param([string[]]$Lines, $Payload, [Parameter(Mandatory = $true)][string]$Name, [Parameter(Mandatory = $true)][string]$Prefix)
+        if ($null -eq $Payload) {
+            return $Lines
+        }
+        $property = $Payload.PSObject.Properties[$Name]
+        if ($null -eq $property -or $null -eq $property.Value) {
+            return $Lines
+        }
+        foreach ($text in @($property.Value)) {
+            if (-not [string]::IsNullOrWhiteSpace([string]$text)) {
+                $Lines += "${Prefix}: $text"
+            }
+        }
+        return $Lines
+    }.GetNewClosure()
+
+    $FormatPreflightValidation = {
+        param([Parameter(Mandatory = $true)]$Payload)
+        $mode = & $GetJsonProperty $Payload "mode"
+        $validText = if ([bool]$Payload.valid) { "valid" } else { "invalid" }
+        $lines = @("Preflight ${mode}: $validText")
+
+        if ($mode -eq "workflow") {
+            $structure = $Payload.structure
+            $template = $Payload.template
+            $structureElements = & $GetPreflightArrayText $structure "elements"
+            $templateElements = & $GetPreflightArrayText $template "kind_elements"
+            $lines += "Structure: atoms=$(& $GetJsonProperty $structure "atom_count"), elements=$structureElements"
+            $lines += "Template KIND elements: $templateElements"
+        }
+        elseif ($mode -eq "existing_input") {
+            $references = $Payload.references
+            $basisFiles = & $GetPreflightArrayText $references "basis_set_file_names"
+            $potentialFiles = & $GetPreflightArrayText $references "potential_file_names"
+            $lines += "Existing input: $(& $GetJsonProperty $Payload.input "path")"
+            $lines += "Referenced basis files: $basisFiles"
+            $lines += "Referenced potential files: $potentialFiles"
+        }
+
+        $cache = $Payload.data_cache
+        if ($null -ne $cache) {
+            $lines += "CP2K data cache: available=$(& $GetJsonProperty $cache "available"), path=$(& $GetJsonProperty $cache "path")"
+        }
+        $lines = & $AddPreflightMessages $lines $Payload "errors" "ERROR"
+        $lines = & $AddPreflightMessages $lines $Payload "warnings" "WARNING"
+        return ($lines -join "`r`n")
+    }.GetNewClosure()
+
+    $SetPreflightValidationText = {
+        param([Parameter(Mandatory = $true)]$Payload)
+        $text = & $FormatPreflightValidation $Payload
+        if ([string]$Payload.mode -eq "workflow") {
+            $controls["TemplateValidationText"].Text = $text
+            $controls["StructureText"].Text = $text
+        }
+        else {
+            $controls["PreviewText"].Text = $text
+            $controls["LogText"].Text = $text
+        }
+        return $text
+    }.GetNewClosure()
+
+    $ValidateActiveInputs = {
+        $null = & $SaveConfigFields $true $false
+        $cachePath = & $GetDataInspectionCachePath
+        if (& $TestIsExistingInputMode) {
+            $arguments = @(
+                "scripts\validate_job_inputs.py",
+                "--mode", "existing_input",
+                "--config", $controls["ConfigPathBox"].Text,
+                "--input", $controls["ExistingInputPathBox"].Text,
+                "--cache", $cachePath,
+                "--compact"
+            )
+        }
+        else {
+            $null = & $SaveTemplateFields $false
+            $arguments = @(
+                "scripts\validate_job_inputs.py",
+                "--mode", "workflow",
+                "--config", $controls["ConfigPathBox"].Text,
+                "--template", $controls["TemplatePathBox"].Text,
+                "--structure", $controls["StructurePathBox"].Text,
+                "--project-name", $controls["ProjectNameBox"].Text,
+                "--cache", $cachePath,
+                "--compact"
+            )
+        }
+
+        $result = Invoke-WinQStepPython $arguments
+        try {
+            $payload = $result.Output | ConvertFrom-Json
+        }
+        catch {
+            throw "Preflight did not return JSON. Raw output:`n$($result.Output)"
+        }
+        $message = & $SetPreflightValidationText $payload
+        if ($result.ExitCode -ne 0 -or -not [bool]$payload.valid) {
+            throw $message
+        }
+        return $payload
+    }.GetNewClosure()
+
     $SelectPreferredLabel = {
         param([string]$Text, [string[]]$PreferredPatterns)
         $values = @(
@@ -1495,10 +1612,8 @@ function New-WinQStepWindow {
 
         & $SetBusy $true "Preparing CP2K job"
         try {
-            $null = & $SaveConfigFields $true $false
-            if (-not (& $TestIsExistingInputMode)) {
-                $null = & $SaveTemplateFields $false
-            }
+            $preflight = & $ValidateActiveInputs
+            $preflightText = & $FormatPreflightValidation $preflight
 
             $prepareArguments = @(& $GetActiveJobArguments $true)
             $prepareArguments += "--compact"
@@ -1531,7 +1646,7 @@ function New-WinQStepWindow {
                 WrapperStderrPath = $wrapperStderrPath
                 Cancelled = $false
             }
-            $controls["LogText"].Text = & $BuildAsyncJobLog $jobState["Current"]
+            $controls["LogText"].Text = "$preflightText`r`n`r`n$(& $BuildAsyncJobLog $jobState["Current"])"
             & $SetJobStatusText (& $FormatRunningJobStatus $jobState["Current"])
             & $SetAsyncJobRunning $true "Running CP2K (PID $($process.Id))"
             $jobTimer.Start()
@@ -1649,10 +1764,8 @@ function New-WinQStepWindow {
     $controls["PreviewButton"].Add_Click({
         $status = if (& $TestIsExistingInputMode) { "Preparing existing input preview" } else { "Preparing workflow input preview" }
         & $InvokeGuiAction $status {
-            $null = & $SaveConfigFields $true $false
-            if (-not (& $TestIsExistingInputMode)) {
-                $null = & $SaveTemplateFields $false
-            }
+            $preflight = & $ValidateActiveInputs
+            $preflightText = & $FormatPreflightValidation $preflight
             $result = Invoke-WinQStepPython (& $GetActiveJobArguments $true)
             $metadata = Get-JsonResult $result
             $inputPath = & $GetActiveInputPreviewPath $metadata
@@ -1662,7 +1775,7 @@ function New-WinQStepWindow {
             else {
                 $controls["PreviewText"].Text = "Input file was not written: $inputPath"
             }
-            $controls["LogText"].Text = & $FormatLogWithSummary $metadata $result.Output
+            $controls["LogText"].Text = "$preflightText`r`n`r`n$(& $FormatLogWithSummary $metadata $result.Output)"
             & $SetArtifactsFromMetadata $metadata
         }
     }.GetNewClosure())

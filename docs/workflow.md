@@ -16,6 +16,17 @@ Use `--prepare-only` to generate the input and metadata without starting CP2K:
 python .\scripts\run_workflow.py --config .\examples\winqstep.config.json --template .\examples\templates\energy_pbe.json --structure .\tests\fixtures\structures\water.xyz --job-dir .\outputs\workflow-preview --prepare-only
 ```
 
+Use preflight validation to check the same workflow inputs before rendering or
+running:
+
+```powershell
+python .\scripts\validate_job_inputs.py --mode workflow --config .\examples\winqstep.config.json --template .\examples\templates\energy_pbe.json --structure .\tests\fixtures\structures\water.xyz
+```
+
+The preflight command reports missing KIND coverage as errors. If a CP2K data
+inspection cache is available, it also warns about template basis/potential data
+files or KIND labels that are not present in the cache.
+
 ## Template Shape
 
 Workflow templates intentionally stay smaller than full QuickStep JSON. They
@@ -51,7 +62,9 @@ common for XYZ. `center_atoms` translates the imported coordinates into the
 middle of the selected cell.
 
 The workflow selects only KIND entries needed by the imported elements. Missing
-KIND definitions fail before CP2K is started.
+KIND definitions fail before CP2K is started. The GUI runs the same preflight
+check before `Preview` and `Run` so those errors appear in the `Template` and
+`Structure` panes.
 
 ## Template Editing
 

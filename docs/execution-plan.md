@@ -12,9 +12,9 @@ Each round should end with a focused commit.
 - Current docs: product scope, architecture, WSL execution rules, CP2K input
   model, workflow, GUI prototype, existing-input jobs, output summaries, job
   history, config editing, template editing, CP2K data inspection, and
-  asynchronous GUI job execution, GUI job lifecycle hardening, and GUI output
-  inspection.
-- Next active round: Round 17, input/template validation refinement.
+  asynchronous GUI job execution, GUI job lifecycle hardening, GUI output
+  inspection, and job input preflight validation.
+- Next active round: Round 18, Windows launcher and packaging polish.
 - Known local facts:
   - WSL2 is available.
   - Default distro is `Ubuntu`.
@@ -536,7 +536,18 @@ Commit boundary:
 
 ## Round 17: Input/Template Validation Refinement
 
+Status: implemented.
+
 Goal: catch common QuickStep input and template mistakes before CP2K starts.
+
+Local verification:
+
+- `scripts/validate_job_inputs.py` validates workflow and existing-input jobs
+  without launching CP2K.
+- Unit tests cover missing workflow KIND coverage, cached CP2K label warnings,
+  existing-input data-file warnings, and CLI exit codes.
+- `scripts/start_gui.ps1 -SmokeTest` validates the GUI preflight wiring without
+  launching CP2K.
 
 Tasks:
 
@@ -555,6 +566,29 @@ Acceptance:
 Commit boundary:
 
 - One commit for validation changes, tests, and docs.
+
+## Round 18: Windows Launcher and Packaging Polish
+
+Goal: make WinQStep easier to start and diagnose from a normal Windows desktop
+session.
+
+Tasks:
+
+- Add a small Windows launcher wrapper around `scripts/start_gui.ps1`.
+- Document execution-policy, Python, WSL, and CP2K prerequisites in one place.
+- Add a startup diagnostics path that checks required scripts, config, WSL, and
+  CP2K command availability before showing the main window.
+- Decide which generated caches and local outputs should stay outside release
+  artifacts.
+
+Acceptance:
+
+- A user can start the GUI without typing the full PowerShell command and can
+  see actionable startup diagnostics when prerequisites are missing.
+
+Commit boundary:
+
+- One commit for launcher, packaging notes, tests, and docs.
 
 ## Working Rules
 

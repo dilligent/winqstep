@@ -54,6 +54,13 @@ To validate or rewrite a workflow template:
 python .\scripts\manage_template.py --template .\examples\templates\energy_pbe.json
 ```
 
+To preflight-check a workflow template and structure before previewing or
+running CP2K:
+
+```powershell
+python .\scripts\validate_job_inputs.py --mode workflow --config .\examples\winqstep.config.json --template .\examples\templates\energy_pbe.json --structure .\tests\fixtures\structures\water.xyz
+```
+
 To inspect configured CP2K basis and potential labels:
 
 ```powershell
@@ -94,11 +101,13 @@ The GUI can run either the structure/template workflow or an existing `.inp`
 file through the same command-line core. It can also browse previous job
 metadata from the selected job folder, edit the active WinQStep config, and edit
 common QuickStep template settings. It can also inspect CP2K data files and
-populate basis/potential choices for template KIND entries. CP2K runs start in
-the background so the window remains responsive, with a `Stop` action for
-best-effort cancellation, status-bar job paths, and a close-window guard while a
-job is active. The `Artifacts` tab gives read-only access to the current job's
-input, output, metadata, stdout, and stderr files.
+populate basis/potential choices for template KIND entries. Before `Preview` or
+`Run`, it preflight-checks the active workflow or existing input so common
+template, structure, and CP2K data-file issues are visible before CP2K starts.
+CP2K runs start in the background so the window remains responsive, with a
+`Stop` action for best-effort cancellation, status-bar job paths, and a
+close-window guard while a job is active. The `Artifacts` tab gives read-only
+access to the current job's input, output, metadata, stdout, and stderr files.
 
 To render and run a minimal QuickStep job through WSL/CP2K:
 

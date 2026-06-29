@@ -28,6 +28,10 @@ Round 13 adds the `Inspect Data` button. It scans the configured CP2K data
 directory with `scripts/inspect_cp2k_data.py`, caches the extracted labels, and
 shows basis/potential choices in the `Template` tab.
 
+Round 17 adds job input preflight validation. Before `Preview` or `Run`, the GUI
+calls `scripts/validate_job_inputs.py` to catch missing workflow KIND entries
+and obvious CP2K data-file mismatches before CP2K starts.
+
 ## Start
 
 ```powershell
@@ -44,6 +48,7 @@ same scripts used by tests:
   `scripts/run_existing_input.py --prepare-only`
 - `Run`: starts `scripts/run_workflow.py` or `scripts/run_existing_input.py`
   in a background process
+- Preflight before `Preview` or `Run`: `scripts/validate_job_inputs.py`
 - `Stop`: requests cancellation for the running background job
 - `History`: `scripts/list_job_history.py`
 - `Load Config` and `Save Config`: `scripts/manage_config.py`
@@ -68,8 +73,13 @@ save and validate the current config first, requiring `cp2k_command` and
 `cp2k_data_dir` before any job command is prepared or launched.
 
 In workflow mode, `Preview` and `Run` also save and validate the current
-template fields before rendering input. Existing-input mode skips template
-handling.
+template fields before rendering input. They then preflight the saved template
+against the selected structure and the latest CP2K data cache. Missing KIND
+coverage and basis/potential label warnings are shown in the `Template` and
+`Structure` tabs, so they can be fixed without reading Python exceptions.
+Existing-input mode skips template handling but still validates that the input
+file exists and warns in the preview/log panes when referenced basis or
+potential files are obviously missing from the cached CP2K data inspection.
 
 `Run` first performs a prepare-only pass to write input and metadata, then starts
 the real CP2K job asynchronously. The GUI remains responsive while a timer
@@ -104,7 +114,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\start_gui.ps1 -Smo
 The Python unit suite runs the same smoke test on Windows. Smoke mode validates
 config loading, template loading, workflow preview, existing-input preview, and
 history scanning without launching CP2K. It also verifies that the asynchronous
-job controls, status bar, and artifact inspection controls are present.
+job controls, status bar, artifact inspection controls, and preflight script
+wiring are present.
 `-LifecycleSmokeTest` starts and stops a controlled background process through
 the same lifecycle helpers used by `Run` and `Stop`. CP2K data inspection is
 covered by unit tests with fixture data and by manual/local WSL smoke runs.

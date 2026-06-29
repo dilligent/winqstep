@@ -38,6 +38,8 @@ For workflow mode, `Preview` and `Run` save and validate the current template
 fields before preparing the CP2K input. Existing-input mode does not use the
 template editor.
 
-The template editor does not inspect CP2K data files yet. It validates field
-shape, numeric ranges, run type, duplicate KIND entries, and required
-basis/potential names.
+The template editor validates field shape, numeric ranges, run type, duplicate
+KIND entries, and required basis/potential names. When a CP2K data inspection
+cache is available, the GUI preflight step also compares template data-file
+names and KIND basis/potential labels against the cached CP2K data labels before
+`Preview` or `Run`.
