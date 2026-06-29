@@ -13,8 +13,9 @@ Each round should end with a focused commit.
   model, workflow, GUI prototype, existing-input jobs, output summaries, job
   history, config editing, template editing, CP2K data inspection, and
   asynchronous GUI job execution, GUI job lifecycle hardening, GUI output
-  inspection, job input preflight validation, and startup diagnostics.
-- Next active round: Round 19, GUI modularization.
+  inspection, job input preflight validation, startup diagnostics, and GUI
+  modularization.
+- Next active round: Round 20, GUI localization foundation.
 - Known local facts:
   - WSL2 is available.
   - Default distro is `Ubuntu`.
@@ -604,7 +605,18 @@ Commit boundary:
 
 ## Round 19: GUI Modularization
 
+Status: implemented.
+
 Goal: reduce the maintenance risk in the PowerShell-hosted WPF prototype.
+
+Local verification:
+
+- `scripts/start_gui.ps1` dot-sources `scripts/gui/WinQStep.GuiHost.ps1` for
+  host/process/file helpers.
+- The WPF layout is loaded from `scripts/gui/WinQStep.xaml` instead of an
+  embedded here-string.
+- GUI smoke tests verify the split files are present, loadable, and still
+  provide the same controls and workflow smoke paths.
 
 Tasks:
 
@@ -624,6 +636,33 @@ Acceptance:
 Commit boundary:
 
 - One commit for GUI file split, tests, and docs.
+
+## Round 20: GUI Localization Foundation
+
+Goal: prepare the GUI for Chinese and English UI text without localizing CP2K
+keywords, metadata schemas, or raw scientific output.
+
+Tasks:
+
+- Add resource files for at least `en-US` and `zh-CN` GUI strings.
+- Add a small PowerShell localization helper for looking up UI text by stable
+  keys.
+- Allow the selected UI language to default from Windows culture, with a manual
+  config override planned or implemented conservatively.
+- Replace high-value hard-coded GUI labels, tab headers, status messages, and
+  common error captions with resource lookups.
+- Keep CP2K input keywords, JSON keys, file names, paths, stdout, stderr, and
+  metadata schemas untranslated.
+
+Acceptance:
+
+- The GUI can start in English or simplified Chinese from resource files while
+  existing CLI JSON and CP2K-facing behavior remain stable.
+
+Commit boundary:
+
+- One commit for localization resources, lookup helper, focused GUI wiring,
+  tests, and docs.
 
 ## Working Rules
 

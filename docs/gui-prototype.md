@@ -36,6 +36,11 @@ Round 18 adds `WinQStep.ps1` and `WinQStep.cmd` launchers plus a startup
 diagnostics mode that can check repository files, config, release hygiene, and
 optional WSL/CP2K availability before opening the main window.
 
+Round 19 splits the PowerShell-hosted GUI into separate files. The main script
+still owns event wiring and GUI workflows, but the WPF layout now lives in
+`scripts/gui/WinQStep.xaml`, while reusable host/process/file helpers live in
+`scripts/gui/WinQStep.GuiHost.ps1`.
+
 ## Start
 
 ```powershell
@@ -77,6 +82,10 @@ so every action remains reachable without maximizing the window.
 The GUI does not parse or generate CP2K input itself. It displays JSON, rendered
 input text, job metadata, and CP2K output summaries produced by the core
 commands.
+
+The GUI layout is intentionally separate from event wiring. Edit
+`scripts/gui/WinQStep.xaml` for controls and layout, and edit
+`scripts/start_gui.ps1` for event handlers and view-state behavior.
 
 Double-clicking a row in the history grid loads the selected metadata into the
 job log pane and the selected CP2K output file into the input preview pane.

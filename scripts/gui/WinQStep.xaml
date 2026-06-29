@@ -1,0 +1,295 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="WinQStep" Height="760" Width="1120" MinHeight="620" MinWidth="900"
+        Background="#F5F7FA" FontFamily="Segoe UI, Microsoft YaHei UI, Microsoft YaHei" WindowStartupLocation="CenterScreen">
+  <Window.Resources>
+    <Style TargetType="TextBox">
+      <Setter Property="Margin" Value="6,4"/>
+      <Setter Property="Padding" Value="6,4"/>
+      <Setter Property="VerticalContentAlignment" Value="Center"/>
+    </Style>
+    <Style TargetType="Button">
+      <Setter Property="Margin" Value="6,4"/>
+      <Setter Property="Padding" Value="10,5"/>
+      <Setter Property="MinWidth" Value="90"/>
+    </Style>
+    <Style TargetType="TextBlock">
+      <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+  </Window.Resources>
+  <Grid Margin="12">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/>
+      <RowDefinition Height="Auto"/>
+    </Grid.RowDefinitions>
+
+    <Grid Grid.Row="0">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="Auto"/>
+        <ColumnDefinition Width="*"/>
+      </Grid.ColumnDefinitions>
+      <TextBlock Grid.Column="0" Text="WinQStep" FontSize="22" FontWeight="SemiBold" Margin="0,4,16,4"/>
+      <WrapPanel x:Name="ActionButtonPanel" Grid.Column="1" HorizontalAlignment="Right">
+        <Button x:Name="LoadConfigButton" Content="Load Config"/>
+        <Button x:Name="SaveConfigButton" Content="Save Config"/>
+        <Button x:Name="LoadTemplateButton" Content="Load Template"/>
+        <Button x:Name="SaveTemplateButton" Content="Save Template"/>
+        <Button x:Name="InspectDataButton" Content="Inspect Data"/>
+        <Button x:Name="DetectButton" Content="Detect"/>
+        <Button x:Name="ImportButton" Content="Import"/>
+        <Button x:Name="PreviewButton" Content="Preview"/>
+        <Button x:Name="RunButton" Content="Run"/>
+        <Button x:Name="CancelJobButton" Content="Stop"/>
+        <Button x:Name="HistoryButton" Content="History"/>
+        <Button x:Name="ClearButton" Content="Clear"/>
+      </WrapPanel>
+    </Grid>
+
+    <GroupBox Grid.Row="1" Header="Job Inputs" Padding="10" Margin="0,10,0,10">
+      <Grid>
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="110"/>
+          <ColumnDefinition Width="*"/>
+          <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Grid.Column="0" Text="Mode"/>
+        <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Margin="6,4">
+          <RadioButton x:Name="WorkflowModeRadio" Content="Workflow" GroupName="JobMode" IsChecked="True" Margin="0,0,18,0"/>
+          <RadioButton x:Name="ExistingInputModeRadio" Content="Existing input" GroupName="JobMode"/>
+        </StackPanel>
+
+        <TextBlock Grid.Row="1" Grid.Column="0" Text="Config"/>
+        <TextBox x:Name="ConfigPathBox" Grid.Row="1" Grid.Column="1"/>
+        <Button x:Name="BrowseConfigButton" Grid.Row="1" Grid.Column="2" Content="Browse"/>
+
+        <TextBlock Grid.Row="2" Grid.Column="0" Text="Template"/>
+        <TextBox x:Name="TemplatePathBox" Grid.Row="2" Grid.Column="1"/>
+        <Button x:Name="BrowseTemplateButton" Grid.Row="2" Grid.Column="2" Content="Browse"/>
+
+        <TextBlock Grid.Row="3" Grid.Column="0" Text="Structure"/>
+        <TextBox x:Name="StructurePathBox" Grid.Row="3" Grid.Column="1"/>
+        <Button x:Name="BrowseStructureButton" Grid.Row="3" Grid.Column="2" Content="Browse"/>
+
+        <TextBlock Grid.Row="4" Grid.Column="0" Text="Existing Input"/>
+        <TextBox x:Name="ExistingInputPathBox" Grid.Row="4" Grid.Column="1"/>
+        <Button x:Name="BrowseExistingInputButton" Grid.Row="4" Grid.Column="2" Content="Browse"/>
+
+        <TextBlock Grid.Row="5" Grid.Column="0" Text="Job Folder"/>
+        <TextBox x:Name="JobDirBox" Grid.Row="5" Grid.Column="1"/>
+        <Button x:Name="BrowseJobDirButton" Grid.Row="5" Grid.Column="2" Content="Browse"/>
+
+        <TextBlock Grid.Row="6" Grid.Column="0" Text="Project"/>
+        <TextBox x:Name="ProjectNameBox" Grid.Row="6" Grid.Column="1"/>
+      </Grid>
+    </GroupBox>
+
+    <TabControl Grid.Row="2">
+      <TabItem Header="Config">
+        <Grid Margin="8">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="160"/>
+            <ColumnDefinition Width="*"/>
+          </Grid.ColumnDefinitions>
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+          </Grid.RowDefinitions>
+
+          <TextBlock Grid.Row="0" Grid.Column="0" Text="Distro"/>
+          <TextBox x:Name="DistroBox" Grid.Row="0" Grid.Column="1"/>
+
+          <TextBlock Grid.Row="1" Grid.Column="0" Text="CP2K Command"/>
+          <TextBox x:Name="Cp2kCommandBox" Grid.Row="1" Grid.Column="1"/>
+
+          <TextBlock Grid.Row="2" Grid.Column="0" Text="CP2K Data Dir"/>
+          <TextBox x:Name="Cp2kDataDirBox" Grid.Row="2" Grid.Column="1"/>
+
+          <TextBlock Grid.Row="3" Grid.Column="0" Text="MPI Command"/>
+          <TextBox x:Name="MpirunCommandBox" Grid.Row="3" Grid.Column="1"/>
+
+          <TextBlock Grid.Row="4" Grid.Column="0" Text="Workspace"/>
+          <TextBox x:Name="DefaultWorkspaceBox" Grid.Row="4" Grid.Column="1"/>
+
+          <TextBlock Grid.Row="5" Grid.Column="0" Text="WSL Prelude"/>
+          <TextBox x:Name="WslPreludeBox" Grid.Row="5" Grid.Column="1" Height="64"
+                   AcceptsReturn="True" TextWrapping="NoWrap" VerticalContentAlignment="Top"
+                   HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"/>
+
+          <TextBlock Grid.Row="6" Grid.Column="0" Text="Timeout"/>
+          <TextBox x:Name="TimeoutBox" Grid.Row="6" Grid.Column="1"/>
+
+          <TextBox x:Name="ConfigValidationText" Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="2"
+                   FontFamily="Cascadia Mono, Consolas, Microsoft YaHei UI, Microsoft YaHei, SimSun"
+                   FontSize="12" AcceptsReturn="True" TextWrapping="Wrap"
+                   HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
+                   IsReadOnly="True"/>
+        </Grid>
+      </TabItem>
+      <TabItem Header="Template">
+        <Grid Margin="8">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="150"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="150"/>
+            <ColumnDefinition Width="*"/>
+          </Grid.ColumnDefinitions>
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="130"/>
+            <RowDefinition Height="90"/>
+          </Grid.RowDefinitions>
+
+          <TextBlock Grid.Row="0" Grid.Column="0" Text="Project"/>
+          <TextBox x:Name="TemplateProjectBox" Grid.Row="0" Grid.Column="1"/>
+          <TextBlock Grid.Row="0" Grid.Column="2" Text="Run Type"/>
+          <TextBox x:Name="TemplateRunTypeBox" Grid.Row="0" Grid.Column="3"/>
+
+          <TextBlock Grid.Row="1" Grid.Column="0" Text="Basis File"/>
+          <TextBox x:Name="BasisSetFileBox" Grid.Row="1" Grid.Column="1"/>
+          <TextBlock Grid.Row="1" Grid.Column="2" Text="Potential File"/>
+          <TextBox x:Name="PotentialFileBox" Grid.Row="1" Grid.Column="3"/>
+
+          <TextBlock Grid.Row="2" Grid.Column="0" Text="XC Functional"/>
+          <TextBox x:Name="XcFunctionalBox" Grid.Row="2" Grid.Column="1"/>
+          <TextBlock Grid.Row="2" Grid.Column="2" Text="EPS SCF"/>
+          <TextBox x:Name="EpsScfBox" Grid.Row="2" Grid.Column="3"/>
+
+          <TextBlock Grid.Row="3" Grid.Column="0" Text="Charge"/>
+          <TextBox x:Name="ChargeBox" Grid.Row="3" Grid.Column="1"/>
+          <TextBlock Grid.Row="3" Grid.Column="2" Text="Multiplicity"/>
+          <TextBox x:Name="MultiplicityBox" Grid.Row="3" Grid.Column="3"/>
+
+          <TextBlock Grid.Row="4" Grid.Column="0" Text="Cutoff"/>
+          <TextBox x:Name="CutoffBox" Grid.Row="4" Grid.Column="1"/>
+          <TextBlock Grid.Row="4" Grid.Column="2" Text="Rel Cutoff"/>
+          <TextBox x:Name="RelCutoffBox" Grid.Row="4" Grid.Column="3"/>
+
+          <TextBlock Grid.Row="5" Grid.Column="0" Text="Max SCF"/>
+          <TextBox x:Name="MaxScfBox" Grid.Row="5" Grid.Column="1"/>
+          <TextBlock Grid.Row="5" Grid.Column="2" Text="Optimizer"/>
+          <TextBox x:Name="GeoOptimizerBox" Grid.Row="5" Grid.Column="3"/>
+
+          <TextBlock Grid.Row="6" Grid.Column="0" Text="GEO Max Iter"/>
+          <TextBox x:Name="GeoMaxIterBox" Grid.Row="6" Grid.Column="1"/>
+
+          <TextBox x:Name="KindsText" Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="4"
+                   FontFamily="Cascadia Mono, Consolas, Microsoft YaHei UI, Microsoft YaHei, SimSun"
+                   FontSize="12" AcceptsReturn="True" AcceptsTab="True" TextWrapping="NoWrap"
+                   HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"/>
+
+          <DataGrid x:Name="DataLabelsGrid" Grid.Row="8" Grid.Column="0" Grid.ColumnSpan="4"
+                    AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single"
+                    HeadersVisibility="Column" GridLinesVisibility="Horizontal" FontSize="12">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Element" Binding="{Binding element}" Width="70"/>
+              <DataGridTextColumn Header="Basis Sets" Binding="{Binding basis_sets}" Width="*"/>
+              <DataGridTextColumn Header="Potentials" Binding="{Binding potentials}" Width="*"/>
+            </DataGrid.Columns>
+          </DataGrid>
+
+          <TextBox x:Name="TemplateValidationText" Grid.Row="9" Grid.Column="0" Grid.ColumnSpan="4"
+                   FontFamily="Cascadia Mono, Consolas, Microsoft YaHei UI, Microsoft YaHei, SimSun"
+                   FontSize="12" AcceptsReturn="True" TextWrapping="Wrap"
+                   HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
+                   IsReadOnly="True"/>
+        </Grid>
+      </TabItem>
+      <TabItem Header="Environment">
+        <TextBox x:Name="EnvironmentText" FontFamily="Cascadia Mono, Consolas, Microsoft YaHei UI, Microsoft YaHei, SimSun" FontSize="12"
+                 AcceptsReturn="True" AcceptsTab="True" TextWrapping="NoWrap"
+                 HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"/>
+      </TabItem>
+      <TabItem Header="Structure">
+        <TextBox x:Name="StructureText" FontFamily="Cascadia Mono, Consolas, Microsoft YaHei UI, Microsoft YaHei, SimSun" FontSize="12"
+                 AcceptsReturn="True" AcceptsTab="True" TextWrapping="NoWrap"
+                 HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"/>
+      </TabItem>
+      <TabItem Header="Input Preview">
+        <TextBox x:Name="PreviewText" FontFamily="Cascadia Mono, Consolas, Microsoft YaHei UI, Microsoft YaHei, SimSun" FontSize="12"
+                 AcceptsReturn="True" AcceptsTab="True" TextWrapping="NoWrap"
+                 HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"/>
+      </TabItem>
+      <TabItem Header="Job Log">
+        <TextBox x:Name="LogText" FontFamily="Cascadia Mono, Consolas, Microsoft YaHei UI, Microsoft YaHei, SimSun" FontSize="12"
+                 AcceptsReturn="True" AcceptsTab="True" TextWrapping="Wrap"
+                 HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"/>
+      </TabItem>
+      <TabItem Header="Artifacts">
+        <Grid Margin="8">
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="120"/>
+            <RowDefinition Height="*"/>
+          </Grid.RowDefinitions>
+          <WrapPanel Grid.Row="0" Margin="0,0,0,6">
+            <Button x:Name="ViewInputButton" Content="Input"/>
+            <Button x:Name="ViewOutputButton" Content="Output"/>
+            <Button x:Name="ViewMetadataButton" Content="Metadata"/>
+            <Button x:Name="ViewStdoutButton" Content="Stdout"/>
+            <Button x:Name="ViewStderrButton" Content="Stderr"/>
+          </WrapPanel>
+          <TextBox x:Name="ArtifactSummaryText" Grid.Row="1"
+                   FontFamily="Cascadia Mono, Consolas, Microsoft YaHei UI, Microsoft YaHei, SimSun"
+                   FontSize="12" AcceptsReturn="True" TextWrapping="Wrap"
+                   HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
+                   IsReadOnly="True"/>
+          <TextBox x:Name="ArtifactText" Grid.Row="2"
+                   FontFamily="Cascadia Mono, Consolas, Microsoft YaHei UI, Microsoft YaHei, SimSun"
+                   FontSize="12" AcceptsReturn="True" AcceptsTab="True" TextWrapping="NoWrap"
+                   HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
+                   IsReadOnly="True"/>
+        </Grid>
+      </TabItem>
+      <TabItem Header="History">
+        <DataGrid x:Name="HistoryGrid" AutoGenerateColumns="False" IsReadOnly="True"
+                  SelectionMode="Single" HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                  FontSize="12">
+          <DataGrid.Columns>
+            <DataGridTextColumn Header="Completed" Binding="{Binding completed_at}" Width="155"/>
+            <DataGridTextColumn Header="Mode" Binding="{Binding mode}" Width="115"/>
+            <DataGridTextColumn Header="Status" Binding="{Binding status}" Width="90"/>
+            <DataGridTextColumn Header="Code" Binding="{Binding returncode}" Width="55"/>
+            <DataGridTextColumn Header="Warnings" Binding="{Binding warning_count}" Width="75"/>
+            <DataGridTextColumn Header="Project/Input" Binding="{Binding project_name}" Width="160"/>
+            <DataGridTextColumn Header="Output" Binding="{Binding output_path}" Width="*"/>
+          </DataGrid.Columns>
+        </DataGrid>
+      </TabItem>
+    </TabControl>
+
+    <StatusBar Grid.Row="3" Margin="0,10,0,0">
+      <StatusBarItem>
+        <TextBlock x:Name="StatusText" Text="Ready"/>
+      </StatusBarItem>
+      <Separator/>
+      <StatusBarItem HorizontalAlignment="Stretch">
+        <TextBlock x:Name="JobStatusText" Text="" TextTrimming="CharacterEllipsis"/>
+      </StatusBarItem>
+    </StatusBar>
+  </Grid>
+</Window>

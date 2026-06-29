@@ -1,0 +1,300 @@
+function Set-WinQStepUtf8Encoding {
+    [Console]::InputEncoding = $Script:Utf8NoBomEncoding
+    [Console]::OutputEncoding = $Script:Utf8NoBomEncoding
+    $global:OutputEncoding = $Script:Utf8NoBomEncoding
+    $env:PYTHONIOENCODING = "utf-8"
+    $env:PYTHONUTF8 = "1"
+}
+
+Set-WinQStepUtf8Encoding
+
+function Resolve-WinQStepPath {
+    param([Parameter(Mandatory = $true)][string]$RelativePath)
+    return [System.IO.Path]::GetFullPath((Join-Path $Script:RepoRoot $RelativePath))
+}
+
+function Add-WinQStepWpfAssemblies {
+    Add-Type -AssemblyName PresentationFramework
+    Add-Type -AssemblyName PresentationCore
+    Add-Type -AssemblyName WindowsBase
+    Add-Type -AssemblyName System.Windows.Forms
+}
+
+function Test-WinQStepGuiPrerequisites {
+    Add-WinQStepWpfAssemblies
+    $python = Get-Command $Script:PythonCommand -ErrorAction SilentlyContinue
+    if ($null -eq $python) {
+        throw "python was not found on PATH."
+    }
+
+    $requiredFiles = @(
+        "WinQStep.cmd",
+        "WinQStep.ps1",
+        "scripts\check_startup.py",
+        "scripts\start_gui.ps1",
+        "scripts\gui\WinQStep.GuiHost.ps1",
+        "scripts\gui\WinQStep.xaml",
+        "scripts\detect_environment.py",
+        "scripts\import_structure.py",
+        "scripts\run_workflow.py",
+        "scripts\run_existing_input.py",
+        "scripts\list_job_history.py",
+        "scripts\manage_config.py",
+        "scripts\manage_template.py",
+        "scripts\inspect_cp2k_data.py",
+        "scripts\validate_job_inputs.py",
+        "scripts\mark_job_cancelled.py",
+        "examples\winqstep.config.json",
+        "examples\templates\energy_pbe.json",
+        "tests\fixtures\structures\water.xyz",
+        "tests\fixtures\quickstep_energy.inp"
+    )
+    $missing = @(
+        foreach ($relativePath in $requiredFiles) {
+            $path = Resolve-WinQStepPath $relativePath
+            if (-not (Test-Path -LiteralPath $path)) {
+                $relativePath
+            }
+        }
+    )
+    if ($missing.Count -gt 0) {
+        throw "Missing required file(s): $($missing -join ', ')"
+    }
+
+    return [ordered]@{
+        wpf_available = $true
+        python = $python.Source
+        repo_root = $Script:RepoRoot
+        checked_files = $requiredFiles
+    }
+}
+
+function Invoke-WinQStepPython {
+    param(
+        [Parameter(Mandatory = $true)][string[]]$Arguments
+    )
+
+    Push-Location $Script:RepoRoot
+    $previousErrorActionPreference = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = "Continue"
+        $output = & $Script:PythonCommand @Arguments 2>&1
+        $exitCode = if ($null -eq $global:LASTEXITCODE) { 0 } else { $global:LASTEXITCODE }
+    }
+    finally {
+        $ErrorActionPreference = $previousErrorActionPreference
+        Pop-Location
+    }
+
+    return [pscustomobject]@{
+        ExitCode = [int]$exitCode
+        Output = (($output | Out-String).TrimEnd())
+    }
+}
+
+function Invoke-WinQStepStartupDiagnostics {
+    param([bool]$SkipLive)
+
+    $arguments = @(
+        "scripts\check_startup.py",
+        "--config", "examples\winqstep.config.json",
+        "--compact"
+    )
+    if ($SkipLive) {
+        $arguments += "--skip-live-probes"
+    }
+    return Invoke-WinQStepPython $arguments
+}
+
+function ConvertTo-WinQStepCommandLineArgument {
+    param([AllowEmptyString()][string]$Argument)
+
+    if ($null -eq $Argument -or $Argument.Length -eq 0) {
+        return '""'
+    }
+    if ($Argument -notmatch '[\s"]') {
+        return $Argument
+    }
+
+    $backslash = [char]92
+    $quote = [char]34
+    $builder = [System.Text.StringBuilder]::new()
+    [void]$builder.Append($quote)
+    $backslashCount = 0
+    foreach ($character in $Argument.ToCharArray()) {
+        if ($character -eq $backslash) {
+            $backslashCount += 1
+            continue
+        }
+        if ($character -eq $quote) {
+            if ($backslashCount -gt 0) {
+                [void]$builder.Append(([string]$backslash) * ($backslashCount * 2))
+            }
+            [void]$builder.Append([string]$backslash)
+            [void]$builder.Append($quote)
+            $backslashCount = 0
+            continue
+        }
+        if ($backslashCount -gt 0) {
+            [void]$builder.Append(([string]$backslash) * $backslashCount)
+            $backslashCount = 0
+        }
+        [void]$builder.Append($character)
+    }
+    if ($backslashCount -gt 0) {
+        [void]$builder.Append(([string]$backslash) * ($backslashCount * 2))
+    }
+    [void]$builder.Append($quote)
+    return $builder.ToString()
+}
+
+function Start-WinQStepPythonProcess {
+    param(
+        [Parameter(Mandatory = $true)][string[]]$Arguments,
+        [Parameter(Mandatory = $true)][string]$StdoutPath,
+        [Parameter(Mandatory = $true)][string]$StderrPath
+    )
+
+    $python = Get-Command $Script:PythonCommand -ErrorAction Stop
+    $argumentLine = (($Arguments | ForEach-Object { ConvertTo-WinQStepCommandLineArgument $_ }) -join " ")
+    $stdoutParent = Split-Path -Parent $StdoutPath
+    $stderrParent = Split-Path -Parent $StderrPath
+    if (-not [string]::IsNullOrWhiteSpace($stdoutParent)) {
+        [System.IO.Directory]::CreateDirectory($stdoutParent) | Out-Null
+    }
+    if (-not [string]::IsNullOrWhiteSpace($stderrParent)) {
+        [System.IO.Directory]::CreateDirectory($stderrParent) | Out-Null
+    }
+    [System.IO.File]::WriteAllText($StdoutPath, "", $Script:Utf8NoBomEncoding)
+    [System.IO.File]::WriteAllText($StderrPath, "", $Script:Utf8NoBomEncoding)
+    $startInfo = [System.Diagnostics.ProcessStartInfo]::new()
+    $startInfo.FileName = $python.Source
+    $startInfo.Arguments = $argumentLine
+    $startInfo.WorkingDirectory = $Script:RepoRoot
+    $startInfo.UseShellExecute = $false
+    $startInfo.CreateNoWindow = $true
+    $startInfo.RedirectStandardOutput = $true
+    $startInfo.RedirectStandardError = $true
+
+    $process = [System.Diagnostics.Process]::new()
+    $process.StartInfo = $startInfo
+
+    [void]$process.Start()
+    return $process
+}
+
+function Save-WinQStepProcessOutput {
+    param(
+        [Parameter(Mandatory = $true)][System.Diagnostics.Process]$Process,
+        [Parameter(Mandatory = $true)][string]$StdoutPath,
+        [Parameter(Mandatory = $true)][string]$StderrPath
+    )
+
+    $stdout = ""
+    $stderr = ""
+    try {
+        $stdout = $Process.StandardOutput.ReadToEnd()
+    }
+    catch {
+        $stdout = ""
+    }
+    try {
+        $stderr = $Process.StandardError.ReadToEnd()
+    }
+    catch {
+        $stderr = ""
+    }
+    try {
+        $Process.WaitForExit()
+    }
+    catch {
+    }
+    [System.IO.File]::WriteAllText($StdoutPath, $stdout, $Script:Utf8NoBomEncoding)
+    [System.IO.File]::WriteAllText($StderrPath, $stderr, $Script:Utf8NoBomEncoding)
+    return [pscustomobject]@{
+        Stdout = $stdout
+        Stderr = $stderr
+    }
+}
+
+function Stop-WinQStepProcessTree {
+    param([Parameter(Mandatory = $true)][System.Diagnostics.Process]$Process)
+
+    if ($Process.HasExited) {
+        return
+    }
+
+    $children = @()
+    try {
+        $children = @(Get-CimInstance Win32_Process -Filter "ParentProcessId=$($Process.Id)")
+    }
+    catch {
+        $children = @()
+    }
+    foreach ($child in $children) {
+        try {
+            $childProcess = [System.Diagnostics.Process]::GetProcessById([int]$child.ProcessId)
+            Stop-WinQStepProcessTree $childProcess
+        }
+        catch {
+            continue
+        }
+    }
+    try {
+        if (-not $Process.HasExited) {
+            $Process.Kill()
+        }
+    }
+    catch {
+    }
+}
+
+function Read-WinQStepFileText {
+    param([string]$Path)
+    if ([string]::IsNullOrWhiteSpace($Path) -or -not [System.IO.File]::Exists($Path)) {
+        return ""
+    }
+    try {
+        return [System.IO.File]::ReadAllText($Path, [System.Text.Encoding]::UTF8)
+    }
+    catch {
+        return ""
+    }
+}
+
+function Get-WinQStepFileTail {
+    param([string]$Path, [int]$LineCount = 80)
+    if ([string]::IsNullOrWhiteSpace($Path) -or -not [System.IO.File]::Exists($Path)) {
+        return ""
+    }
+    try {
+        return ((Get-Content -LiteralPath $Path -Tail $LineCount -ErrorAction Stop) | Out-String).TrimEnd()
+    }
+    catch {
+        return ""
+    }
+}
+
+function Get-JsonResult {
+    param([Parameter(Mandatory = $true)]$Result)
+    if ($Result.ExitCode -ne 0) {
+        throw $Result.Output
+    }
+    try {
+        return ($Result.Output | ConvertFrom-Json)
+    }
+    catch {
+        throw "Command did not return JSON. Raw output:`n$($Result.Output)"
+    }
+}
+
+function Format-Cp2kSummary {
+    param([Parameter(Mandatory = $true)]$Metadata)
+    if ($null -eq $Metadata.cp2k_output) {
+        return ""
+    }
+    $summary = $Metadata.cp2k_output
+    $warningCount = if ($null -eq $summary.warning_count) { "n/a" } else { [string]$summary.warning_count }
+    return "CP2K summary: status=$($summary.status), warnings=$warningCount, program_ended=$($summary.program_ended)"
+}
+

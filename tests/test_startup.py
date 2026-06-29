@@ -32,6 +32,8 @@ class StartupDiagnosticsTests(unittest.TestCase):
         self.assertTrue(required["WinQStep.ps1"])
         self.assertTrue(required["scripts/start_gui.ps1"])
         self.assertTrue(required["scripts/check_startup.py"])
+        self.assertTrue(required["scripts/gui/WinQStep.GuiHost.ps1"])
+        self.assertTrue(required["scripts/gui/WinQStep.xaml"])
         exclusions = {item["pattern"]: item["present"] for item in payload["checks"]["release_exclusions"]}
         self.assertTrue(exclusions["/outputs/"])
         self.assertTrue(exclusions["*.winqstep-cache.json"])
