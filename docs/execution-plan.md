@@ -18,8 +18,8 @@ Each round should end with a focused commit.
   language preferences, local release packaging, release install smoke testing,
   release-candidate workflow walkthrough, release handoff notes, final release
   artifact build, release install smoke, live CP2K release validation, and user
-  guide polish.
-- Next active round: Round 33, tester handoff feedback triage and packaging
+  guide polish, and GUI async run completion hardening.
+- Next active round: Round 34, tester handoff feedback triage and packaging
   decision.
 - Known local facts:
   - WSL2 is available.
@@ -1128,6 +1128,55 @@ Acceptance:
 Commit boundary:
 
 - One commit for Round 32 release baseline documentation.
+
+## Round 33: GUI Async Run Completion Crash Fix
+
+Status: implemented.
+
+Goal: fix the GUI crash reported when clicking `Run` for the default water
+workflow: Job log updated while CP2K was running, then the WPF dispatcher raised
+an invalid `&` invocation error when the async job completed.
+
+Root cause:
+
+- The async completion closure was created before `SetArtifactsFromMetadata`
+  was defined.
+- While the job was running, timer refreshes could still tail CP2K output.
+- When CP2K exited, the completion path tried to call the not-yet-captured
+  artifact helper from inside the closure, which became an invalid call target
+  under PowerShell strict mode.
+
+Local verification:
+
+- `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\start_gui.ps1 -AsyncRunSmokeTest -Language zh-CN`:
+  passed with a real CP2K `ENERGY` run.
+- `python .\scripts\run_checks.py --profile live --compact`: 3/3 checks passed,
+  including the new GUI async `Run` smoke.
+- `python -m unittest tests.test_gui_prototype tests.test_run_checks`: 13 tests
+  passed.
+- `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\start_gui.ps1 -ButtonSmokeTest -SkipLiveProbes -Language zh-CN`:
+  passed.
+
+Tasks:
+
+- Move async completion/timer closure creation after artifact helpers are
+  defined.
+- Catch async refresh failures so future refresh errors write to Job log and
+  restore controls instead of crashing the WPF app.
+- Add `-AsyncRunSmokeTest` to click the GUI `Run` button and wait for a real
+  CP2K job to finish.
+- Add the async run smoke to the `live` check profile.
+- Document the new live smoke coverage.
+
+Acceptance:
+
+- The default GUI water workflow can run to completion from the `Run` button.
+- Job log, status, and artifacts update after the async job completes.
+- The `live` profile fails if this GUI async completion path regresses.
+
+Commit boundary:
+
+- One commit for the async run crash fix, live smoke coverage, tests, and docs.
 
 ## Working Rules
 

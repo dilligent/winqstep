@@ -5,6 +5,7 @@ param(
     [switch]$LifecycleSmokeTest,
     [switch]$ButtonSmokeTest,
     [switch]$EditedPreviewSmokeTest,
+    [switch]$AsyncRunSmokeTest,
     [switch]$PythonInvokeSmokeTest,
     [switch]$Diagnostics,
     [switch]$SkipLiveProbes,
@@ -18,7 +19,7 @@ $Script:RepoRoot = Split-Path -Parent $PSScriptRoot
 $Script:PythonCommand = "python"
 $Script:Utf8NoBomEncoding = New-Object System.Text.UTF8Encoding($false)
 $Script:RequestedLanguage = $Language
-$SuppressGuiMessageBoxes = [bool]($ButtonSmokeTest -or $EditedPreviewSmokeTest)
+$SuppressGuiMessageBoxes = [bool]($ButtonSmokeTest -or $EditedPreviewSmokeTest -or $AsyncRunSmokeTest)
 $EditedPreviewSmokeTestEnabled = [bool]$EditedPreviewSmokeTest
 $EditedPreviewSmokeState = @{ Report = $null }
 $Script:SuppressGuiMessageBoxes = $SuppressGuiMessageBoxes
@@ -556,98 +557,6 @@ function New-WinQStepWindow {
         return ($sections -join "`r`n`r`n")
     }.GetNewClosure()
 
-    $CompleteAsyncJob = {
-        param([Parameter(Mandatory = $true)][hashtable]$State)
-        $jobTimer.Stop()
-        $process = [System.Diagnostics.Process]$State["Process"]
-        $process.Refresh()
-        $exitCode = if ($process.HasExited) { [int]$process.ExitCode } else { $null }
-        $captured = Save-WinQStepProcessOutput $process ([string]$State["WrapperStdoutPath"]) ([string]$State["WrapperStderrPath"])
-        $stdout = [string]$captured.Stdout
-        $stderr = [string]$captured.Stderr
-        $metadata = $null
-        if (-not [string]::IsNullOrWhiteSpace($stdout)) {
-            try {
-                $metadata = ($stdout | ConvertFrom-Json)
-            }
-            catch {
-                $metadata = $null
-            }
-        }
-
-        if ([bool]$State["Cancelled"] -and [System.IO.File]::Exists([string]$State["MetadataPath"])) {
-            $cancelArgs = @(
-                "scripts\mark_job_cancelled.py",
-                "--metadata", [string]$State["MetadataPath"],
-                "--stdout-file", [string]$State["WrapperStdoutPath"],
-                "--stderr-file", [string]$State["WrapperStderrPath"],
-                "--compact"
-            )
-            if ($null -ne $exitCode) {
-                $cancelArgs += @("--returncode", [string]$exitCode)
-            }
-            $cancelResult = Invoke-WinQStepPython $cancelArgs
-            if ($cancelResult.ExitCode -eq 0) {
-                $metadata = Get-JsonResult $cancelResult
-            }
-            else {
-                $stderr = (($stderr, $cancelResult.Output) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }) -join "`r`n"
-            }
-        }
-
-        if ($null -eq $metadata) {
-            $metadata = & $ReadMetadataFile ([string]$State["MetadataPath"])
-        }
-
-        if ($null -ne $metadata) {
-            $finalStatus = if ([bool]$State["Cancelled"]) { Get-WinQStepText "status.cancelled" } elseif ($exitCode -eq 0) { Get-WinQStepText "status.ready" } else { Get-WinQStepText "status.finished_with_errors" }
-            $logText = & $FormatLogWithSummary $metadata $stdout
-            if (-not [string]::IsNullOrWhiteSpace($stderr)) {
-                $logText = "$logText`r`n`r`n--- wrapper stderr ---`r`n$stderr"
-            }
-            $controls["LogText"].Text = & $AddMetadataTails $logText $metadata
-            & $SetArtifactsFromMetadata $metadata
-        }
-        else {
-            $parts = @("CP2K wrapper exited without JSON metadata. exit_code=$exitCode")
-            if (-not [string]::IsNullOrWhiteSpace($stdout)) {
-                $parts += "--- wrapper stdout ---`r`n$stdout"
-            }
-            if (-not [string]::IsNullOrWhiteSpace($stderr)) {
-                $parts += "--- wrapper stderr ---`r`n$stderr"
-            }
-            $controls["LogText"].Text = ($parts -join "`r`n`r`n")
-            $finalStatus = if ([bool]$State["Cancelled"]) { Get-WinQStepText "status.cancelled" } else { Get-WinQStepText "status.finished_with_errors" }
-            & $SetJobStatusText "Last job: status=$finalStatus | metadata=$($State["MetadataPath"])"
-        }
-
-        $controls["LogText"].ScrollToEnd()
-        $jobState["Current"] = $null
-        & $SetAsyncJobRunning $false $finalStatus
-    }.GetNewClosure()
-
-    $RefreshAsyncJob = {
-        $current = $jobState["Current"]
-        if ($null -eq $current) {
-            $jobTimer.Stop()
-            return
-        }
-
-        $process = [System.Diagnostics.Process]$current["Process"]
-        if ($process.HasExited) {
-            & $CompleteAsyncJob $current
-            return
-        }
-
-        & $SetJobStatusText (& $FormatRunningJobStatus $current)
-        $controls["LogText"].Text = & $BuildAsyncJobLog $current
-        $controls["LogText"].ScrollToEnd()
-    }.GetNewClosure()
-
-    $jobTimer.Add_Tick({
-        & $RefreshAsyncJob
-    }.GetNewClosure())
-
     $GetJsonProperty = {
         param($Object, [Parameter(Mandatory = $true)][string]$Name, [string]$Default = "")
         if ($null -eq $Object) {
@@ -895,6 +804,107 @@ function New-WinQStepWindow {
         & $UpdateArtifactControls
         & $SetJobStatusText (& $FormatFinishedJobStatus $Metadata ([string]$artifacts["status"]))
     }.GetNewClosure()
+
+    $CompleteAsyncJob = {
+        param([Parameter(Mandatory = $true)][hashtable]$State)
+        $jobTimer.Stop()
+        $process = [System.Diagnostics.Process]$State["Process"]
+        $process.Refresh()
+        $exitCode = if ($process.HasExited) { [int]$process.ExitCode } else { $null }
+        $captured = Save-WinQStepProcessOutput $process ([string]$State["WrapperStdoutPath"]) ([string]$State["WrapperStderrPath"])
+        $stdout = [string]$captured.Stdout
+        $stderr = [string]$captured.Stderr
+        $metadata = $null
+        if (-not [string]::IsNullOrWhiteSpace($stdout)) {
+            try {
+                $metadata = ($stdout | ConvertFrom-Json)
+            }
+            catch {
+                $metadata = $null
+            }
+        }
+
+        if ([bool]$State["Cancelled"] -and [System.IO.File]::Exists([string]$State["MetadataPath"])) {
+            $cancelArgs = @(
+                "scripts\mark_job_cancelled.py",
+                "--metadata", [string]$State["MetadataPath"],
+                "--stdout-file", [string]$State["WrapperStdoutPath"],
+                "--stderr-file", [string]$State["WrapperStderrPath"],
+                "--compact"
+            )
+            if ($null -ne $exitCode) {
+                $cancelArgs += @("--returncode", [string]$exitCode)
+            }
+            $cancelResult = Invoke-WinQStepPython $cancelArgs
+            if ($cancelResult.ExitCode -eq 0) {
+                $metadata = Get-JsonResult $cancelResult
+            }
+            else {
+                $stderr = (($stderr, $cancelResult.Output) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }) -join "`r`n"
+            }
+        }
+
+        if ($null -eq $metadata) {
+            $metadata = & $ReadMetadataFile ([string]$State["MetadataPath"])
+        }
+
+        if ($null -ne $metadata) {
+            $finalStatus = if ([bool]$State["Cancelled"]) { Get-WinQStepText "status.cancelled" } elseif ($exitCode -eq 0) { Get-WinQStepText "status.ready" } else { Get-WinQStepText "status.finished_with_errors" }
+            $logText = & $FormatLogWithSummary $metadata $stdout
+            if (-not [string]::IsNullOrWhiteSpace($stderr)) {
+                $logText = "$logText`r`n`r`n--- wrapper stderr ---`r`n$stderr"
+            }
+            $controls["LogText"].Text = & $AddMetadataTails $logText $metadata
+            & $SetArtifactsFromMetadata $metadata
+        }
+        else {
+            $parts = @("CP2K wrapper exited without JSON metadata. exit_code=$exitCode")
+            if (-not [string]::IsNullOrWhiteSpace($stdout)) {
+                $parts += "--- wrapper stdout ---`r`n$stdout"
+            }
+            if (-not [string]::IsNullOrWhiteSpace($stderr)) {
+                $parts += "--- wrapper stderr ---`r`n$stderr"
+            }
+            $controls["LogText"].Text = ($parts -join "`r`n`r`n")
+            $finalStatus = if ([bool]$State["Cancelled"]) { Get-WinQStepText "status.cancelled" } else { Get-WinQStepText "status.finished_with_errors" }
+            & $SetJobStatusText "Last job: status=$finalStatus | metadata=$($State["MetadataPath"])"
+        }
+
+        $controls["LogText"].ScrollToEnd()
+        $jobState["Current"] = $null
+        & $SetAsyncJobRunning $false $finalStatus
+    }.GetNewClosure()
+
+    $RefreshAsyncJob = {
+        $current = $jobState["Current"]
+        if ($null -eq $current) {
+            $jobTimer.Stop()
+            return
+        }
+
+        $process = [System.Diagnostics.Process]$current["Process"]
+        if ($process.HasExited) {
+            & $CompleteAsyncJob $current
+            return
+        }
+
+        & $SetJobStatusText (& $FormatRunningJobStatus $current)
+        $controls["LogText"].Text = & $BuildAsyncJobLog $current
+        $controls["LogText"].ScrollToEnd()
+    }.GetNewClosure()
+
+    $jobTimer.Add_Tick({
+        try {
+            & $RefreshAsyncJob
+        }
+        catch {
+            $jobTimer.Stop()
+            $jobState["Current"] = $null
+            $message = $_.Exception.Message
+            & $AppendLog "ERROR: async job refresh failed: $message"
+            & $SetAsyncJobRunning $false (Get-WinQStepText "status.finished_with_errors")
+        }
+    }.GetNewClosure())
 
     $SetArtifactsFromHistoryItem = {
         param([Parameter(Mandatory = $true)]$Item)
@@ -2206,6 +2216,118 @@ if ($EditedPreviewSmokeTest) {
         $report["edited_input_separate_from_original"] -and
         -not $report["original_input_contains_marker"] -and
         (@($report["run_arguments"]) -contains [string]$report["edited_input_path"])
+    ) {
+        exit 0
+    }
+    exit 1
+}
+
+if ($AsyncRunSmokeTest) {
+    $report = Test-WinQStepGuiPrerequisites
+    $window = New-WinQStepWindow
+    $smokeDir = Resolve-WinQStepPath "outputs\gui-async-run-smoke"
+    [System.IO.Directory]::CreateDirectory($smokeDir) | Out-Null
+    $smokeConfigPath = Join-Path $smokeDir "async_run.config.json"
+    $smokeTemplatePath = Join-Path $smokeDir "async_run.template.json"
+    [System.IO.File]::Copy((Resolve-WinQStepPath "examples\winqstep.config.json"), $smokeConfigPath, $true)
+    [System.IO.File]::Copy((Resolve-WinQStepPath "examples\templates\energy_pbe.json"), $smokeTemplatePath, $true)
+    $window.FindName("ConfigPathBox").Text = $smokeConfigPath
+    $window.FindName("TemplatePathBox").Text = $smokeTemplatePath
+    $window.FindName("StructurePathBox").Text = Resolve-WinQStepPath "tests\fixtures\structures\water.xyz"
+    $window.FindName("JobDirBox").Text = $smokeDir
+    $window.FindName("ProjectNameBox").Text = "async_run_smoke"
+    $window.FindName("WorkflowModeRadio").IsChecked = $true
+
+    $PumpDispatcher = {
+        param([int]$Milliseconds = 100)
+        $frame = [System.Windows.Threading.DispatcherFrame]::new()
+        $timer = [System.Windows.Threading.DispatcherTimer]::new(
+            [System.Windows.Threading.DispatcherPriority]::Background
+        )
+        $timer.Interval = [TimeSpan]::FromMilliseconds($Milliseconds)
+        $timer.Add_Tick({
+            $timer.Stop()
+            $frame.Continue = $false
+        }.GetNewClosure())
+        $timer.Start()
+        [System.Windows.Threading.Dispatcher]::PushFrame($frame)
+    }.GetNewClosure()
+
+    $ClickButton = {
+        param([Parameter(Mandatory = $true)][string]$Name)
+        $button = $window.FindName($Name)
+        if ($null -eq $button) {
+            throw "Button was not found: $Name"
+        }
+        if (-not [bool]$button.IsEnabled) {
+            throw "Button is disabled: $Name"
+        }
+        $eventArgs = [System.Windows.RoutedEventArgs]::new([System.Windows.Controls.Button]::ClickEvent)
+        $button.RaiseEvent($eventArgs)
+        & $PumpDispatcher 50
+    }.GetNewClosure()
+
+    $runError = $null
+    $runErrorStack = ""
+    $timedOut = $false
+    $started = $false
+    try {
+        & $ClickButton "RunButton"
+        $started = [bool]$window.FindName("CancelJobButton").IsEnabled
+        $deadline = [DateTime]::UtcNow.AddSeconds(120)
+        while ([bool]$window.FindName("CancelJobButton").IsEnabled) {
+            if ([DateTime]::UtcNow -gt $deadline) {
+                $timedOut = $true
+                break
+            }
+            & $PumpDispatcher 250
+        }
+    }
+    catch {
+        $runError = $_.Exception.Message
+        $runErrorStack = [string]$_.ScriptStackTrace
+    }
+
+    if ($timedOut -and [bool]$window.FindName("CancelJobButton").IsEnabled) {
+        try {
+            & $ClickButton "CancelJobButton"
+        }
+        catch {
+        }
+    }
+
+    $logText = [string]$window.FindName("LogText").Text
+    $artifactSummary = [string]$window.FindName("ArtifactSummaryText").Text
+    $jobStatusText = [string]$window.FindName("JobStatusText").Text
+    $statusText = [string]$window.FindName("StatusText").Text
+    $report["mode"] = "async_run_smoke"
+    $report["run_error"] = $runError
+    $report["run_error_stack"] = $runErrorStack
+    $report["run_started"] = $started
+    $report["timed_out"] = $timedOut
+    $report["run_completed"] = (-not [bool]$window.FindName("CancelJobButton").IsEnabled)
+    $report["run_button_reenabled"] = [bool]$window.FindName("RunButton").IsEnabled
+    $report["status_text"] = $statusText
+    $report["job_status_text"] = $jobStatusText
+    $report["log_has_summary"] = $logText.Contains("CP2K summary:")
+    $report["log_has_success"] = ($logText.Contains("status=succeeded") -or $jobStatusText.Contains("status=succeeded"))
+    $report["artifact_has_output"] = $artifactSummary.Contains("output=[exists]")
+    $report["artifact_has_metadata"] = $artifactSummary.Contains("metadata=[exists]")
+    $report["artifact_results_enabled"] = [bool]$window.FindName("ViewResultsButton").IsEnabled
+    $report["log_tail"] = if ($logText.Length -gt 1200) { $logText.Substring($logText.Length - 1200) } else { $logText }
+    $report | ConvertTo-Json -Depth 6
+
+    if (
+        [string]::IsNullOrWhiteSpace($runError) -and
+        $started -and
+        -not $timedOut -and
+        $report["run_completed"] -and
+        $report["run_button_reenabled"] -and
+        $report["log_has_summary"] -and
+        $report["log_has_success"] -and
+        $report["artifact_has_output"] -and
+        $report["artifact_has_metadata"] -and
+        $report["artifact_results_enabled"]
     ) {
         exit 0
     }

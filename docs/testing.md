@@ -29,7 +29,8 @@ python .\scripts\run_checks.py --profile all
 - `rc`: release-candidate user-path walkthrough. It runs offline startup and
   config/template validation, prepares an `ENERGY_FORCE` workflow job, prepares
   an existing-input job, scans history, and checks the release file plan.
-- `live`: startup diagnostics and GUI button smoke with WSL/CP2K probes enabled.
+- `live`: startup diagnostics, GUI button smoke, and GUI async `Run` smoke with
+  WSL/CP2K probes enabled.
 - `all`: expands to `fast`, `gui`, `release`, and `rc`. It does not include
   `live`.
 
@@ -74,8 +75,10 @@ python .\scripts\run_checks.py --profile live
 ```
 
 The live profile calls the configured distro, CP2K command, and CP2K data path.
-It should stay explicit so offline development and release verification remain
-deterministic.
+It also clicks the GUI `Run` button against the default water structure, waits
+for the asynchronous job to complete, and checks that the GUI re-enables
+controls and exposes output artifacts. It should stay explicit so offline
+development and release verification remain deterministic.
 
 For an explicit live CP2K walkthrough of the same `ENERGY_FORCE` path, run:
 

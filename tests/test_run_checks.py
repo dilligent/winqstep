@@ -41,6 +41,7 @@ class RunChecksTests(unittest.TestCase):
         self.assertIn("release-candidate-walkthrough", names)
         self.assertNotIn("startup-diagnostics-live", names)
         self.assertNotIn("gui-button-smoke-live", names)
+        self.assertNotIn("gui-async-run-smoke-live", names)
 
     def test_rc_plan_runs_release_candidate_walkthrough(self) -> None:
         plan = build_check_plan(
@@ -62,9 +63,13 @@ class RunChecksTests(unittest.TestCase):
             powershell_executable="powershell",
         )
 
-        self.assertEqual([check["name"] for check in plan], ["startup-diagnostics-live", "gui-button-smoke-live"])
+        self.assertEqual(
+            [check["name"] for check in plan],
+            ["startup-diagnostics-live", "gui-button-smoke-live", "gui-async-run-smoke-live"],
+        )
         self.assertIn("-Diagnostics", plan[0]["command"])
         self.assertIn("-ButtonSmokeTest", plan[1]["command"])
+        self.assertIn("-AsyncRunSmokeTest", plan[2]["command"])
         self.assertIsNone(plan[0]["skip_reason"])
 
     def test_list_cli_reports_plan_without_running_checks(self) -> None:

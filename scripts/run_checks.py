@@ -142,6 +142,13 @@ def build_check_plan(
                         ["-ButtonSmokeTest", "-Language", "zh-CN"],
                         timeout=240,
                     ),
+                    powershell_check(
+                        "gui-async-run-smoke-live",
+                        profile,
+                        powershell,
+                        ["-AsyncRunSmokeTest", "-Language", "zh-CN"],
+                        timeout=300,
+                    ),
                 ]
             )
         else:

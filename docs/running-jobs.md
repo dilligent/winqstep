@@ -67,3 +67,17 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\start_gui.ps1 -Lif
 It starts a controlled sleeper process through the same helper used by `Run`,
 stops it through the same process-tree helper used by `Stop`, and emits JSON
 describing whether the process started and stopped.
+
+## GUI Async Run Smoke
+
+When WSL2 and CP2K are available, the GUI script can also run a full
+non-interactive `Run` button smoke:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\start_gui.ps1 -AsyncRunSmokeTest -Language zh-CN
+```
+
+This starts the default water workflow through the same GUI event handler used
+by the desktop `Run` button, pumps the WPF dispatcher until the asynchronous job
+finishes, and verifies that output artifacts and parsed result summaries are
+available without leaving the GUI in a busy state.
