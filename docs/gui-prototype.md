@@ -158,9 +158,13 @@ the GUI.
 
 The `Artifacts` tab shows a compact summary for the current or selected job:
 job status, return code, CP2K output status, warning count, program-end marker,
-and the known input, output, metadata, stdout, and stderr paths. The tab has
-read-only `Input`, `Output`, `Metadata`, `Stdout`, and `Stderr` buttons that
-load those files into the GUI text pane without modifying or rerunning the job.
+total energy, total atomic force, and the known input, output, metadata, stdout,
+stderr, and saved-result paths. The tab has read-only `Input`, `Output`,
+`Metadata`, `Stdout`, and `Stderr` buttons that load those files into the GUI
+text pane without modifying or rerunning the job. `Results` shows a structured
+text result summary, including per-atom forces when CP2K printed an
+`ENERGY_FORCE` force block. `Save Results` writes that same summary as
+`*.results.txt` next to the job metadata.
 
 Double-clicking a row in the CP2K data label table updates the corresponding
 KIND table entry, preferring MOLOPT basis labels and GTH-PBE potentials when

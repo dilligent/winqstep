@@ -65,6 +65,15 @@ class JobHistoryTests(unittest.TestCase):
                             "status": "completed",
                             "warning_count": 1,
                             "program_ended": True,
+                            "total_energy_hartree": -17.219350325303314,
+                            "forces": {
+                                "unit": "hartree/bohr",
+                                "atoms": [
+                                    {"atom": 1, "x": 0.0, "y": 0.0, "z": -0.0135588799, "norm": 0.0135588799}
+                                ],
+                                "sum": {"x": 0.0, "y": 0.0, "z": 0.00148299452},
+                                "total_atomic_force": 0.00148299452,
+                            },
                         },
                     }
                 ),
@@ -76,6 +85,9 @@ class JobHistoryTests(unittest.TestCase):
             self.assertEqual(job["mode"], "existing_input")
             self.assertEqual(job["project_name"], "water")
             self.assertEqual(job["warning_count"], 1)
+            self.assertAlmostEqual(job["total_energy_hartree"], -17.219350325303314)
+            self.assertAlmostEqual(job["total_atomic_force"], 0.00148299452)
+            self.assertEqual(job["force_unit"], "hartree/bohr")
 
     def test_bad_metadata_is_reported_without_stopping_scan(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:

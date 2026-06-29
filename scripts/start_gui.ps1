@@ -68,6 +68,7 @@ function New-WinQStepWindow {
         "LoadConfigButton", "SaveConfigButton", "LoadTemplateButton", "SaveTemplateButton",
         "InspectDataButton", "DetectButton", "ImportButton",
         "PreviewButton", "RunButton", "CancelJobButton", "HistoryButton", "ClearButton",
+        "ViewResultsButton", "SaveResultsButton",
         "ViewInputButton", "ViewOutputButton", "ViewMetadataButton", "ViewStdoutButton", "ViewStderrButton",
         "BrowseConfigButton", "BrowseTemplateButton", "BrowseStructureButton",
         "BrowseExistingInputButton", "BrowseJobDirButton"
@@ -96,6 +97,8 @@ function New-WinQStepWindow {
         BrowseStructureButton = "button.browse"
         BrowseExistingInputButton = "button.browse"
         BrowseJobDirButton = "button.browse"
+        ViewResultsButton = "button.results"
+        SaveResultsButton = "button.save_results"
         ViewInputButton = "button.input"
         ViewOutputButton = "button.output"
         ViewMetadataButton = "button.metadata"
@@ -199,6 +202,10 @@ function New-WinQStepWindow {
         stdout = $controls["ViewStdoutButton"]
         stderr = $controls["ViewStderrButton"]
     }
+    $resultButtons = @(
+        $controls["ViewResultsButton"],
+        $controls["SaveResultsButton"]
+    )
     $artifactState = @{ Current = $null }
     $previewState = @{ Current = $null }
 
@@ -208,6 +215,7 @@ function New-WinQStepWindow {
         $controls["InspectDataButton"], $controls["DetectButton"], $controls["ImportButton"],
         $controls["PreviewButton"], $controls["RunButton"],
         $controls["HistoryButton"], $controls["ClearButton"],
+        $controls["ViewResultsButton"], $controls["SaveResultsButton"],
         $controls["ViewInputButton"], $controls["ViewOutputButton"], $controls["ViewMetadataButton"],
         $controls["ViewStdoutButton"], $controls["ViewStderrButton"], $controls["BrowseConfigButton"],
         $controls["BrowseTemplateButton"], $controls["BrowseStructureButton"],
@@ -270,6 +278,14 @@ function New-WinQStepWindow {
                 $enabled = (-not [string]::IsNullOrWhiteSpace($path)) -and [System.IO.File]::Exists($path)
             }
             $entry.Value.IsEnabled = $enabled
+        }
+        $hasResultText = (
+            $null -ne $current -and
+            $null -ne $current["result_text"] -and
+            -not [string]::IsNullOrWhiteSpace([string]$current["result_text"])
+        )
+        foreach ($button in $resultButtons) {
+            $button.IsEnabled = $hasResultText
         }
     }.GetNewClosure()
 
@@ -660,9 +676,40 @@ function New-WinQStepWindow {
         return [string]$current
     }.GetNewClosure()
 
+    $GetNestedValue = {
+        param($Object, [Parameter(Mandatory = $true)][string[]]$Names)
+        $current = $Object
+        foreach ($name in $Names) {
+            if ($null -eq $current) {
+                return $null
+            }
+            $property = $current.PSObject.Properties[$name]
+            if ($null -eq $property -or $null -eq $property.Value) {
+                return $null
+            }
+            $current = $property.Value
+        }
+        return $current
+    }.GetNewClosure()
+
     $GetMetadataFilePath = {
         param($Metadata, [Parameter(Mandatory = $true)][string]$Key)
         return (& $GetNestedPath $Metadata @("files", $Key, "path"))
+    }.GetNewClosure()
+
+    $FormatResultValue = {
+        param($Value, [string]$Default = "not_available")
+        if ($null -eq $Value) {
+            return $Default
+        }
+        if ($Value -is [double] -or $Value -is [single] -or $Value -is [decimal]) {
+            return [System.Convert]::ToString($Value, [System.Globalization.CultureInfo]::InvariantCulture)
+        }
+        $text = [string]$Value
+        if ([string]::IsNullOrWhiteSpace($text)) {
+            return $Default
+        }
+        return $text
     }.GetNewClosure()
 
     $BuildArtifactSummary = {
@@ -675,24 +722,159 @@ function New-WinQStepWindow {
         if (-not [string]::IsNullOrWhiteSpace([string]$Artifacts["ended_at"])) {
             $lines += "ended_at=$($Artifacts["ended_at"])"
         }
+        if (-not [string]::IsNullOrWhiteSpace([string]$Artifacts["total_energy_hartree"])) {
+            $lines += "energy_hartree=$($Artifacts["total_energy_hartree"])"
+        }
+        if (-not [string]::IsNullOrWhiteSpace([string]$Artifacts["total_atomic_force"])) {
+            $forceUnit = [string]$Artifacts["force_unit"]
+            $suffix = if ([string]::IsNullOrWhiteSpace($forceUnit)) { "" } else { " $forceUnit" }
+            $lines += "total_atomic_force=$($Artifacts["total_atomic_force"])$suffix"
+        }
         foreach ($key in @("input", "output", "metadata", "stdout", "stderr")) {
             $path = [string]$Artifacts["paths"][$key]
             $exists = if (-not [string]::IsNullOrWhiteSpace($path) -and [System.IO.File]::Exists($path)) { "exists" } else { "missing" }
             $lines += "$key=[$exists] $path"
         }
+        if ($Artifacts["paths"].ContainsKey("results")) {
+            $path = [string]$Artifacts["paths"]["results"]
+            if (-not [string]::IsNullOrWhiteSpace($path)) {
+                $exists = if ([System.IO.File]::Exists($path)) { "exists" } else { "missing" }
+                $lines += "results=[$exists] $path"
+            }
+        }
+        return ($lines -join "`r`n")
+    }.GetNewClosure()
+
+    $BuildResultSummaryFromMetadata = {
+        param([Parameter(Mandatory = $true)]$Metadata)
+        $summary = $Metadata.cp2k_output
+        $jobMode = & $GetNestedPath $Metadata @("job", "mode")
+        $projectName = & $GetNestedPath $Metadata @("quickstep", "project_name")
+        if ([string]::IsNullOrWhiteSpace($projectName)) {
+            $projectName = & $GetNestedPath $Metadata @("workflow", "template", "project_name")
+        }
+        if ([string]::IsNullOrWhiteSpace($projectName)) {
+            $projectName = & $GetNestedPath $Metadata @("job", "input_stem")
+        }
+        $runType = & $GetNestedPath $Metadata @("quickstep", "run_type")
+        if ([string]::IsNullOrWhiteSpace($runType)) {
+            $runType = & $GetNestedPath $Metadata @("workflow", "template", "run_type")
+        }
+        $lines = @(
+            "Result summary",
+            "status=$(& $FormatResultValue (& $GetNestedValue $Metadata @("status")))",
+            "returncode=$(& $FormatResultValue (& $GetNestedValue $Metadata @("returncode")))",
+            "mode=$(& $FormatResultValue $jobMode)",
+            "project=$(& $FormatResultValue $projectName)",
+            "run_type=$(& $FormatResultValue $runType)",
+            "cp2k_output.status=$(& $FormatResultValue (& $GetNestedValue $summary @("status")))",
+            "warnings=$(& $FormatResultValue (& $GetNestedValue $summary @("warning_count")))",
+            "program_ended=$(& $FormatResultValue (& $GetNestedValue $summary @("program_ended")))",
+            "ended_at=$(& $FormatResultValue (& $GetNestedValue $summary @("ended_at")))",
+            "stopped_in=$(& $FormatResultValue (& $GetNestedValue $summary @("stopped_in")))",
+            "total_energy_hartree=$(& $FormatResultValue (& $GetNestedValue $summary @("total_energy_hartree")))",
+            "input=$(& $FormatResultValue (& $GetMetadataFilePath $Metadata "input"))",
+            "output=$(& $FormatResultValue (& $GetMetadataFilePath $Metadata "output"))",
+            "metadata=$(& $FormatResultValue (& $GetMetadataFilePath $Metadata "metadata"))"
+        )
+
+        $forces = & $GetNestedValue $summary @("forces")
+        if ($null -eq $forces) {
+            $lines += "forces=not_available"
+            return ($lines -join "`r`n")
+        }
+
+        $unit = & $FormatResultValue (& $GetNestedValue $forces @("unit")) ""
+        $totalAtomicForce = & $GetNestedValue $forces @("total_atomic_force")
+        $totalText = & $FormatResultValue $totalAtomicForce
+        if ([string]::IsNullOrWhiteSpace($unit)) {
+            $lines += "total_atomic_force=$totalText"
+        }
+        else {
+            $lines += "total_atomic_force=$totalText $unit"
+        }
+
+        $atoms = @()
+        $atomsValue = & $GetNestedValue $forces @("atoms")
+        if ($null -ne $atomsValue) {
+            $atoms = @($atomsValue)
+        }
+        if ($atoms.Count -gt 0) {
+            $headerUnit = if ([string]::IsNullOrWhiteSpace($unit)) { "" } else { " ($unit)" }
+            $lines += ""
+            $lines += "Forces$headerUnit"
+            $lines += ("{0,6} {1,18} {2,18} {3,18} {4,18}" -f "atom", "x", "y", "z", "|f|")
+            foreach ($atom in $atoms) {
+                $lines += (
+                    "{0,6} {1,18} {2,18} {3,18} {4,18}" -f
+                    (& $FormatResultValue (& $GetNestedValue $atom @("atom")) ""),
+                    (& $FormatResultValue (& $GetNestedValue $atom @("x")) ""),
+                    (& $FormatResultValue (& $GetNestedValue $atom @("y")) ""),
+                    (& $FormatResultValue (& $GetNestedValue $atom @("z")) ""),
+                    (& $FormatResultValue (& $GetNestedValue $atom @("norm")) "")
+                )
+            }
+        }
+        $forceSum = & $GetNestedValue $forces @("sum")
+        if ($null -ne $forceSum) {
+            $lines += (
+                "{0,6} {1,18} {2,18} {3,18} {4,18}" -f
+                "Sum",
+                (& $FormatResultValue (& $GetNestedValue $forceSum @("x")) ""),
+                (& $FormatResultValue (& $GetNestedValue $forceSum @("y")) ""),
+                (& $FormatResultValue (& $GetNestedValue $forceSum @("z")) ""),
+                ""
+            )
+        }
+        return ($lines -join "`r`n")
+    }.GetNewClosure()
+
+    $BuildResultSummaryFromArtifacts = {
+        param([Parameter(Mandatory = $true)][hashtable]$Artifacts)
+        $energyText = & $FormatResultValue ($Artifacts["total_energy_hartree"])
+        $forceText = & $FormatResultValue ($Artifacts["total_atomic_force"])
+        $forceUnit = [string]$Artifacts["force_unit"]
+        if (-not [string]::IsNullOrWhiteSpace($forceUnit)) {
+            $forceText = "$forceText $forceUnit"
+        }
+        $lines = @(
+            "Result summary",
+            "status=$($Artifacts["status"])",
+            "returncode=$($Artifacts["returncode"])",
+            "mode=$($Artifacts["mode"])",
+            "project=$($Artifacts["project_name"])",
+            "run_type=$($Artifacts["run_type"])",
+            "cp2k_output.status=$($Artifacts["output_status"])",
+            "warnings=$($Artifacts["warning_count"])",
+            "program_ended=$($Artifacts["program_ended"])",
+            "total_energy_hartree=$energyText",
+            "total_atomic_force=$forceText",
+            "input=$($Artifacts["paths"]["input"])",
+            "output=$($Artifacts["paths"]["output"])",
+            "metadata=$($Artifacts["paths"]["metadata"])"
+        )
         return ($lines -join "`r`n")
     }.GetNewClosure()
 
     $SetArtifactsFromMetadata = {
         param([Parameter(Mandatory = $true)]$Metadata)
         $summary = $Metadata.cp2k_output
+        $forces = & $GetNestedValue $summary @("forces")
+        $forceUnit = if ($null -ne $forces) { & $GetNestedPath $forces @("unit") } else { "" }
+        $totalAtomicForce = if ($null -ne $forces) { & $FormatResultValue (& $GetNestedValue $forces @("total_atomic_force")) "" } else { "" }
         $artifacts = @{
             status = (& $GetJsonProperty $Metadata "status" "")
             returncode = (& $GetJsonProperty $Metadata "returncode" "")
+            mode = (& $GetNestedPath $Metadata @("job", "mode"))
+            project_name = (& $GetNestedPath $Metadata @("quickstep", "project_name"))
+            run_type = (& $GetNestedPath $Metadata @("quickstep", "run_type"))
             output_status = (& $GetJsonProperty $summary "status" "")
             warning_count = (& $GetJsonProperty $summary "warning_count" "")
             program_ended = (& $GetJsonProperty $summary "program_ended" "")
             ended_at = (& $GetJsonProperty $summary "ended_at" "")
+            total_energy_hartree = (& $FormatResultValue (& $GetNestedValue $summary @("total_energy_hartree")) "")
+            total_atomic_force = $totalAtomicForce
+            force_unit = $forceUnit
             paths = @{
                 input = (& $GetMetadataFilePath $Metadata "input")
                 output = (& $GetMetadataFilePath $Metadata "output")
@@ -700,6 +882,13 @@ function New-WinQStepWindow {
                 stdout = (& $GetMetadataFilePath $Metadata "stdout")
                 stderr = (& $GetMetadataFilePath $Metadata "stderr")
             }
+            result_text = (& $BuildResultSummaryFromMetadata $Metadata)
+        }
+        if ([string]::IsNullOrWhiteSpace([string]$artifacts["project_name"])) {
+            $artifacts["project_name"] = (& $GetNestedPath $Metadata @("workflow", "template", "project_name"))
+        }
+        if ([string]::IsNullOrWhiteSpace([string]$artifacts["run_type"])) {
+            $artifacts["run_type"] = (& $GetNestedPath $Metadata @("workflow", "template", "run_type"))
         }
         $artifactState["Current"] = $artifacts
         $controls["ArtifactSummaryText"].Text = & $BuildArtifactSummary $artifacts
@@ -712,10 +901,16 @@ function New-WinQStepWindow {
         $artifacts = @{
             status = (& $GetJsonProperty $Item "status" "")
             returncode = (& $GetJsonProperty $Item "returncode" "")
+            mode = (& $GetJsonProperty $Item "mode" "")
+            project_name = (& $GetJsonProperty $Item "project_name" "")
+            run_type = (& $GetJsonProperty $Item "run_type" "")
             output_status = (& $GetJsonProperty $Item "output_status" "")
             warning_count = (& $GetJsonProperty $Item "warning_count" "")
             program_ended = (& $GetJsonProperty $Item "program_ended" "")
             ended_at = ""
+            total_energy_hartree = (& $GetJsonProperty $Item "total_energy_hartree" "")
+            total_atomic_force = (& $GetJsonProperty $Item "total_atomic_force" "")
+            force_unit = (& $GetJsonProperty $Item "force_unit" "")
             paths = @{
                 input = (& $GetJsonProperty $Item "input_path" "")
                 output = (& $GetJsonProperty $Item "output_path" "")
@@ -724,6 +919,7 @@ function New-WinQStepWindow {
                 stderr = (& $GetJsonProperty $Item "stderr_path" "")
             }
         }
+        $artifacts["result_text"] = & $BuildResultSummaryFromArtifacts $artifacts
         $artifactState["Current"] = $artifacts
         $controls["ArtifactSummaryText"].Text = & $BuildArtifactSummary $artifacts
         & $UpdateArtifactControls
@@ -741,6 +937,74 @@ function New-WinQStepWindow {
         catch {
             return $null
         }
+    }.GetNewClosure()
+
+    $ViewResultSummary = {
+        $current = $artifactState["Current"]
+        if ($null -eq $current -or [string]::IsNullOrWhiteSpace([string]$current["result_text"])) {
+            throw "No result summary is available."
+        }
+        $path = ""
+        if ($null -ne $current["paths"] -and $current["paths"].ContainsKey("results")) {
+            $path = [string]$current["paths"]["results"]
+        }
+        $title = if ([string]::IsNullOrWhiteSpace($path)) { "current job" } else { $path }
+        $text = [string]$current["result_text"]
+        $controls["ArtifactText"].Text = "--- results: $title ---`r`n$text"
+        $controls["LogText"].Text = $text
+    }.GetNewClosure()
+
+    $GetResultSummaryPath = {
+        param([Parameter(Mandatory = $true)][hashtable]$Current)
+        $paths = $Current["paths"]
+        $candidate = ""
+        foreach ($key in @("metadata", "output", "input")) {
+            if ($null -ne $paths -and $paths.ContainsKey($key)) {
+                $candidate = [string]$paths[$key]
+                if (-not [string]::IsNullOrWhiteSpace($candidate)) {
+                    break
+                }
+            }
+        }
+        if ([string]::IsNullOrWhiteSpace($candidate)) {
+            $jobDir = & $ResolveWindowsWorkspacePath $controls["JobDirBox"].Text
+            [System.IO.Directory]::CreateDirectory($jobDir) | Out-Null
+            return (Join-Path $jobDir "winqstep.results.txt")
+        }
+        $parent = Split-Path -Parent $candidate
+        if ([string]::IsNullOrWhiteSpace($parent)) {
+            $parent = & $ResolveWindowsWorkspacePath $controls["JobDirBox"].Text
+        }
+        [System.IO.Directory]::CreateDirectory($parent) | Out-Null
+        $stem = [System.IO.Path]::GetFileNameWithoutExtension($candidate)
+        if ($stem.EndsWith(".winqstep", [System.StringComparison]::OrdinalIgnoreCase)) {
+            $stem = $stem.Substring(0, $stem.Length - ".winqstep".Length)
+        }
+        if ([string]::IsNullOrWhiteSpace($stem)) {
+            $stem = "winqstep"
+        }
+        return (Join-Path $parent "$stem.results.txt")
+    }.GetNewClosure()
+
+    $SaveResultSummary = {
+        $current = $artifactState["Current"]
+        if ($null -eq $current -or [string]::IsNullOrWhiteSpace([string]$current["result_text"])) {
+            throw "No result summary is available."
+        }
+        $path = & $GetResultSummaryPath $current
+        $text = [string]$current["result_text"]
+        $encoding = $Script:Utf8NoBomEncoding
+        if ($null -eq $encoding) {
+            $encoding = New-Object System.Text.UTF8Encoding($false)
+        }
+        [System.IO.File]::WriteAllText($path, ($text + "`r`n"), $encoding)
+        $current["paths"]["results"] = $path
+        $artifactState["Current"] = $current
+        $controls["ArtifactSummaryText"].Text = & $BuildArtifactSummary $current
+        $controls["ArtifactText"].Text = "--- results: $path ---`r`n$text"
+        $controls["LogText"].Text = "Saved result summary: $path`r`n`r`n$text"
+        & $UpdateArtifactControls
+        return $path
     }.GetNewClosure()
 
     $ViewArtifact = {
@@ -1673,6 +1937,18 @@ function New-WinQStepWindow {
         & $CancelAsyncJob
     }.GetNewClosure())
 
+    $controls["ViewResultsButton"].Add_Click({
+        & $InvokeGuiAction -Status (Get-WinQStepText "status.viewing_results_artifact") -Action {
+            & $ViewResultSummary
+        }
+    }.GetNewClosure())
+
+    $controls["SaveResultsButton"].Add_Click({
+        & $InvokeGuiAction -Status (Get-WinQStepText "status.saving_results_artifact") -Action {
+            $null = & $SaveResultSummary
+        }
+    }.GetNewClosure())
+
     $controls["ViewInputButton"].Add_Click({
         & $InvokeGuiAction -Status (Get-WinQStepText "status.viewing_input_artifact") -Action {
             & $ViewArtifact "input"
@@ -1973,6 +2249,25 @@ if ($ButtonSmokeTest) {
             status = "completed"
             warning_count = 0
             program_ended = $true
+            total_energy_hartree = -17.219350325303314
+            forces = [ordered]@{
+                unit = "hartree/bohr"
+                atoms = @(
+                    [ordered]@{
+                        atom = 1
+                        x = 0.0
+                        y = 0.0
+                        z = -0.0135588799
+                        norm = 0.0135588799
+                    }
+                )
+                sum = [ordered]@{
+                    x = 0.0
+                    y = 0.0
+                    z = 0.00148299452
+                }
+                total_atomic_force = 0.00148299452
+            }
         }
     }
     [System.IO.File]::WriteAllText($historyInputPath, "&GLOBAL`n  PROJECT button_history`n&END GLOBAL`n", $Script:Utf8NoBomEncoding)
@@ -2084,6 +2379,18 @@ if ($ButtonSmokeTest) {
         }
     }
 
+    & $RecordButtonSmokeClick "ViewResultsButton"
+    $artifactResultsTextBeforeClear = [string]$window.FindName("ArtifactText").Text
+    & $RecordButtonSmokeClick "SaveResultsButton"
+    $artifactSummaryAfterSave = [string]$window.FindName("ArtifactSummaryText").Text
+    $savedResultsPath = Join-Path $historySmokeDir "button_history.results.txt"
+    $savedResultsText = if ([System.IO.File]::Exists($savedResultsPath)) {
+        [System.IO.File]::ReadAllText($savedResultsPath, [System.Text.Encoding]::UTF8)
+    }
+    else {
+        ""
+    }
+
     foreach ($buttonName in @("ViewInputButton", "ViewOutputButton", "ViewMetadataButton", "ViewStdoutButton", "ViewStderrButton")) {
         & $RecordButtonSmokeClick $buttonName
     }
@@ -2096,6 +2403,7 @@ if ($ButtonSmokeTest) {
     & $RecordButtonSmokeClick "ClearButton"
 
     $artifactViewButtonsDisabled = @(
+        "ViewResultsButton", "SaveResultsButton",
         "ViewInputButton", "ViewOutputButton", "ViewMetadataButton", "ViewStdoutButton", "ViewStderrButton"
     ).Where({ [bool]$window.FindName($_).IsEnabled }).Count -eq 0
     $textFieldsCleared = @(
@@ -2117,6 +2425,11 @@ if ($ButtonSmokeTest) {
     $report["workflow_preview_has_global"] = $workflowPreviewText.Contains("&GLOBAL")
     $report["existing_preview_has_global"] = $existingPreviewText.Contains("&GLOBAL")
     $report["artifact_summary_has_history"] = $artifactSummaryBeforeClear.Contains("button_history")
+    $report["artifact_summary_has_energy"] = $artifactSummaryBeforeClear.Contains("energy_hartree=-17.2193503253033")
+    $report["artifact_results_has_force_table"] = ($artifactResultsTextBeforeClear.Contains("Forces (hartree/bohr)") -and $artifactResultsTextBeforeClear.Contains("total_atomic_force=0.00148299452 hartree/bohr"))
+    $report["result_summary_saved"] = [System.IO.File]::Exists($savedResultsPath)
+    $report["result_summary_path_in_summary"] = $artifactSummaryAfterSave.Contains("results=[exists] $savedResultsPath")
+    $report["result_summary_file_has_force"] = $savedResultsText.Contains("total_atomic_force=0.00148299452 hartree/bohr")
     $report["artifact_text_has_stderr"] = $artifactTextBeforeClear.Contains("stderr smoke")
     $report["artifact_log_has_stderr"] = $logTextBeforeClear.Contains("stderr smoke")
     $report["preview_text_has_output"] = $previewTextBeforeClear.Contains("PROGRAM ENDED")
@@ -2137,6 +2450,11 @@ if ($ButtonSmokeTest) {
         $report["workflow_preview_has_global"] -and
         $report["existing_preview_has_global"] -and
         $report["artifact_summary_has_history"] -and
+        $report["artifact_summary_has_energy"] -and
+        $report["artifact_results_has_force_table"] -and
+        $report["result_summary_saved"] -and
+        $report["result_summary_path_in_summary"] -and
+        $report["result_summary_file_has_force"] -and
         $report["artifact_text_has_stderr"] -and
         $report["artifact_log_has_stderr"] -and
         $report["preview_text_has_output"] -and
@@ -2243,6 +2561,12 @@ if ($SmokeTest) {
     $report["job_status_text_initial"] = [string]$window.FindName("JobStatusText").Text
     $report["artifact_summary_loaded"] = ($window.FindName("ArtifactSummaryText") -is [System.Windows.Controls.TextBox])
     $report["artifact_text_loaded"] = ($window.FindName("ArtifactText") -is [System.Windows.Controls.TextBox])
+    $report["artifact_result_buttons_loaded"] = @(
+        "ViewResultsButton", "SaveResultsButton"
+    ).Where({ $window.FindName($_) -is [System.Windows.Controls.Button] }).Count
+    $report["artifact_result_buttons_initially_disabled"] = @(
+        "ViewResultsButton", "SaveResultsButton"
+    ).Where({ [bool]$window.FindName($_).IsEnabled }).Count -eq 0
     $report["artifact_view_buttons_loaded"] = @(
         "ViewInputButton", "ViewOutputButton", "ViewMetadataButton", "ViewStdoutButton", "ViewStderrButton"
     ).Where({ $window.FindName($_) -is [System.Windows.Controls.Button] }).Count

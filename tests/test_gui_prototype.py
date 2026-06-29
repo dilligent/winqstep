@@ -63,10 +63,17 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn("JobStatusText", xaml_text)
         self.assertIn("ArtifactSummaryText", xaml_text)
         self.assertIn("ArtifactText", xaml_text)
+        self.assertIn("ViewResultsButton", xaml_text)
+        self.assertIn("SaveResultsButton", xaml_text)
         self.assertIn("ViewInputButton", xaml_text)
         self.assertIn("SetArtifactsFromMetadata", script_text)
         self.assertIn("SetArtifactsFromHistoryItem", script_text)
+        self.assertIn("BuildResultSummaryFromMetadata", script_text)
+        self.assertIn("ViewResultSummary", script_text)
+        self.assertIn("SaveResultSummary", script_text)
         self.assertIn("ViewArtifact", script_text)
+        self.assertIn('"button.results": "Results"', english_text)
+        self.assertIn('"button.results": "结果"', chinese_text)
         self.assertIn("scripts\\validate_job_inputs.py", script_text)
         self.assertIn("scripts\\check_startup.py", helper_text)
         self.assertIn("scripts\\build_release.py", helper_text)
@@ -108,6 +115,7 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn('$controls["RunButton"].Add_Click({\n        & $StartAsyncJob', script_text)
         self.assertIn('$controls["CancelJobButton"].Add_Click({\n        & $CancelAsyncJob', script_text)
         self.assertIn('$controls["ViewOutputButton"].Add_Click({\n        & $InvokeGuiAction -Status (Get-WinQStepText "status.viewing_output_artifact") -Action', script_text)
+        self.assertIn('$controls["ViewResultsButton"].Add_Click({\n        & $InvokeGuiAction -Status (Get-WinQStepText "status.viewing_results_artifact") -Action', script_text)
         self.assertIn('$InvokeGuiAction -Status (Get-WinQStepText "status.detecting_environment") -Action', script_text)
         self.assertIn('$InvokeGuiAction -Status (Get-WinQStepText "status.importing_structure") -Action', script_text)
         self.assertIn('$InvokeGuiAction -Status (Get-WinQStepText "status.loading_job_history") -Action', script_text)
@@ -162,6 +170,8 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertEqual(report["job_status_text_initial"], "")
         self.assertTrue(report["artifact_summary_loaded"])
         self.assertTrue(report["artifact_text_loaded"])
+        self.assertEqual(report["artifact_result_buttons_loaded"], 2)
+        self.assertTrue(report["artifact_result_buttons_initially_disabled"])
         self.assertEqual(report["artifact_view_buttons_loaded"], 5)
         self.assertTrue(report["artifact_view_buttons_initially_disabled"])
         self.assertTrue(report["config_tab_loaded"])
@@ -320,6 +330,8 @@ class GuiPrototypeTests(unittest.TestCase):
             "PreviewExistingInputButton",
             "HistoryButton",
             "HistoryGridDoubleClick",
+            "ViewResultsButton",
+            "SaveResultsButton",
             "ViewInputButton",
             "ViewOutputButton",
             "ViewMetadataButton",
@@ -342,6 +354,11 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertTrue(report["workflow_preview_has_global"])
         self.assertTrue(report["existing_preview_has_global"])
         self.assertTrue(report["artifact_summary_has_history"])
+        self.assertTrue(report["artifact_summary_has_energy"])
+        self.assertTrue(report["artifact_results_has_force_table"])
+        self.assertTrue(report["result_summary_saved"])
+        self.assertTrue(report["result_summary_path_in_summary"])
+        self.assertTrue(report["result_summary_file_has_force"])
         self.assertTrue(report["artifact_text_has_stderr"])
         self.assertTrue(report["artifact_log_has_stderr"])
         self.assertTrue(report["preview_text_has_output"])

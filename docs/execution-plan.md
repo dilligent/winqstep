@@ -13,10 +13,11 @@ Each round should end with a focused commit.
   model, workflow, GUI prototype, existing-input jobs, output summaries, job
   history, config editing, template editing, CP2K data inspection, and
   asynchronous GUI job execution, GUI job lifecycle hardening, GUI output
-  inspection, job input preflight validation, startup diagnostics, and GUI
-  modularization, GUI localization, persisted GUI language preferences, local
-  release packaging, release install smoke testing, and user guide polish.
-- Next active round: Round 24, release candidate workflow walkthrough.
+  inspection, structured GUI result summaries, job input preflight validation,
+  startup diagnostics, and GUI modularization, GUI localization, persisted GUI
+  language preferences, local release packaging, release install smoke testing,
+  and user guide polish.
+- Next active round: Round 30, release candidate workflow walkthrough.
 - Known local facts:
   - WSL2 is available.
   - Default distro is `Ubuntu`.
@@ -973,6 +974,41 @@ Commit boundary:
 
 - One commit for ENERGY_FORCE examples, force printing, force parsing, live
   verification docs, and tests.
+
+## Round 29: GUI Result Summary and Export
+
+Status: implemented.
+
+Goal: make parsed CP2K results easier to inspect and export from the GUI,
+especially `ENERGY_FORCE` energy/force summaries.
+
+Local verification:
+
+- `scripts/start_gui.ps1 -SmokeTest -Language en-US` validates the new result
+  buttons are present and disabled before a job is selected.
+- `scripts/start_gui.ps1 -ButtonSmokeTest -SkipLiveProbes -Language en-US`
+  loads a synthetic ENERGY_FORCE history item, opens `Results`, saves
+  `button_history.results.txt`, and checks the saved force summary.
+- Targeted unit tests cover GUI static wiring, localization keys, startup
+  resource completeness, and history energy/force fields.
+
+Tasks:
+
+- Add `Results` and `Save Results` controls to the `Artifacts` tab.
+- Build a structured result text summary from job metadata.
+- Include total energy, total atomic force, and per-atom forces when available.
+- Save the result summary as `*.results.txt` next to job metadata.
+- Carry total energy and total atomic force through history scan items.
+
+Acceptance:
+
+- Users can inspect parsed scientific results without opening raw metadata.
+- ENERGY_FORCE force tables are visible in the GUI result summary.
+- Saved result summaries are deterministic UTF-8 text files.
+
+Commit boundary:
+
+- One commit for result summary GUI controls, history fields, tests, and docs.
 
 ## Working Rules
 

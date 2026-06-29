@@ -65,6 +65,7 @@ def _history_item(metadata_path: Path) -> dict[str, Any]:
     stdout_path = _metadata_path(metadata, "stdout")
     stderr_path = _metadata_path(metadata, "stderr")
     cp2k_output = _cp2k_output_summary(metadata, output_path)
+    forces = _as_dict(cp2k_output.get("forces"))
 
     return {
         "metadata_path": str(metadata_path),
@@ -83,6 +84,9 @@ def _history_item(metadata_path: Path) -> dict[str, Any]:
         "output_status": cp2k_output.get("status"),
         "warning_count": cp2k_output.get("warning_count"),
         "program_ended": cp2k_output.get("program_ended"),
+        "total_energy_hartree": cp2k_output.get("total_energy_hartree"),
+        "total_atomic_force": forces.get("total_atomic_force"),
+        "force_unit": _optional_text(forces.get("unit")),
     }
 
 
