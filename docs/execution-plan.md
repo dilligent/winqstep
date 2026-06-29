@@ -19,8 +19,9 @@ Each round should end with a focused commit.
   release-candidate workflow walkthrough, release handoff notes, final release
   artifact build, release install smoke, live CP2K release validation, and user
   guide polish, GUI async run completion hardening, and window-level GUI
-  overflow scrolling, and QuickStep CELL/PERIODIC template support.
-- Next active round: Round 36, QuickStep SCF control expansion.
+  overflow scrolling, QuickStep CELL/PERIODIC template support, and QuickStep
+  SCF control expansion.
+- Next active round: Round 37, QuickStep KPOINTS support.
 - Known local facts:
   - WSL2 is available.
   - Default distro is `Ubuntu`.
@@ -1240,6 +1241,48 @@ Commit boundary:
 
 - One commit for CELL/PERIODIC model, renderer, template/GUI controls, tests,
   and docs.
+
+## Round 36: QuickStep SCF Control Expansion
+
+Status: implemented.
+
+Goal: expose common QuickStep SCF solver controls without broadening into
+spin-polarized DFT, DFT+U, hybrid functional, or MD workflows yet.
+
+Local verification:
+
+- A real local CP2K 2025.2 run completed with `DIAGONALIZATION`,
+  `BROYDEN_MIXING`, `SMEAR`, and `TELEC [K]` in
+  `outputs/round36-scf-live`, return code `0`, and zero CP2K warnings.
+
+Tasks:
+
+- Add typed DFT fields for `ADDED_MOS`, `OT`, `DIAGONALIZATION`, `MIXING`, and
+  `SMEAR`.
+- Render `SCF/&OT` for OT minimization, and render `SCF/&DIAGONALIZATION`,
+  optional `SCF/&MIXING`, and optional `SCF/&SMEAR` for diagonalization.
+- Keep existing templates on a `DEFAULT` SCF method so previous generated input
+  snapshots stay unchanged unless the user explicitly enables advanced SCF
+  controls.
+- Validate method choices, numeric ranges, and incompatible combinations such as
+  mixing or smearing without `DIAGONALIZATION`.
+- Expose the new fields in `scripts/manage_template.py` and the GUI Template
+  tab with editable drop-downs and checkboxes.
+- Add tests for renderer output, template normalization, invalid combinations,
+  GUI controls, localization keys, and default compatibility.
+
+Acceptance:
+
+- Default ENERGY, ENERGY_FORCE, and GEO_OPT generated inputs remain stable.
+- OT templates render only an `&OT` subsection.
+- Diagonalization templates can render `ADDED_MOS`, `&DIAGONALIZATION`,
+  `&MIXING`, and `&SMEAR`.
+- The GUI loads and saves the new SCF controls through the same template JSON
+  path used by CLI workflows.
+
+Commit boundary:
+
+- One commit for SCF model, renderer, template/GUI controls, tests, and docs.
 
 ## Working Rules
 

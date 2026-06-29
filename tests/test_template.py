@@ -67,6 +67,50 @@ class TemplateTests(unittest.TestCase):
         self.assertEqual(transform["fallback_cell"]["c"], [0.0, 0.0, 14.0])
         self.assertFalse(transform["center_atoms"])
 
+    def test_merge_fields_updates_scf_controls(self) -> None:
+        template = load_template(ENERGY_TEMPLATE)
+        merged = merge_template_fields(
+            template,
+            {
+                "scf_method": "diagonalization",
+                "added_mos": "8",
+                "diagonalization_algorithm": "davidson",
+                "mixing_enabled": True,
+                "mixing_method": "pulay_mixing",
+                "mixing_alpha": "0.25",
+                "mixing_beta": "1.0",
+                "smearing_enabled": True,
+                "smearing_method": "fermi_dirac",
+                "electronic_temperature": "500",
+            },
+        )
+        validation = validate_template(merged)
+
+        self.assertTrue(validation["valid"], validation["errors"])
+        dft = validation["template"]["dft"]
+        self.assertEqual(dft["scf_method"], "DIAGONALIZATION")
+        self.assertEqual(dft["added_mos"], 8)
+        self.assertEqual(dft["diagonalization_algorithm"], "DAVIDSON")
+        self.assertTrue(dft["mixing_enabled"])
+        self.assertEqual(dft["mixing_method"], "PULAY_MIXING")
+        self.assertTrue(dft["smearing_enabled"])
+        self.assertEqual(dft["electronic_temperature"], "500")
+
+    def test_validate_rejects_smearing_without_added_mos(self) -> None:
+        template = load_template(ENERGY_TEMPLATE)
+        merged = merge_template_fields(
+            template,
+            {
+                "scf_method": "DIAGONALIZATION",
+                "added_mos": "0",
+                "smearing_enabled": True,
+            },
+        )
+        validation = validate_template(merged)
+
+        self.assertFalse(validation["valid"])
+        self.assertIn("dft.smearing_enabled requires dft.added_mos", "\n".join(validation["errors"]))
+
     def test_blank_geo_fields_do_not_break_energy_template(self) -> None:
         template = load_template(ENERGY_TEMPLATE)
         merged = merge_template_fields(template, {"optimizer": "", "geo_opt_max_iter": ""})
@@ -128,6 +172,18 @@ class TemplateTests(unittest.TestCase):
                 "rel_cutoff",
                 "eps_scf",
                 "max_scf",
+                "scf_method",
+                "added_mos",
+                "ot_minimizer",
+                "ot_preconditioner",
+                "diagonalization_algorithm",
+                "mixing_enabled",
+                "mixing_method",
+                "mixing_alpha",
+                "mixing_beta",
+                "smearing_enabled",
+                "smearing_method",
+                "electronic_temperature",
             ])
             self.assertFalse(template_path.read_bytes().startswith(b"\xef\xbb\xbf"))
 

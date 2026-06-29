@@ -64,6 +64,51 @@ class QuickStepTests(unittest.TestCase):
         with self.assertRaisesRegex(QuickStepInputError, "periodic cell vectors"):
             quickstep_input_from_dict(data)
 
+    def test_renders_ot_scf_section(self) -> None:
+        data = json.loads((ROOT / "examples" / "quickstep_energy.json").read_text(encoding="utf-8"))
+        data["dft"]["scf_method"] = "ot"
+        data["dft"]["ot_minimizer"] = "diis"
+        data["dft"]["ot_preconditioner"] = "full_kinetic"
+
+        rendered = render_quickstep_input(quickstep_input_from_dict(data))
+
+        self.assertIn("      &OT\n        MINIMIZER DIIS\n        PRECONDITIONER FULL_KINETIC\n      &END OT\n", rendered)
+        self.assertNotIn("&DIAGONALIZATION", rendered)
+
+    def test_renders_diagonalization_mixing_and_smearing(self) -> None:
+        data = json.loads((ROOT / "examples" / "quickstep_energy.json").read_text(encoding="utf-8"))
+        data["dft"].update(
+            {
+                "scf_method": "diagonalization",
+                "added_mos": 4,
+                "diagonalization_algorithm": "standard",
+                "mixing_enabled": True,
+                "mixing_method": "broyden_mixing",
+                "mixing_alpha": "0.3",
+                "mixing_beta": "1.5",
+                "smearing_enabled": True,
+                "smearing_method": "fermi_dirac",
+                "electronic_temperature": "500",
+            }
+        )
+
+        rendered = render_quickstep_input(quickstep_input_from_dict(data))
+
+        self.assertIn("      ADDED_MOS 4\n", rendered)
+        self.assertIn("      &DIAGONALIZATION\n        ALGORITHM STANDARD\n      &END DIAGONALIZATION\n", rendered)
+        self.assertIn("      &MIXING\n        METHOD BROYDEN_MIXING\n        ALPHA 0.3\n        BETA 1.5\n      &END MIXING\n", rendered)
+        self.assertIn(
+            "      &SMEAR ON\n        METHOD FERMI_DIRAC\n        TELEC [K] 500\n      &END SMEAR\n",
+            rendered,
+        )
+
+    def test_rejects_mixing_without_diagonalization(self) -> None:
+        data = json.loads((ROOT / "examples" / "quickstep_energy.json").read_text(encoding="utf-8"))
+        data["dft"]["mixing_enabled"] = True
+
+        with self.assertRaisesRegex(QuickStepInputError, "mixing requires"):
+            quickstep_input_from_dict(data)
+
     def test_cli_writes_output_file(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
             output_path = Path(tmp_dir) / "water.inp"

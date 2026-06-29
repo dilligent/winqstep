@@ -32,6 +32,18 @@ FIELD_ARGS = {
     "rel_cutoff": "rel_cutoff",
     "eps_scf": "eps_scf",
     "max_scf": "max_scf",
+    "scf_method": "scf_method",
+    "added_mos": "added_mos",
+    "ot_minimizer": "ot_minimizer",
+    "ot_preconditioner": "ot_preconditioner",
+    "diagonalization_algorithm": "diagonalization_algorithm",
+    "mixing_enabled": "mixing_enabled",
+    "mixing_method": "mixing_method",
+    "mixing_alpha": "mixing_alpha",
+    "mixing_beta": "mixing_beta",
+    "smearing_enabled": "smearing_enabled",
+    "smearing_method": "smearing_method",
+    "electronic_temperature": "electronic_temperature",
     "optimizer": "optimizer",
     "geo_opt_max_iter": "geo_opt_max_iter",
     "fallback_cell_periodic": "fallback_cell_periodic",
@@ -61,6 +73,18 @@ def main() -> int:
     parser.add_argument("--rel-cutoff")
     parser.add_argument("--eps-scf")
     parser.add_argument("--max-scf")
+    parser.add_argument("--scf-method")
+    parser.add_argument("--added-mos")
+    parser.add_argument("--ot-minimizer")
+    parser.add_argument("--ot-preconditioner")
+    parser.add_argument("--diagonalization-algorithm")
+    parser.add_argument("--mixing-enabled")
+    parser.add_argument("--mixing-method")
+    parser.add_argument("--mixing-alpha")
+    parser.add_argument("--mixing-beta")
+    parser.add_argument("--smearing-enabled")
+    parser.add_argument("--smearing-method")
+    parser.add_argument("--electronic-temperature")
     parser.add_argument("--optimizer")
     parser.add_argument("--geo-opt-max-iter")
     parser.add_argument("--fallback-cell-periodic")

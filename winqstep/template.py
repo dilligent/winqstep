@@ -7,7 +7,18 @@ import re
 from pathlib import Path
 from typing import Any
 
-from .quickstep import DftSettings, GeoOptSettings, PERIODIC_VALUES, RUN_TYPES
+from .quickstep import (
+    DIAGONALIZATION_ALGORITHMS,
+    MIXING_METHODS,
+    OT_MINIMIZERS,
+    OT_PRECONDITIONERS,
+    PERIODIC_VALUES,
+    RUN_TYPES,
+    SCF_METHODS,
+    SMEARING_METHODS,
+    DftSettings,
+    GeoOptSettings,
+)
 
 
 TEMPLATE_KEY_ORDER = (
@@ -28,6 +39,18 @@ DFT_KEY_ORDER = (
     "rel_cutoff",
     "eps_scf",
     "max_scf",
+    "scf_method",
+    "added_mos",
+    "ot_minimizer",
+    "ot_preconditioner",
+    "diagonalization_algorithm",
+    "mixing_enabled",
+    "mixing_method",
+    "mixing_alpha",
+    "mixing_beta",
+    "smearing_enabled",
+    "smearing_method",
+    "electronic_temperature",
 )
 GEO_OPT_KEY_ORDER = ("optimizer", "max_iter")
 FALLBACK_CELL_FIELD_KEYS = (
@@ -225,7 +248,59 @@ def _normalize_dft(data: dict[str, Any], errors: list[str]) -> dict[str, Any]:
         ),
         "eps_scf": _eps_value(data.get("eps_scf", defaults.eps_scf), errors),
         "max_scf": _positive_int_value(data.get("max_scf", defaults.max_scf), "dft.max_scf", errors),
+        "scf_method": _choice_value(
+            data.get("scf_method", defaults.scf_method),
+            "dft.scf_method",
+            SCF_METHODS,
+            errors,
+        ),
+        "added_mos": _int_min_value(data.get("added_mos", defaults.added_mos), "dft.added_mos", -1, errors),
+        "ot_minimizer": _choice_value(
+            data.get("ot_minimizer", defaults.ot_minimizer),
+            "dft.ot_minimizer",
+            OT_MINIMIZERS,
+            errors,
+        ),
+        "ot_preconditioner": _choice_value(
+            data.get("ot_preconditioner", defaults.ot_preconditioner),
+            "dft.ot_preconditioner",
+            OT_PRECONDITIONERS,
+            errors,
+        ),
+        "diagonalization_algorithm": _choice_value(
+            data.get("diagonalization_algorithm", defaults.diagonalization_algorithm),
+            "dft.diagonalization_algorithm",
+            DIAGONALIZATION_ALGORITHMS,
+            errors,
+        ),
+        "mixing_enabled": _bool_value(data.get("mixing_enabled", defaults.mixing_enabled)),
+        "mixing_method": _choice_value(
+            data.get("mixing_method", defaults.mixing_method),
+            "dft.mixing_method",
+            MIXING_METHODS,
+            errors,
+        ),
+        "mixing_alpha": _positive_float_string(data.get("mixing_alpha", defaults.mixing_alpha), "dft.mixing_alpha", errors),
+        "mixing_beta": _positive_float_string(data.get("mixing_beta", defaults.mixing_beta), "dft.mixing_beta", errors),
+        "smearing_enabled": _bool_value(data.get("smearing_enabled", defaults.smearing_enabled)),
+        "smearing_method": _choice_value(
+            data.get("smearing_method", defaults.smearing_method),
+            "dft.smearing_method",
+            SMEARING_METHODS,
+            errors,
+        ),
+        "electronic_temperature": _positive_float_string(
+            data.get("electronic_temperature", defaults.electronic_temperature),
+            "dft.electronic_temperature",
+            errors,
+        ),
     }
+    if dft["mixing_enabled"] and dft["scf_method"] != "DIAGONALIZATION":
+        errors.append("dft.mixing_enabled requires dft.scf_method DIAGONALIZATION")
+    if dft["smearing_enabled"] and dft["scf_method"] != "DIAGONALIZATION":
+        errors.append("dft.smearing_enabled requires dft.scf_method DIAGONALIZATION")
+    if dft["smearing_enabled"] and dft["added_mos"] == 0:
+        errors.append("dft.smearing_enabled requires dft.added_mos to add unoccupied orbitals")
     return {key: dft[key] for key in DFT_KEY_ORDER}
 
 
@@ -357,6 +432,20 @@ def _positive_int_value(value: Any, key: str, errors: list[str]) -> int:
     return parsed
 
 
+def _int_min_value(value: Any, key: str, minimum: int, errors: list[str]) -> int:
+    parsed = _int_value(value, key, errors)
+    if parsed < minimum:
+        errors.append(f"{key} must be {minimum} or greater")
+    return parsed
+
+
+def _choice_value(value: Any, key: str, choices: set[str], errors: list[str]) -> str:
+    text = _required_string(value, key, errors).upper()
+    if text and text not in choices:
+        errors.append(f"{key} has an unsupported value")
+    return text
+
+
 def _eps_value(value: Any, errors: list[str]) -> str:
     text = _string_value(value, "dft.eps_scf", errors).upper()
     try:
@@ -366,6 +455,18 @@ def _eps_value(value: Any, errors: list[str]) -> str:
         return text
     if parsed <= 0:
         errors.append("dft.eps_scf must be positive")
+    return text
+
+
+def _positive_float_string(value: Any, key: str, errors: list[str]) -> str:
+    text = _string_value(value, key, errors).upper()
+    try:
+        parsed = float(text.replace("D", "E"))
+    except ValueError:
+        errors.append(f"{key} must be a positive numeric value")
+        return text
+    if parsed <= 0:
+        errors.append(f"{key} must be positive")
     return text
 
 

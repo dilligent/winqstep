@@ -81,7 +81,7 @@ python .\scripts\manage_template.py --template .\examples\templates\energy_pbe.j
 ```
 
 The GUI `Template` tab uses the same command. It exposes project name, run type,
-DFT settings, GEO_OPT settings, fallback cell/periodicity settings, centering,
-and KIND basis/potential entries. Supported QuickStep run types are `ENERGY`,
-`ENERGY_FORCE`, and `GEO_OPT`. Workflow preview and run actions save and
-validate the current template before rendering input.
+DFT settings, SCF solver controls, GEO_OPT settings, fallback cell/periodicity
+settings, centering, and KIND basis/potential entries. Supported QuickStep run
+types are `ENERGY`, `ENERGY_FORCE`, and `GEO_OPT`. Workflow preview and run
+actions save and validate the current template before rendering input.

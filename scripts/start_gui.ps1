@@ -60,10 +60,18 @@ function New-WinQStepWindow {
         "TemplateProjectLabel", "RunTypeLabel", "BasisFileLabel", "PotentialFileLabel",
         "XcFunctionalLabel", "EpsScfLabel", "ChargeLabel", "MultiplicityLabel",
         "CutoffLabel", "RelCutoffLabel", "MaxScfLabel", "OptimizerLabel", "GeoMaxIterLabel",
+        "ScfMethodLabel", "AddedMosLabel", "DiagonalizationAlgorithmLabel",
+        "OtMinimizerLabel", "OtPreconditionerLabel", "MixingMethodLabel",
+        "MixingAlphaLabel", "MixingBetaLabel", "SmearingMethodLabel",
+        "ElectronicTemperatureLabel",
         "FallbackPeriodicLabel", "FallbackCellALabel", "FallbackCellBLabel", "FallbackCellCLabel",
         "TemplateProjectBox", "TemplateRunTypeBox", "BasisSetFileBox", "PotentialFileBox",
         "XcFunctionalBox", "ChargeBox", "MultiplicityBox", "CutoffBox", "RelCutoffBox",
         "EpsScfBox", "MaxScfBox", "GeoOptimizerBox", "GeoMaxIterBox",
+        "ScfMethodBox", "AddedMosBox", "DiagonalizationAlgorithmBox",
+        "OtMinimizerBox", "OtPreconditionerBox", "MixingMethodBox",
+        "MixingAlphaBox", "MixingBetaBox", "SmearingMethodBox",
+        "ElectronicTemperatureBox", "MixingEnabledBox", "SmearingEnabledBox",
         "FallbackPeriodicBox", "FallbackCellABox", "FallbackCellBBox", "FallbackCellCBox",
         "CenterAtomsBox", "KindsText",
         "KindEntriesGrid", "DataLabelsGrid", "TemplateValidationText",
@@ -110,6 +118,8 @@ function New-WinQStepWindow {
         ViewStderrButton = "button.stderr"
         WorkflowModeRadio = "mode.workflow"
         ExistingInputModeRadio = "mode.existing_input"
+        MixingEnabledBox = "label.mixing_enabled"
+        SmearingEnabledBox = "label.smearing_enabled"
         CenterAtomsBox = "label.center_atoms"
         }
         foreach ($entry in $contentLocalization.GetEnumerator()) {
@@ -158,6 +168,16 @@ function New-WinQStepWindow {
         CutoffLabel = "label.cutoff"
         RelCutoffLabel = "label.rel_cutoff"
         MaxScfLabel = "label.max_scf"
+        ScfMethodLabel = "label.scf_method"
+        AddedMosLabel = "label.added_mos"
+        DiagonalizationAlgorithmLabel = "label.diagonalization_algorithm"
+        OtMinimizerLabel = "label.ot_minimizer"
+        OtPreconditionerLabel = "label.ot_preconditioner"
+        MixingMethodLabel = "label.mixing_method"
+        MixingAlphaLabel = "label.mixing_alpha"
+        MixingBetaLabel = "label.mixing_beta"
+        SmearingMethodLabel = "label.smearing_method"
+        ElectronicTemperatureLabel = "label.electronic_temperature"
         OptimizerLabel = "label.optimizer"
         GeoMaxIterLabel = "label.geo_max_iter"
         FallbackPeriodicLabel = "label.fallback_periodic"
@@ -1301,6 +1321,18 @@ function New-WinQStepWindow {
         $controls["RelCutoffBox"].Text = & $GetJsonProperty $dft "rel_cutoff"
         $controls["EpsScfBox"].Text = & $GetJsonProperty $dft "eps_scf"
         $controls["MaxScfBox"].Text = & $GetJsonProperty $dft "max_scf"
+        $controls["ScfMethodBox"].Text = & $GetJsonProperty $dft "scf_method"
+        $controls["AddedMosBox"].Text = & $GetJsonProperty $dft "added_mos"
+        $controls["DiagonalizationAlgorithmBox"].Text = & $GetJsonProperty $dft "diagonalization_algorithm"
+        $controls["OtMinimizerBox"].Text = & $GetJsonProperty $dft "ot_minimizer"
+        $controls["OtPreconditionerBox"].Text = & $GetJsonProperty $dft "ot_preconditioner"
+        $controls["MixingEnabledBox"].IsChecked = @("1", "true", "yes", "on").Contains((& $GetJsonProperty $dft "mixing_enabled" "False").ToLowerInvariant())
+        $controls["MixingMethodBox"].Text = & $GetJsonProperty $dft "mixing_method"
+        $controls["MixingAlphaBox"].Text = & $GetJsonProperty $dft "mixing_alpha"
+        $controls["MixingBetaBox"].Text = & $GetJsonProperty $dft "mixing_beta"
+        $controls["SmearingEnabledBox"].IsChecked = @("1", "true", "yes", "on").Contains((& $GetJsonProperty $dft "smearing_enabled" "False").ToLowerInvariant())
+        $controls["SmearingMethodBox"].Text = & $GetJsonProperty $dft "smearing_method"
+        $controls["ElectronicTemperatureBox"].Text = & $GetJsonProperty $dft "electronic_temperature"
         $controls["GeoOptimizerBox"].Text = & $GetJsonProperty $geoOpt "optimizer"
         $controls["GeoMaxIterBox"].Text = & $GetJsonProperty $geoOpt "max_iter"
         $controls["FallbackPeriodicBox"].Text = & $GetJsonProperty $fallbackCell "periodic"
@@ -1352,6 +1384,18 @@ function New-WinQStepWindow {
             rel_cutoff = $controls["RelCutoffBox"].Text
             eps_scf = $controls["EpsScfBox"].Text
             max_scf = $controls["MaxScfBox"].Text
+            scf_method = $controls["ScfMethodBox"].Text
+            added_mos = $controls["AddedMosBox"].Text
+            ot_minimizer = $controls["OtMinimizerBox"].Text
+            ot_preconditioner = $controls["OtPreconditionerBox"].Text
+            diagonalization_algorithm = $controls["DiagonalizationAlgorithmBox"].Text
+            mixing_enabled = [bool]$controls["MixingEnabledBox"].IsChecked
+            mixing_method = $controls["MixingMethodBox"].Text
+            mixing_alpha = $controls["MixingAlphaBox"].Text
+            mixing_beta = $controls["MixingBetaBox"].Text
+            smearing_enabled = [bool]$controls["SmearingEnabledBox"].IsChecked
+            smearing_method = $controls["SmearingMethodBox"].Text
+            electronic_temperature = $controls["ElectronicTemperatureBox"].Text
             optimizer = $controls["GeoOptimizerBox"].Text
             geo_opt_max_iter = $controls["GeoMaxIterBox"].Text
             fallback_cell_periodic = $controls["FallbackPeriodicBox"].Text
@@ -2774,6 +2818,10 @@ if ($SmokeTest) {
         "TemplateProjectBox", "TemplateRunTypeBox", "BasisSetFileBox", "PotentialFileBox",
         "XcFunctionalBox", "EpsScfBox", "ChargeBox", "MultiplicityBox",
         "CutoffBox", "RelCutoffBox", "MaxScfBox", "GeoOptimizerBox", "GeoMaxIterBox",
+        "ScfMethodBox", "AddedMosBox", "DiagonalizationAlgorithmBox",
+        "OtMinimizerBox", "OtPreconditionerBox", "MixingMethodBox",
+        "MixingAlphaBox", "MixingBetaBox", "SmearingMethodBox",
+        "ElectronicTemperatureBox",
         "FallbackPeriodicBox", "FallbackCellABox", "FallbackCellBBox", "FallbackCellCBox"
     )
     $report["template_tab_loaded"] = ($window.FindName("TemplateProjectBox") -is [System.Windows.Controls.ComboBox])
@@ -2784,6 +2832,10 @@ if ($SmokeTest) {
     $report["template_project_name"] = [string]$window.FindName("TemplateProjectBox").Text
     $report["template_run_type"] = [string]$window.FindName("TemplateRunTypeBox").Text
     $report["template_cutoff"] = [string]$window.FindName("CutoffBox").Text
+    $report["template_scf_method"] = [string]$window.FindName("ScfMethodBox").Text
+    $report["template_added_mos"] = [string]$window.FindName("AddedMosBox").Text
+    $report["template_mixing_enabled"] = [bool]$window.FindName("MixingEnabledBox").IsChecked
+    $report["template_smearing_enabled"] = [bool]$window.FindName("SmearingEnabledBox").IsChecked
     $report["template_fallback_periodic"] = [string]$window.FindName("FallbackPeriodicBox").Text
     $report["template_fallback_cell_a"] = [string]$window.FindName("FallbackCellABox").Text
     $report["template_center_atoms"] = [bool]$window.FindName("CenterAtomsBox").IsChecked

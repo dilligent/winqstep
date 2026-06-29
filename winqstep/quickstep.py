@@ -9,6 +9,26 @@ from typing import Any, Iterable, Literal
 RunType = Literal["ENERGY", "ENERGY_FORCE", "GEO_OPT"]
 RUN_TYPES = {"ENERGY", "ENERGY_FORCE", "GEO_OPT"}
 PERIODIC_VALUES = {"NONE", "X", "Y", "Z", "XY", "XZ", "YZ", "XYZ"}
+SCF_METHODS = {"DEFAULT", "OT", "DIAGONALIZATION"}
+OT_MINIMIZERS = {"SD", "CG", "DIIS", "BROYDEN"}
+OT_PRECONDITIONERS = {
+    "FULL_ALL",
+    "FULL_KINETIC",
+    "FULL_SINGLE",
+    "FULL_SINGLE_INVERSE",
+    "FULL_S_INVERSE",
+    "NONE",
+}
+DIAGONALIZATION_ALGORITHMS = {"STANDARD", "DAVIDSON", "LANCZOS", "FILTER_MATRIX"}
+MIXING_METHODS = {
+    "DIRECT_P_MIXING",
+    "BROYDEN_MIXING",
+    "PULAY_MIXING",
+    "KERKER_MIXING",
+    "MULTISECANT_MIXING",
+    "NEW_PULAY_MIXING",
+}
+SMEARING_METHODS = {"FERMI_DIRAC", "ENERGY_WINDOW", "GAUSSIAN", "METHFESSEL_PAXTON", "MARZARI_VANDERBILT"}
 
 
 class QuickStepInputError(ValueError):
@@ -47,6 +67,18 @@ class DftSettings:
     rel_cutoff: int = 40
     eps_scf: str = "1.0E-6"
     max_scf: int = 50
+    scf_method: str = "DEFAULT"
+    added_mos: int = 0
+    ot_minimizer: str = "CG"
+    ot_preconditioner: str = "FULL_KINETIC"
+    diagonalization_algorithm: str = "STANDARD"
+    mixing_enabled: bool = False
+    mixing_method: str = "BROYDEN_MIXING"
+    mixing_alpha: str = "0.4"
+    mixing_beta: str = "1.5"
+    smearing_enabled: bool = False
+    smearing_method: str = "FERMI_DIRAC"
+    electronic_temperature: str = "300"
 
 
 @dataclass(frozen=True)
@@ -84,6 +116,13 @@ def _int_value(data: dict[str, Any], key: str, default: int) -> int:
     value = data.get(key, default)
     if not isinstance(value, int):
         raise QuickStepInputError(f"{key} must be an integer")
+    return value
+
+
+def _bool_value(data: dict[str, Any], key: str, default: bool) -> bool:
+    value = data.get(key, default)
+    if not isinstance(value, bool):
+        raise QuickStepInputError(f"{key} must be a boolean")
     return value
 
 
@@ -128,6 +167,18 @@ def _parse_dft(data: dict[str, Any]) -> DftSettings:
         rel_cutoff=_int_value(data, "rel_cutoff", 40),
         eps_scf=_optional_string(data, "eps_scf", "1.0E-6"),
         max_scf=_int_value(data, "max_scf", 50),
+        scf_method=_optional_string(data, "scf_method", "DEFAULT").upper(),
+        added_mos=_int_value(data, "added_mos", 0),
+        ot_minimizer=_optional_string(data, "ot_minimizer", "CG").upper(),
+        ot_preconditioner=_optional_string(data, "ot_preconditioner", "FULL_KINETIC").upper(),
+        diagonalization_algorithm=_optional_string(data, "diagonalization_algorithm", "STANDARD").upper(),
+        mixing_enabled=_bool_value(data, "mixing_enabled", False),
+        mixing_method=_optional_string(data, "mixing_method", "BROYDEN_MIXING").upper(),
+        mixing_alpha=_optional_string(data, "mixing_alpha", "0.4"),
+        mixing_beta=_optional_string(data, "mixing_beta", "1.5"),
+        smearing_enabled=_bool_value(data, "smearing_enabled", False),
+        smearing_method=_optional_string(data, "smearing_method", "FERMI_DIRAC").upper(),
+        electronic_temperature=_optional_string(data, "electronic_temperature", "300"),
     )
 
 
@@ -193,6 +244,29 @@ def validate_quickstep_input(model: QuickStepInput) -> None:
         raise QuickStepInputError("cutoff and rel_cutoff must be positive")
     if model.dft.max_scf <= 0:
         raise QuickStepInputError("max_scf must be positive")
+    if model.dft.scf_method not in SCF_METHODS:
+        raise QuickStepInputError("dft.scf_method has an unsupported value")
+    if model.dft.added_mos < -1:
+        raise QuickStepInputError("dft.added_mos must be -1 or greater")
+    if model.dft.ot_minimizer not in OT_MINIMIZERS:
+        raise QuickStepInputError("dft.ot_minimizer has an unsupported value")
+    if model.dft.ot_preconditioner not in OT_PRECONDITIONERS:
+        raise QuickStepInputError("dft.ot_preconditioner has an unsupported value")
+    if model.dft.diagonalization_algorithm not in DIAGONALIZATION_ALGORITHMS:
+        raise QuickStepInputError("dft.diagonalization_algorithm has an unsupported value")
+    if model.dft.mixing_method not in MIXING_METHODS:
+        raise QuickStepInputError("dft.mixing_method has an unsupported value")
+    if model.dft.smearing_method not in SMEARING_METHODS:
+        raise QuickStepInputError("dft.smearing_method has an unsupported value")
+    if model.dft.mixing_enabled and model.dft.scf_method != "DIAGONALIZATION":
+        raise QuickStepInputError("SCF mixing requires dft.scf_method DIAGONALIZATION")
+    if model.dft.smearing_enabled and model.dft.scf_method != "DIAGONALIZATION":
+        raise QuickStepInputError("SCF smearing requires dft.scf_method DIAGONALIZATION")
+    if model.dft.smearing_enabled and model.dft.added_mos == 0:
+        raise QuickStepInputError("SCF smearing requires dft.added_mos to add unoccupied orbitals")
+    _positive_float(model.dft.mixing_alpha, "dft.mixing_alpha")
+    _positive_float(model.dft.mixing_beta, "dft.mixing_beta")
+    _positive_float(model.dft.electronic_temperature, "dft.electronic_temperature")
     if model.geo_opt.max_iter <= 0:
         raise QuickStepInputError("geo_opt.max_iter must be positive")
 
@@ -224,6 +298,7 @@ def render_quickstep_input(model: QuickStepInput) -> str:
         "    &SCF",
         f"      EPS_SCF {model.dft.eps_scf}",
         f"      MAX_SCF {model.dft.max_scf}",
+        *_render_scf_extras(model.dft),
         "    &END SCF",
         "    &XC",
         f"      &XC_FUNCTIONAL {model.dft.xc_functional}",
@@ -272,12 +347,65 @@ def _render_force_eval_print(model: QuickStepInput) -> list[str]:
     ]
 
 
+def _render_scf_extras(dft: DftSettings) -> list[str]:
+    lines: list[str] = []
+    if dft.added_mos != 0:
+        lines.append(f"      ADDED_MOS {dft.added_mos}")
+    if dft.scf_method == "OT":
+        lines.extend(
+            [
+                "      &OT",
+                f"        MINIMIZER {dft.ot_minimizer}",
+                f"        PRECONDITIONER {dft.ot_preconditioner}",
+                "      &END OT",
+            ]
+        )
+    if dft.scf_method == "DIAGONALIZATION":
+        lines.extend(
+            [
+                "      &DIAGONALIZATION",
+                f"        ALGORITHM {dft.diagonalization_algorithm}",
+                "      &END DIAGONALIZATION",
+            ]
+        )
+        if dft.mixing_enabled:
+            lines.extend(
+                [
+                    "      &MIXING",
+                    f"        METHOD {dft.mixing_method}",
+                    f"        ALPHA {dft.mixing_alpha}",
+                    f"        BETA {dft.mixing_beta}",
+                    "      &END MIXING",
+                ]
+            )
+        if dft.smearing_enabled:
+            lines.extend(
+                [
+                    "      &SMEAR ON",
+                    f"        METHOD {dft.smearing_method}",
+                    f"        TELEC [K] {dft.electronic_temperature}",
+                    "      &END SMEAR",
+                ]
+            )
+    return lines
+
+
 def _format_vector(vector: tuple[float, float, float]) -> str:
     return " ".join(f"{value:.10g}" for value in vector)
 
 
 def _vector_norm(vector: tuple[float, float, float]) -> float:
     return sum(value * value for value in vector) ** 0.5
+
+
+def _positive_float(value: str, key: str) -> float:
+    try:
+        parsed = float(value.replace("D", "E"))
+    except ValueError as exc:
+        raise QuickStepInputError(f"{key} must be a positive numeric value") from exc
+    if parsed <= 0:
+        raise QuickStepInputError(f"{key} must be positive")
+    return parsed
 
 
 def _render_atoms(atoms: Iterable[Atom]) -> list[str]:

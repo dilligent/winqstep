@@ -22,7 +22,9 @@ Editable fields include:
 - `project_name`
 - `run_type`: `ENERGY`, `ENERGY_FORCE`, or `GEO_OPT`
 - DFT fields: basis file, potential file, XC functional, charge,
-  multiplicity, cutoff, relative cutoff, EPS_SCF, and MAX_SCF
+  multiplicity, cutoff, relative cutoff, EPS_SCF, MAX_SCF, SCF method,
+  ADDED_MOS, OT settings, diagonalization settings, mixing settings, and
+  electronic-temperature smearing settings
 - GEO_OPT fields: optimizer and max iterations
 - Structure transform fields: fallback periodicity, fallback cell A/B/C
   vectors, and whether fallback-cell structures should be centered
@@ -39,15 +41,18 @@ by the renderer and workflow layer.
 Single-line template fields are editable drop-down controls. Each field offers
 common CP2K/WinQStep choices, such as `ENERGY`, `ENERGY_FORCE`, and `GEO_OPT`
 for run type, common basis and potential file names, common XC functional
-shortcuts, typical SCF/MGRID numeric values, and `BFGS`, `LBFGS`, or `CG` for
-GEO_OPT optimizer. Fallback cell fields expose the supported CP2K periodicity
-labels and common cubic-cell vectors while still accepting direct typed values.
+shortcuts, typical SCF/MGRID numeric values, SCF methods such as `DEFAULT`,
+`DIAGONALIZATION`, and `OT`, and `BFGS`, `LBFGS`, or `CG` for GEO_OPT
+optimizer. Fallback cell fields expose the supported CP2K periodicity labels
+and common cubic-cell vectors while still accepting direct typed values.
 The controls remain editable, so values not listed in the drop-down can still
 be typed directly and saved through the same template writer.
 The candidate lists are intentionally conservative and are based on the CP2K
 manual pages for `GLOBAL/RUN_TYPE`, `DFT/BASIS_SET_FILE_NAME`,
 `DFT/POTENTIAL_FILE_NAME`, `XC/XC_FUNCTIONAL`, `DFT/MGRID`, `DFT/SCF`, and
-`MOTION/GEO_OPT`, plus `SUBSYS/CELL` and `DFT/POISSON` for periodicity.
+`MOTION/GEO_OPT`, plus `SUBSYS/CELL`, `DFT/POISSON`, `SCF/OT`,
+`SCF/DIAGONALIZATION`, `SCF/MIXING`, and `SCF/SMEAR` for periodicity and SCF
+solver controls.
 
 KIND entries are shown in an editable `Element`, `Basis Set`, `Potential` table
 instead of a raw text box. The GUI still serializes that table through
@@ -57,8 +62,10 @@ For workflow mode, `Preview` and `Run` save and validate the current template
 fields before preparing the CP2K input. Existing-input mode does not use the
 template editor.
 
-The template editor validates field shape, numeric ranges, run type, duplicate
-KIND entries, and required basis/potential names. When a CP2K data inspection
+The template editor validates field shape, numeric ranges, run type, SCF method
+choices, duplicate KIND entries, and required basis/potential names. It rejects
+mixing or smearing unless the SCF method is `DIAGONALIZATION`; smearing also
+requires `ADDED_MOS` to add unoccupied orbitals. When a CP2K data inspection
 cache is available, the GUI preflight step also compares template data-file
 names and KIND basis/potential labels against the cached CP2K data labels before
 `Preview` or `Run`.
