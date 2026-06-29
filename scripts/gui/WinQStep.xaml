@@ -168,7 +168,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="130"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="90"/>
           </Grid.RowDefinitions>
 
@@ -272,12 +272,22 @@
             <ComboBoxItem Content="200"/>
           </ComboBox>
 
-          <TextBox x:Name="KindsText" Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="4"
+          <DataGrid x:Name="KindEntriesGrid" Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="4"
+                    AutoGenerateColumns="False" CanUserAddRows="True" CanUserDeleteRows="True"
+                    SelectionMode="Single" HeadersVisibility="Column" GridLinesVisibility="Horizontal" FontSize="12">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Element" Binding="{Binding element, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="70"/>
+              <DataGridTextColumn Header="Basis Set" Binding="{Binding basis_set, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="*"/>
+              <DataGridTextColumn Header="Potential" Binding="{Binding potential, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="*"/>
+            </DataGrid.Columns>
+          </DataGrid>
+          <TextBox x:Name="KindsText" Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="4" Visibility="Collapsed"
                    FontFamily="Cascadia Mono, Consolas, Microsoft YaHei UI, Microsoft YaHei, SimSun"
                    FontSize="12" AcceptsReturn="True" AcceptsTab="True" TextWrapping="NoWrap"
                    HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"/>
 
           <DataGrid x:Name="DataLabelsGrid" Grid.Row="8" Grid.Column="0" Grid.ColumnSpan="4"
+                    Height="130" Visibility="Collapsed"
                     AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single"
                     HeadersVisibility="Column" GridLinesVisibility="Horizontal" FontSize="12">
             <DataGrid.Columns>

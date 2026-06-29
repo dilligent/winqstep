@@ -53,7 +53,7 @@ function New-WinQStepWindow {
         "TemplateProjectBox", "TemplateRunTypeBox", "BasisSetFileBox", "PotentialFileBox",
         "XcFunctionalBox", "ChargeBox", "MultiplicityBox", "CutoffBox", "RelCutoffBox",
         "EpsScfBox", "MaxScfBox", "GeoOptimizerBox", "GeoMaxIterBox", "KindsText",
-        "DataLabelsGrid", "TemplateValidationText",
+        "KindEntriesGrid", "DataLabelsGrid", "TemplateValidationText",
         "EnvironmentText", "StructureText", "PreviewText", "LogText",
         "ArtifactSummaryText", "ArtifactText", "HistoryGrid", "StatusText", "JobStatusText",
         "LoadConfigButton", "SaveConfigButton", "LoadTemplateButton", "SaveTemplateButton",
@@ -847,6 +847,58 @@ function New-WinQStepWindow {
         return ($lines -join "`r`n")
     }.GetNewClosure()
 
+    $NewKindEntriesTable = {
+        $table = [System.Data.DataTable]::new()
+        [void]$table.Columns.Add("element", [string])
+        [void]$table.Columns.Add("basis_set", [string])
+        [void]$table.Columns.Add("potential", [string])
+        Write-Output -NoEnumerate $table
+    }.GetNewClosure()
+
+    $SetKindEntriesFromText = {
+        param([string]$Text)
+        $table = & $NewKindEntriesTable
+        foreach ($line in @($Text -split "`r?`n")) {
+            $trimmed = $line.Trim()
+            if ([string]::IsNullOrWhiteSpace($trimmed) -or $trimmed.StartsWith("#")) {
+                continue
+            }
+            $parts = @($trimmed -split "\s+")
+            if ($parts.Count -lt 3) {
+                continue
+            }
+            $row = $table.NewRow()
+            $row["element"] = $parts[0]
+            $row["basis_set"] = $parts[1]
+            $row["potential"] = $parts[2]
+            [void]$table.Rows.Add($row)
+        }
+        $controls["KindEntriesGrid"].ItemsSource = $table.DefaultView
+    }.GetNewClosure()
+
+    $GetKindEntriesText = {
+        $lines = @()
+        foreach ($rowView in @($controls["KindEntriesGrid"].ItemsSource)) {
+            if ($null -eq $rowView -or $rowView.IsNew) {
+                continue
+            }
+            $element = ([string]$rowView["element"]).Trim()
+            $basis = ([string]$rowView["basis_set"]).Trim()
+            $potential = ([string]$rowView["potential"]).Trim()
+            if ([string]::IsNullOrWhiteSpace($element) -and [string]::IsNullOrWhiteSpace($basis) -and [string]::IsNullOrWhiteSpace($potential)) {
+                continue
+            }
+            $lines += "$element $basis $potential"
+        }
+        return ($lines -join "`n")
+    }.GetNewClosure()
+
+    $SyncKindsTextFromGrid = {
+        $text = & $GetKindEntriesText
+        $controls["KindsText"].Text = $text
+        return $text
+    }.GetNewClosure()
+
     $SetTemplateFieldsFromPayload = {
         param([Parameter(Mandatory = $true)]$Payload)
         $template = $Payload.template
@@ -865,7 +917,9 @@ function New-WinQStepWindow {
         $controls["MaxScfBox"].Text = & $GetJsonProperty $dft "max_scf"
         $controls["GeoOptimizerBox"].Text = & $GetJsonProperty $geoOpt "optimizer"
         $controls["GeoMaxIterBox"].Text = & $GetJsonProperty $geoOpt "max_iter"
-        $controls["KindsText"].Text = & $GetJsonProperty $Payload "kinds_text"
+        $kindsText = & $GetJsonProperty $Payload "kinds_text"
+        $controls["KindsText"].Text = $kindsText
+        & $SetKindEntriesFromText $kindsText
         $controls["TemplateValidationText"].Text = & $FormatTemplateValidation $Payload
     }.GetNewClosure()
 
@@ -901,7 +955,7 @@ function New-WinQStepWindow {
             max_scf = $controls["MaxScfBox"].Text
             optimizer = $controls["GeoOptimizerBox"].Text
             geo_opt_max_iter = $controls["GeoMaxIterBox"].Text
-            kinds_text = $controls["KindsText"].Text
+            kinds_text = (& $SyncKindsTextFromGrid)
         }
         return ($fields | ConvertTo-Json -Compress)
     }.GetNewClosure()
@@ -959,6 +1013,7 @@ function New-WinQStepWindow {
             }
         }
         $controls["DataLabelsGrid"].ItemsSource = $rows
+        $controls["DataLabelsGrid"].Visibility = if ($rows.Count -gt 0) { [System.Windows.Visibility]::Visible } else { [System.Windows.Visibility]::Collapsed }
         $cachePath = & $GetJsonProperty $Payload "cache_path"
         $controls["TemplateValidationText"].Text = "CP2K data labels: elements=$($rows.Count), files=$($Payload.counts.files)`r`ncache=$cachePath"
     }.GetNewClosure()
@@ -1133,7 +1188,8 @@ function New-WinQStepWindow {
         $newLine = "$element $basis $potential"
         $updated = $false
         $lines = @()
-        foreach ($line in @($controls["KindsText"].Text -split "`r?`n")) {
+        $currentKindsText = & $SyncKindsTextFromGrid
+        foreach ($line in @($currentKindsText -split "`r?`n")) {
             if ($line.Trim() -match "^$([regex]::Escape($element))\s+") {
                 $lines += $newLine
                 $updated = $true
@@ -1146,6 +1202,7 @@ function New-WinQStepWindow {
             $lines += $newLine
         }
         $controls["KindsText"].Text = ($lines -join "`r`n")
+        & $SetKindEntriesFromText $controls["KindsText"].Text
     }.GetNewClosure()
 
     $LoadHistory = {
@@ -1431,7 +1488,9 @@ function New-WinQStepWindow {
         $controls["ArtifactSummaryText"].Clear()
         $controls["ArtifactText"].Clear()
         $controls["HistoryGrid"].ItemsSource = $null
+        $controls["KindEntriesGrid"].ItemsSource = (& $NewKindEntriesTable).DefaultView
         $controls["DataLabelsGrid"].ItemsSource = $null
+        $controls["DataLabelsGrid"].Visibility = [System.Windows.Visibility]::Collapsed
         $artifactState["Current"] = $null
         & $SetJobStatusText ""
         & $UpdateArtifactControls
@@ -1627,9 +1686,14 @@ if ($SmokeTest) {
     $report["template_project_name"] = [string]$window.FindName("TemplateProjectBox").Text
     $report["template_run_type"] = [string]$window.FindName("TemplateRunTypeBox").Text
     $report["template_cutoff"] = [string]$window.FindName("CutoffBox").Text
+    $kindEntriesView = $window.FindName("KindEntriesGrid").ItemsSource
+    $report["kind_entries_grid_loaded"] = ($window.FindName("KindEntriesGrid") -is [System.Windows.Controls.DataGrid])
+    $report["kind_entries_grid_rows"] = if ($null -ne $kindEntriesView) { $kindEntriesView.Count } else { 0 }
+    $report["kinds_text_hidden"] = ($window.FindName("KindsText").Visibility -eq [System.Windows.Visibility]::Collapsed)
     $report["template_kinds_has_oxygen"] = ([string]$window.FindName("KindsText").Text).Contains("O")
     $report["template_validation_text"] = [string]$window.FindName("TemplateValidationText").Text
     $report["data_labels_grid_loaded"] = ($window.FindName("DataLabelsGrid") -is [System.Windows.Controls.DataGrid])
+    $report["data_labels_grid_initially_collapsed"] = ($window.FindName("DataLabelsGrid").Visibility -eq [System.Windows.Visibility]::Collapsed)
     $report["history_grid_loaded"] = ($window.FindName("HistoryGrid") -is [System.Windows.Controls.DataGrid])
     $report["console_output_encoding"] = [Console]::OutputEncoding.WebName
     $report["pythonioencoding"] = $env:PYTHONIOENCODING

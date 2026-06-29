@@ -45,6 +45,10 @@ manual pages for `GLOBAL/RUN_TYPE`, `DFT/BASIS_SET_FILE_NAME`,
 `DFT/POTENTIAL_FILE_NAME`, `XC/XC_FUNCTIONAL`, `DFT/MGRID`, `DFT/SCF`, and
 `MOTION/GEO_OPT`.
 
+KIND entries are shown in an editable `Element`, `Basis Set`, `Potential` table
+instead of a raw text box. The GUI still serializes that table through
+`kinds_text` internally, so the CLI and JSON template format stay unchanged.
+
 For workflow mode, `Preview` and `Run` save and validate the current template
 fields before preparing the CP2K input. Existing-input mode does not use the
 template editor.

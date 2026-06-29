@@ -128,8 +128,9 @@ potential files are obviously missing from the cached CP2K data inspection.
 
 The single-line fields on the `Template` tab are editable drop-down controls:
 users can select common values from the list or type a custom value directly.
-The `KindsText` area remains a multi-line text editor because each line carries
-an element, basis-set label, and potential label.
+Template KIND entries are shown in an editable `Element`, `Basis Set`,
+`Potential` table. The hidden `KindsText` backing field is kept only so the GUI
+can reuse the existing `kinds_text` JSON writer.
 
 `Run` first performs a prepare-only pass to write input and metadata, then starts
 the real CP2K job asynchronously. The GUI remains responsive while a timer
@@ -149,8 +150,9 @@ read-only `Input`, `Output`, `Metadata`, `Stdout`, and `Stderr` buttons that
 load those files into the GUI text pane without modifying or rerunning the job.
 
 Double-clicking a row in the CP2K data label table updates the corresponding
-`KindsText` entry, preferring MOLOPT basis labels and GTH-PBE potentials when
-available.
+KIND table entry, preferring MOLOPT basis labels and GTH-PBE potentials when
+available. The CP2K data label table is collapsed until `Inspect Data` returns
+available labels.
 
 ## Smoke Test
 

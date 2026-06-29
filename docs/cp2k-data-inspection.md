@@ -47,8 +47,8 @@ validates the current config, scans the configured WSL `cp2k_data_dir`, writes
 the cache in the configured workspace, and fills the CP2K data table in the
 `Template` tab.
 
-Double-click a row in the CP2K data table to update that element in `KindsText`.
-The GUI prefers `MOLOPT` basis labels and `GTH-PBE` potentials when several
-labels are available.
+Double-click a row in the CP2K data table to update that element in the
+template KIND table. The GUI prefers `MOLOPT` basis labels and `GTH-PBE`
+potentials when several labels are available.
 
 The scanner is read-only with respect to the WSL CP2K data directory.

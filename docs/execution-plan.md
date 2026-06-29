@@ -762,13 +762,14 @@ Notes:
   run type, basis file, potential file, XC functional, charge, multiplicity,
   cutoff, relative cutoff, EPS_SCF, MAX_SCF, GEO_OPT optimizer, and GEO_OPT
   max iterations.
+- Template KIND entries now render in an editable `Element`, `Basis Set`,
+  `Potential` table while still saving through the existing `kinds_text`
+  template writer.
 - Run type choices stay within the current WinQStep QuickStep model:
   `ENERGY` and `GEO_OPT`.
-- `KindsText` remains a multi-line text area because each line has structured
-  `element basis_set potential` content and is already assisted by the CP2K data
-  label table.
 - GUI smoke tests verify that all single-line template fields are editable
-  drop-down controls and that core option lists are present.
+  drop-down controls, core option lists are present, and template KIND rows are
+  shown in the table instead of a visible raw text box.
 
 Commit boundary:
 
