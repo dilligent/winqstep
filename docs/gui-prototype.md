@@ -97,6 +97,13 @@ same scripts used by tests:
 The top action buttons wrap onto additional rows when the window is too narrow,
 so every action remains reachable without maximizing the window.
 
+The main tab order follows the common workflow path: `Config`, `Template`,
+`Input Preview`, `Structure`, `Environment`, `Job Log`, `Artifacts`, and
+`History`. `Template` and `Input Preview` are adjacent so users can edit template
+fields and immediately inspect the generated CP2K input without crossing
+diagnostic tabs. They remain separate tabs to keep the editable template grid
+and read-only input text pane from competing for vertical space.
+
 The GUI does not parse or generate CP2K input itself. It displays JSON, rendered
 input text, job metadata, and CP2K output summaries produced by the core
 commands.

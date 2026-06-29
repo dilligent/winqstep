@@ -1,5 +1,6 @@
 import json
 import platform
+import re
 import shutil
 import subprocess
 import unittest
@@ -25,6 +26,20 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn("Get-WinQStepText", helper_text)
         self.assertIn("Set-WinQStepContent", helper_text)
         self.assertIn("UiLanguageBox", xaml_text)
+        self.assertIn('TabControl x:Name="MainTabs"', xaml_text)
+        self.assertEqual(
+            re.findall(r'<TabItem x:Name="([^"]+)"', xaml_text),
+            [
+                "ConfigTab",
+                "TemplateTab",
+                "InputPreviewTab",
+                "StructureTab",
+                "EnvironmentTab",
+                "JobLogTab",
+                "ArtifactsTab",
+                "HistoryTab",
+            ],
+        )
         self.assertIn('x:Name="TemplateRunTypeBox" Grid.Row="0" Grid.Column="3" IsEditable="True"', xaml_text)
         self.assertIn('<ComboBoxItem Content="ENERGY"/>', xaml_text)
         self.assertIn('<ComboBoxItem Content="GEO_OPT"/>', xaml_text)
@@ -165,6 +180,20 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertTrue(report["data_labels_grid_loaded"])
         self.assertTrue(report["data_labels_grid_initially_collapsed"])
         self.assertTrue(report["history_grid_loaded"])
+        self.assertEqual(
+            report["tab_order"],
+            [
+                "ConfigTab",
+                "TemplateTab",
+                "InputPreviewTab",
+                "StructureTab",
+                "EnvironmentTab",
+                "JobLogTab",
+                "ArtifactsTab",
+                "HistoryTab",
+            ],
+        )
+        self.assertTrue(report["template_preview_tabs_adjacent"])
         self.assertEqual(report["console_output_encoding"].lower(), "utf-8")
         self.assertEqual(report["pythonioencoding"], "utf-8")
         self.assertEqual(report["encoding_probe_exit_code"], 0)

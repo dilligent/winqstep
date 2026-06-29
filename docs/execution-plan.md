@@ -847,6 +847,35 @@ Commit boundary:
 
 - One commit for check runner, tests, diagnostics/release wiring, and docs.
 
+## Round 25: GUI Tab Order Polish
+
+Status: implemented.
+
+Goal: make the lower tab bar match the user workflow better after trial-user
+feedback.
+
+Local verification:
+
+- GUI smoke tests now report the actual WPF tab order.
+- Static GUI tests verify the XAML `TabItem` order.
+
+Tasks:
+
+- Move `Input Preview` next to `Template`.
+- Keep the tabs separate for now so the Template editor and read-only generated
+  input pane do not crowd each other.
+- Move diagnostic tabs after the edit/preview path.
+
+Acceptance:
+
+- The tab order is `Config`, `Template`, `Input Preview`, `Structure`,
+  `Environment`, `Job Log`, `Artifacts`, `History`.
+- Tests fail if the Template and Input Preview tabs stop being adjacent.
+
+Commit boundary:
+
+- One commit for GUI tab order, smoke assertions, and docs.
+
 ## Working Rules
 
 - Keep each round small enough to review.

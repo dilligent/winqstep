@@ -38,6 +38,7 @@ function New-WinQStepWindow {
 
     $controls = @{}
     $names = @(
+        "MainTabs",
         "WorkflowModeRadio", "ExistingInputModeRadio",
         "JobInputsGroup",
         "ModeLabel", "ConfigPathLabel", "TemplatePathLabel", "StructurePathLabel",
@@ -2009,6 +2010,12 @@ if ($SmokeTest) {
     $report["data_labels_grid_loaded"] = ($window.FindName("DataLabelsGrid") -is [System.Windows.Controls.DataGrid])
     $report["data_labels_grid_initially_collapsed"] = ($window.FindName("DataLabelsGrid").Visibility -eq [System.Windows.Visibility]::Collapsed)
     $report["history_grid_loaded"] = ($window.FindName("HistoryGrid") -is [System.Windows.Controls.DataGrid])
+    $mainTabs = $window.FindName("MainTabs")
+    $tabOrder = @($mainTabs.Items | ForEach-Object { [string]$_.Name })
+    $report["tab_order"] = $tabOrder
+    $templateIndex = [array]::IndexOf($tabOrder, "TemplateTab")
+    $previewIndex = [array]::IndexOf($tabOrder, "InputPreviewTab")
+    $report["template_preview_tabs_adjacent"] = ($templateIndex -ge 0 -and $previewIndex -eq ($templateIndex + 1))
     $report["console_output_encoding"] = [Console]::OutputEncoding.WebName
     $report["pythonioencoding"] = $env:PYTHONIOENCODING
     $report["encoding_probe_exit_code"] = $encodingProbeResult.ExitCode

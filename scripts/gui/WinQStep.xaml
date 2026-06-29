@@ -95,7 +95,7 @@
       </Grid>
     </GroupBox>
 
-    <TabControl Grid.Row="2">
+    <TabControl x:Name="MainTabs" Grid.Row="2">
       <TabItem x:Name="ConfigTab" Header="Config">
         <Grid Margin="8">
           <Grid.ColumnDefinitions>
@@ -304,8 +304,8 @@
                    IsReadOnly="True"/>
         </Grid>
       </TabItem>
-      <TabItem x:Name="EnvironmentTab" Header="Environment">
-        <TextBox x:Name="EnvironmentText" FontFamily="Cascadia Mono, Consolas, Microsoft YaHei UI, Microsoft YaHei, SimSun" FontSize="12"
+      <TabItem x:Name="InputPreviewTab" Header="Input Preview">
+        <TextBox x:Name="PreviewText" FontFamily="Cascadia Mono, Consolas, Microsoft YaHei UI, Microsoft YaHei, SimSun" FontSize="12"
                  AcceptsReturn="True" AcceptsTab="True" TextWrapping="NoWrap"
                  HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"/>
       </TabItem>
@@ -314,8 +314,8 @@
                  AcceptsReturn="True" AcceptsTab="True" TextWrapping="NoWrap"
                  HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"/>
       </TabItem>
-      <TabItem x:Name="InputPreviewTab" Header="Input Preview">
-        <TextBox x:Name="PreviewText" FontFamily="Cascadia Mono, Consolas, Microsoft YaHei UI, Microsoft YaHei, SimSun" FontSize="12"
+      <TabItem x:Name="EnvironmentTab" Header="Environment">
+        <TextBox x:Name="EnvironmentText" FontFamily="Cascadia Mono, Consolas, Microsoft YaHei UI, Microsoft YaHei, SimSun" FontSize="12"
                  AcceptsReturn="True" AcceptsTab="True" TextWrapping="NoWrap"
                  HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"/>
       </TabItem>
