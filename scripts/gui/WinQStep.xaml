@@ -47,7 +47,7 @@
       </WrapPanel>
     </Grid>
 
-    <GroupBox Grid.Row="1" Header="Job Inputs" Padding="10" Margin="0,10,0,10">
+    <GroupBox x:Name="JobInputsGroup" Grid.Row="1" Header="Job Inputs" Padding="10" Margin="0,10,0,10">
       <Grid>
         <Grid.ColumnDefinitions>
           <ColumnDefinition Width="110"/>
@@ -64,39 +64,39 @@
           <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0" Grid.Column="0" Text="Mode"/>
+        <TextBlock x:Name="ModeLabel" Grid.Row="0" Grid.Column="0" Text="Mode"/>
         <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Margin="6,4">
           <RadioButton x:Name="WorkflowModeRadio" Content="Workflow" GroupName="JobMode" IsChecked="True" Margin="0,0,18,0"/>
           <RadioButton x:Name="ExistingInputModeRadio" Content="Existing input" GroupName="JobMode"/>
         </StackPanel>
 
-        <TextBlock Grid.Row="1" Grid.Column="0" Text="Config"/>
+        <TextBlock x:Name="ConfigPathLabel" Grid.Row="1" Grid.Column="0" Text="Config"/>
         <TextBox x:Name="ConfigPathBox" Grid.Row="1" Grid.Column="1"/>
         <Button x:Name="BrowseConfigButton" Grid.Row="1" Grid.Column="2" Content="Browse"/>
 
-        <TextBlock Grid.Row="2" Grid.Column="0" Text="Template"/>
+        <TextBlock x:Name="TemplatePathLabel" Grid.Row="2" Grid.Column="0" Text="Template"/>
         <TextBox x:Name="TemplatePathBox" Grid.Row="2" Grid.Column="1"/>
         <Button x:Name="BrowseTemplateButton" Grid.Row="2" Grid.Column="2" Content="Browse"/>
 
-        <TextBlock Grid.Row="3" Grid.Column="0" Text="Structure"/>
+        <TextBlock x:Name="StructurePathLabel" Grid.Row="3" Grid.Column="0" Text="Structure"/>
         <TextBox x:Name="StructurePathBox" Grid.Row="3" Grid.Column="1"/>
         <Button x:Name="BrowseStructureButton" Grid.Row="3" Grid.Column="2" Content="Browse"/>
 
-        <TextBlock Grid.Row="4" Grid.Column="0" Text="Existing Input"/>
+        <TextBlock x:Name="ExistingInputPathLabel" Grid.Row="4" Grid.Column="0" Text="Existing Input"/>
         <TextBox x:Name="ExistingInputPathBox" Grid.Row="4" Grid.Column="1"/>
         <Button x:Name="BrowseExistingInputButton" Grid.Row="4" Grid.Column="2" Content="Browse"/>
 
-        <TextBlock Grid.Row="5" Grid.Column="0" Text="Job Folder"/>
+        <TextBlock x:Name="JobFolderLabel" Grid.Row="5" Grid.Column="0" Text="Job Folder"/>
         <TextBox x:Name="JobDirBox" Grid.Row="5" Grid.Column="1"/>
         <Button x:Name="BrowseJobDirButton" Grid.Row="5" Grid.Column="2" Content="Browse"/>
 
-        <TextBlock Grid.Row="6" Grid.Column="0" Text="Project"/>
+        <TextBlock x:Name="ProjectLabel" Grid.Row="6" Grid.Column="0" Text="Project"/>
         <TextBox x:Name="ProjectNameBox" Grid.Row="6" Grid.Column="1"/>
       </Grid>
     </GroupBox>
 
     <TabControl Grid.Row="2">
-      <TabItem Header="Config">
+      <TabItem x:Name="ConfigTab" Header="Config">
         <Grid Margin="8">
           <Grid.ColumnDefinitions>
             <ColumnDefinition Width="160"/>
@@ -113,27 +113,27 @@
             <RowDefinition Height="*"/>
           </Grid.RowDefinitions>
 
-          <TextBlock Grid.Row="0" Grid.Column="0" Text="Distro"/>
+          <TextBlock x:Name="DistroLabel" Grid.Row="0" Grid.Column="0" Text="Distro"/>
           <TextBox x:Name="DistroBox" Grid.Row="0" Grid.Column="1"/>
 
-          <TextBlock Grid.Row="1" Grid.Column="0" Text="CP2K Command"/>
+          <TextBlock x:Name="Cp2kCommandLabel" Grid.Row="1" Grid.Column="0" Text="CP2K Command"/>
           <TextBox x:Name="Cp2kCommandBox" Grid.Row="1" Grid.Column="1"/>
 
-          <TextBlock Grid.Row="2" Grid.Column="0" Text="CP2K Data Dir"/>
+          <TextBlock x:Name="Cp2kDataDirLabel" Grid.Row="2" Grid.Column="0" Text="CP2K Data Dir"/>
           <TextBox x:Name="Cp2kDataDirBox" Grid.Row="2" Grid.Column="1"/>
 
-          <TextBlock Grid.Row="3" Grid.Column="0" Text="MPI Command"/>
+          <TextBlock x:Name="MpiCommandLabel" Grid.Row="3" Grid.Column="0" Text="MPI Command"/>
           <TextBox x:Name="MpirunCommandBox" Grid.Row="3" Grid.Column="1"/>
 
-          <TextBlock Grid.Row="4" Grid.Column="0" Text="Workspace"/>
+          <TextBlock x:Name="WorkspaceLabel" Grid.Row="4" Grid.Column="0" Text="Workspace"/>
           <TextBox x:Name="DefaultWorkspaceBox" Grid.Row="4" Grid.Column="1"/>
 
-          <TextBlock Grid.Row="5" Grid.Column="0" Text="WSL Prelude"/>
+          <TextBlock x:Name="WslPreludeLabel" Grid.Row="5" Grid.Column="0" Text="WSL Prelude"/>
           <TextBox x:Name="WslPreludeBox" Grid.Row="5" Grid.Column="1" Height="64"
                    AcceptsReturn="True" TextWrapping="NoWrap" VerticalContentAlignment="Top"
                    HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"/>
 
-          <TextBlock Grid.Row="6" Grid.Column="0" Text="Timeout"/>
+          <TextBlock x:Name="TimeoutLabel" Grid.Row="6" Grid.Column="0" Text="Timeout"/>
           <TextBox x:Name="TimeoutBox" Grid.Row="6" Grid.Column="1"/>
 
           <TextBox x:Name="ConfigValidationText" Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="2"
@@ -143,7 +143,7 @@
                    IsReadOnly="True"/>
         </Grid>
       </TabItem>
-      <TabItem Header="Template">
+      <TabItem x:Name="TemplateTab" Header="Template">
         <Grid Margin="8">
           <Grid.ColumnDefinitions>
             <ColumnDefinition Width="150"/>
@@ -164,37 +164,37 @@
             <RowDefinition Height="90"/>
           </Grid.RowDefinitions>
 
-          <TextBlock Grid.Row="0" Grid.Column="0" Text="Project"/>
+          <TextBlock x:Name="TemplateProjectLabel" Grid.Row="0" Grid.Column="0" Text="Project"/>
           <TextBox x:Name="TemplateProjectBox" Grid.Row="0" Grid.Column="1"/>
-          <TextBlock Grid.Row="0" Grid.Column="2" Text="Run Type"/>
+          <TextBlock x:Name="RunTypeLabel" Grid.Row="0" Grid.Column="2" Text="Run Type"/>
           <TextBox x:Name="TemplateRunTypeBox" Grid.Row="0" Grid.Column="3"/>
 
-          <TextBlock Grid.Row="1" Grid.Column="0" Text="Basis File"/>
+          <TextBlock x:Name="BasisFileLabel" Grid.Row="1" Grid.Column="0" Text="Basis File"/>
           <TextBox x:Name="BasisSetFileBox" Grid.Row="1" Grid.Column="1"/>
-          <TextBlock Grid.Row="1" Grid.Column="2" Text="Potential File"/>
+          <TextBlock x:Name="PotentialFileLabel" Grid.Row="1" Grid.Column="2" Text="Potential File"/>
           <TextBox x:Name="PotentialFileBox" Grid.Row="1" Grid.Column="3"/>
 
-          <TextBlock Grid.Row="2" Grid.Column="0" Text="XC Functional"/>
+          <TextBlock x:Name="XcFunctionalLabel" Grid.Row="2" Grid.Column="0" Text="XC Functional"/>
           <TextBox x:Name="XcFunctionalBox" Grid.Row="2" Grid.Column="1"/>
-          <TextBlock Grid.Row="2" Grid.Column="2" Text="EPS SCF"/>
+          <TextBlock x:Name="EpsScfLabel" Grid.Row="2" Grid.Column="2" Text="EPS SCF"/>
           <TextBox x:Name="EpsScfBox" Grid.Row="2" Grid.Column="3"/>
 
-          <TextBlock Grid.Row="3" Grid.Column="0" Text="Charge"/>
+          <TextBlock x:Name="ChargeLabel" Grid.Row="3" Grid.Column="0" Text="Charge"/>
           <TextBox x:Name="ChargeBox" Grid.Row="3" Grid.Column="1"/>
-          <TextBlock Grid.Row="3" Grid.Column="2" Text="Multiplicity"/>
+          <TextBlock x:Name="MultiplicityLabel" Grid.Row="3" Grid.Column="2" Text="Multiplicity"/>
           <TextBox x:Name="MultiplicityBox" Grid.Row="3" Grid.Column="3"/>
 
-          <TextBlock Grid.Row="4" Grid.Column="0" Text="Cutoff"/>
+          <TextBlock x:Name="CutoffLabel" Grid.Row="4" Grid.Column="0" Text="Cutoff"/>
           <TextBox x:Name="CutoffBox" Grid.Row="4" Grid.Column="1"/>
-          <TextBlock Grid.Row="4" Grid.Column="2" Text="Rel Cutoff"/>
+          <TextBlock x:Name="RelCutoffLabel" Grid.Row="4" Grid.Column="2" Text="Rel Cutoff"/>
           <TextBox x:Name="RelCutoffBox" Grid.Row="4" Grid.Column="3"/>
 
-          <TextBlock Grid.Row="5" Grid.Column="0" Text="Max SCF"/>
+          <TextBlock x:Name="MaxScfLabel" Grid.Row="5" Grid.Column="0" Text="Max SCF"/>
           <TextBox x:Name="MaxScfBox" Grid.Row="5" Grid.Column="1"/>
-          <TextBlock Grid.Row="5" Grid.Column="2" Text="Optimizer"/>
+          <TextBlock x:Name="OptimizerLabel" Grid.Row="5" Grid.Column="2" Text="Optimizer"/>
           <TextBox x:Name="GeoOptimizerBox" Grid.Row="5" Grid.Column="3"/>
 
-          <TextBlock Grid.Row="6" Grid.Column="0" Text="GEO Max Iter"/>
+          <TextBlock x:Name="GeoMaxIterLabel" Grid.Row="6" Grid.Column="0" Text="GEO Max Iter"/>
           <TextBox x:Name="GeoMaxIterBox" Grid.Row="6" Grid.Column="1"/>
 
           <TextBox x:Name="KindsText" Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="4"
@@ -219,27 +219,27 @@
                    IsReadOnly="True"/>
         </Grid>
       </TabItem>
-      <TabItem Header="Environment">
+      <TabItem x:Name="EnvironmentTab" Header="Environment">
         <TextBox x:Name="EnvironmentText" FontFamily="Cascadia Mono, Consolas, Microsoft YaHei UI, Microsoft YaHei, SimSun" FontSize="12"
                  AcceptsReturn="True" AcceptsTab="True" TextWrapping="NoWrap"
                  HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"/>
       </TabItem>
-      <TabItem Header="Structure">
+      <TabItem x:Name="StructureTab" Header="Structure">
         <TextBox x:Name="StructureText" FontFamily="Cascadia Mono, Consolas, Microsoft YaHei UI, Microsoft YaHei, SimSun" FontSize="12"
                  AcceptsReturn="True" AcceptsTab="True" TextWrapping="NoWrap"
                  HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"/>
       </TabItem>
-      <TabItem Header="Input Preview">
+      <TabItem x:Name="InputPreviewTab" Header="Input Preview">
         <TextBox x:Name="PreviewText" FontFamily="Cascadia Mono, Consolas, Microsoft YaHei UI, Microsoft YaHei, SimSun" FontSize="12"
                  AcceptsReturn="True" AcceptsTab="True" TextWrapping="NoWrap"
                  HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"/>
       </TabItem>
-      <TabItem Header="Job Log">
+      <TabItem x:Name="JobLogTab" Header="Job Log">
         <TextBox x:Name="LogText" FontFamily="Cascadia Mono, Consolas, Microsoft YaHei UI, Microsoft YaHei, SimSun" FontSize="12"
                  AcceptsReturn="True" AcceptsTab="True" TextWrapping="Wrap"
                  HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"/>
       </TabItem>
-      <TabItem Header="Artifacts">
+      <TabItem x:Name="ArtifactsTab" Header="Artifacts">
         <Grid Margin="8">
           <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -265,7 +265,7 @@
                    IsReadOnly="True"/>
         </Grid>
       </TabItem>
-      <TabItem Header="History">
+      <TabItem x:Name="HistoryTab" Header="History">
         <DataGrid x:Name="HistoryGrid" AutoGenerateColumns="False" IsReadOnly="True"
                   SelectionMode="Single" HeadersVisibility="Column" GridLinesVisibility="Horizontal"
                   FontSize="12">

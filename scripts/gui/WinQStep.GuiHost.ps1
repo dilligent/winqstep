@@ -1,4 +1,7 @@
 function Set-WinQStepUtf8Encoding {
+    if (-not (Get-Variable -Scope Script -Name Utf8NoBomEncoding -ErrorAction SilentlyContinue)) {
+        $Script:Utf8NoBomEncoding = New-Object System.Text.UTF8Encoding($false)
+    }
     [Console]::InputEncoding = $Script:Utf8NoBomEncoding
     [Console]::OutputEncoding = $Script:Utf8NoBomEncoding
     $global:OutputEncoding = $Script:Utf8NoBomEncoding
@@ -11,6 +14,109 @@ Set-WinQStepUtf8Encoding
 function Resolve-WinQStepPath {
     param([Parameter(Mandatory = $true)][string]$RelativePath)
     return [System.IO.Path]::GetFullPath((Join-Path $Script:RepoRoot $RelativePath))
+}
+
+function Resolve-WinQStepLanguage {
+    param([string]$Language)
+
+    $candidate = $Language
+    if ([string]::IsNullOrWhiteSpace($candidate)) {
+        $candidate = [System.Globalization.CultureInfo]::CurrentUICulture.Name
+    }
+    $candidate = $candidate.Trim()
+    if ($candidate -match "^zh") {
+        return "zh-CN"
+    }
+    return "en-US"
+}
+
+function Read-WinQStepLocalizationFile {
+    param([Parameter(Mandatory = $true)][string]$Language)
+
+    $path = Resolve-WinQStepPath "resources\i18n\$Language.json"
+    if (-not [System.IO.File]::Exists($path)) {
+        throw "Localization resource was not found: $path"
+    }
+    $payload = [System.IO.File]::ReadAllText($path, [System.Text.Encoding]::UTF8) | ConvertFrom-Json
+    $strings = @{}
+    foreach ($property in $payload.PSObject.Properties) {
+        $strings[$property.Name] = [string]$property.Value
+    }
+    return $strings
+}
+
+function Initialize-WinQStepLocalization {
+    param([string]$Language)
+
+    $resolvedLanguage = Resolve-WinQStepLanguage $Language
+    $strings = Read-WinQStepLocalizationFile "en-US"
+    if ($resolvedLanguage -ne "en-US") {
+        $localized = Read-WinQStepLocalizationFile $resolvedLanguage
+        foreach ($key in $localized.Keys) {
+            $strings[$key] = $localized[$key]
+        }
+    }
+
+    $Script:WinQStepLocalization = [ordered]@{
+        language = $resolvedLanguage
+        requested_language = $Language
+        strings = $strings
+    }
+    return $Script:WinQStepLocalization
+}
+
+function Get-WinQStepLanguage {
+    if ($null -eq (Get-Variable -Scope Script -Name WinQStepLocalization -ErrorAction SilentlyContinue)) {
+        return ""
+    }
+    return [string]$Script:WinQStepLocalization.language
+}
+
+function Get-WinQStepText {
+    param([Parameter(Mandatory = $true)][string]$Key)
+
+    if ($null -eq (Get-Variable -Scope Script -Name WinQStepLocalization -ErrorAction SilentlyContinue)) {
+        return $Key
+    }
+    $strings = $Script:WinQStepLocalization.strings
+    if ($strings.ContainsKey($Key)) {
+        return [string]$strings[$Key]
+    }
+    return $Key
+}
+
+function Format-WinQStepText {
+    param(
+        [Parameter(Mandatory = $true)][string]$Key,
+        [object[]]$Arguments = @()
+    )
+
+    return [string]::Format(
+        [System.Globalization.CultureInfo]::InvariantCulture,
+        (Get-WinQStepText $Key),
+        $Arguments
+    )
+}
+
+function Set-WinQStepContent {
+    param($Control, [Parameter(Mandatory = $true)][string]$Key)
+    if ($null -ne $Control) {
+        $Control.Content = Get-WinQStepText $Key
+    }
+}
+
+function Set-WinQStepHeader {
+    param($Control, [Parameter(Mandatory = $true)][string]$Key)
+    if ($null -ne $Control) {
+        $Control.Header = Get-WinQStepText $Key
+    }
+}
+
+function Set-WinQStepText {
+    param($Control, [Parameter(Mandatory = $true)][string]$Key)
+    if ($null -ne $Control) {
+        $Control.Text = Get-WinQStepText $Key
+    }
 }
 
 function Add-WinQStepWpfAssemblies {
@@ -34,6 +140,8 @@ function Test-WinQStepGuiPrerequisites {
         "scripts\start_gui.ps1",
         "scripts\gui\WinQStep.GuiHost.ps1",
         "scripts\gui\WinQStep.xaml",
+        "resources\i18n\en-US.json",
+        "resources\i18n\zh-CN.json",
         "scripts\detect_environment.py",
         "scripts\import_structure.py",
         "scripts\run_workflow.py",

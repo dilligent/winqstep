@@ -10,6 +10,14 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class StartupDiagnosticsTests(unittest.TestCase):
+    def test_localization_resources_have_matching_keys(self) -> None:
+        english = json.loads((ROOT / "resources" / "i18n" / "en-US.json").read_text(encoding="utf-8"))
+        chinese = json.loads((ROOT / "resources" / "i18n" / "zh-CN.json").read_text(encoding="utf-8"))
+
+        self.assertEqual(set(english), set(chinese))
+        self.assertEqual(english["button.preview"], "Preview")
+        self.assertEqual(chinese["button.preview"], "预览")
+
     def test_python_startup_diagnostics_skip_live_probes(self) -> None:
         completed = subprocess.run(
             [
@@ -34,6 +42,8 @@ class StartupDiagnosticsTests(unittest.TestCase):
         self.assertTrue(required["scripts/check_startup.py"])
         self.assertTrue(required["scripts/gui/WinQStep.GuiHost.ps1"])
         self.assertTrue(required["scripts/gui/WinQStep.xaml"])
+        self.assertTrue(required["resources/i18n/en-US.json"])
+        self.assertTrue(required["resources/i18n/zh-CN.json"])
         exclusions = {item["pattern"]: item["present"] for item in payload["checks"]["release_exclusions"]}
         self.assertTrue(exclusions["/outputs/"])
         self.assertTrue(exclusions["*.winqstep-cache.json"])
@@ -47,6 +57,7 @@ class StartupDiagnosticsTests(unittest.TestCase):
         self.assertIn("-ExecutionPolicy", ps1_text)
         self.assertIn("-Diagnostics", ps1_text)
         self.assertIn("-SkipLiveProbes", ps1_text)
+        self.assertIn("-Language", ps1_text)
         self.assertIn("WinQStep.ps1", cmd_text)
         self.assertIn("ExecutionPolicy Bypass", cmd_text)
 

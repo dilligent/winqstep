@@ -14,10 +14,17 @@ class GuiPrototypeTests(unittest.TestCase):
         script_text = (ROOT / "scripts" / "start_gui.ps1").read_text(encoding="utf-8").replace("\r\n", "\n")
         helper_text = (ROOT / "scripts" / "gui" / "WinQStep.GuiHost.ps1").read_text(encoding="utf-8").replace("\r\n", "\n")
         xaml_text = (ROOT / "scripts" / "gui" / "WinQStep.xaml").read_text(encoding="utf-8").replace("\r\n", "\n")
+        english_text = (ROOT / "resources" / "i18n" / "en-US.json").read_text(encoding="utf-8")
+        chinese_text = (ROOT / "resources" / "i18n" / "zh-CN.json").read_text(encoding="utf-8")
 
         self.assertIn('gui\\WinQStep.GuiHost.ps1', script_text)
         self.assertIn('scripts\\gui\\WinQStep.xaml', script_text)
         self.assertNotIn('[xml]$xaml = @"', script_text)
+        self.assertIn("Initialize-WinQStepLocalization", helper_text)
+        self.assertIn("Get-WinQStepText", helper_text)
+        self.assertIn("Set-WinQStepContent", helper_text)
+        self.assertIn('"button.preview": "Preview"', english_text)
+        self.assertIn('"button.preview": "预览"', chinese_text)
         self.assertIn("[System.Windows.Threading.DispatcherTimer]::new()", script_text)
         self.assertIn("Start-WinQStepPythonProcess", helper_text)
         self.assertIn("Save-WinQStepProcessOutput", helper_text)
@@ -39,13 +46,14 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn('$controls["StructureText"].Text = $text', script_text)
         self.assertIn('$controls["PreviewText"].Text = $text', script_text)
         self.assertIn("$window.Add_Closing({", script_text)
-        self.assertIn("Use Stop before closing WinQStep", script_text)
+        self.assertIn("message.close_blocked", script_text)
+        self.assertIn("Use Stop before closing WinQStep", english_text)
         self.assertIn("job_dir=$($State[\"JobDir\"])", script_text)
         self.assertIn("wrapper_stdout=$($State[\"WrapperStdoutPath\"])", script_text)
         self.assertIn("$LifecycleSmokeTest", script_text)
         self.assertIn('$controls["RunButton"].Add_Click({\n        & $StartAsyncJob', script_text)
         self.assertIn('$controls["CancelJobButton"].Add_Click({\n        & $CancelAsyncJob', script_text)
-        self.assertIn('$controls["ViewOutputButton"].Add_Click({\n        & $InvokeGuiAction "Viewing output artifact"', script_text)
+        self.assertIn('$controls["ViewOutputButton"].Add_Click({\n        & $InvokeGuiAction (Get-WinQStepText "status.viewing_output_artifact")', script_text)
 
     @unittest.skipUnless(platform.system() == "Windows", "WPF prototype is Windows-only")
     def test_wpf_smoke_test_loads_window(self) -> None:
@@ -62,6 +70,8 @@ class GuiPrototypeTests(unittest.TestCase):
                 "-File",
                 str(ROOT / "scripts" / "start_gui.ps1"),
                 "-SmokeTest",
+                "-Language",
+                "en-US",
             ],
             capture_output=True,
             check=False,
@@ -72,6 +82,10 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertEqual(completed.returncode, 0, stderr)
         report = json.loads(stdout)
         self.assertTrue(report["wpf_available"])
+        self.assertEqual(report["ui_language"], "en-US")
+        self.assertEqual(report["preview_button_text"], "Preview")
+        self.assertEqual(report["config_tab_header"], "Config")
+        self.assertEqual(report["status_text_initial"], "Ready")
         self.assertIn("WinQStep.cmd", report["checked_files"])
         self.assertIn("WinQStep.ps1", report["checked_files"])
         self.assertIn("scripts\\start_gui.ps1", report["checked_files"])
@@ -122,6 +136,37 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertEqual(report["history_first_warning_count"], 0)
         self.assertTrue(report["existing_mode_input_enabled"])
         self.assertFalse(report["existing_mode_import_enabled"])
+
+    @unittest.skipUnless(platform.system() == "Windows", "WPF prototype is Windows-only")
+    def test_wpf_smoke_can_load_chinese_language(self) -> None:
+        powershell = shutil.which("powershell") or shutil.which("pwsh")
+        if not powershell:
+            self.skipTest("PowerShell is not available")
+
+        completed = subprocess.run(
+            [
+                powershell,
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                str(ROOT / "scripts" / "start_gui.ps1"),
+                "-SmokeTest",
+                "-Language",
+                "zh-CN",
+            ],
+            capture_output=True,
+            check=False,
+        )
+
+        stderr = completed.stderr.decode("utf-8", errors="replace")
+        stdout = completed.stdout.decode("utf-8-sig", errors="replace")
+        self.assertEqual(completed.returncode, 0, stderr)
+        report = json.loads(stdout)
+        self.assertEqual(report["ui_language"], "zh-CN")
+        self.assertEqual(report["preview_button_text"], "预览")
+        self.assertEqual(report["config_tab_header"], "配置")
+        self.assertEqual(report["status_text_initial"], "就绪")
 
     @unittest.skipUnless(platform.system() == "Windows", "WPF prototype is Windows-only")
     def test_lifecycle_smoke_can_stop_background_process(self) -> None:

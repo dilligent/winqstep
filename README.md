@@ -103,6 +103,12 @@ To run startup diagnostics without opening the GUI:
 .\WinQStep.ps1 -Diagnostics
 ```
 
+To force a GUI language:
+
+```powershell
+.\WinQStep.ps1 -Language zh-CN
+```
+
 The GUI can run either the structure/template workflow or an existing `.inp`
 file through the same command-line core. It can also browse previous job
 metadata from the selected job folder, edit the active WinQStep config, and edit
@@ -138,6 +144,7 @@ python .\scripts\list_job_history.py --workspace .\outputs --limit 10
 
 Launcher, prerequisite, and release-hygiene notes are in
 `docs/startup.md`.
+GUI localization notes are in `docs/localization.md`.
 
 ## License
 

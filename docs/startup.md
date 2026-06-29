@@ -21,6 +21,13 @@ Both launchers run `scripts/start_gui.ps1` with `-ExecutionPolicy Bypass` for
 that process only. They do not change the machine-wide PowerShell execution
 policy.
 
+Force a GUI language when needed:
+
+```powershell
+.\WinQStep.ps1 -Language en-US
+.\WinQStep.ps1 -Language zh-CN
+```
+
 ## Startup Diagnostics
 
 Run diagnostics without opening the GUI:

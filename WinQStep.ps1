@@ -2,7 +2,8 @@
 [CmdletBinding()]
 param(
     [switch]$Diagnostics,
-    [switch]$SkipLiveProbes
+    [switch]$SkipLiveProbes,
+    [string]$Language = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -23,6 +24,9 @@ if ($Diagnostics) {
 }
 if ($SkipLiveProbes) {
     $arguments += "-SkipLiveProbes"
+}
+if (-not [string]::IsNullOrWhiteSpace($Language)) {
+    $arguments += @("-Language", $Language)
 }
 
 & powershell @arguments

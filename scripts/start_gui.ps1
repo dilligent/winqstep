@@ -4,7 +4,8 @@ param(
     [switch]$SmokeTest,
     [switch]$LifecycleSmokeTest,
     [switch]$Diagnostics,
-    [switch]$SkipLiveProbes
+    [switch]$SkipLiveProbes,
+    [string]$Language = ""
 )
 
 Set-StrictMode -Version Latest
@@ -13,10 +14,12 @@ $ErrorActionPreference = "Stop"
 $Script:RepoRoot = Split-Path -Parent $PSScriptRoot
 $Script:PythonCommand = "python"
 $Script:Utf8NoBomEncoding = New-Object System.Text.UTF8Encoding($false)
+$Script:RequestedLanguage = $Language
 
 . (Join-Path $PSScriptRoot "gui\WinQStep.GuiHost.ps1")
 function New-WinQStepWindow {
     Add-WinQStepWpfAssemblies
+    $localization = Initialize-WinQStepLocalization $Script:RequestedLanguage
 
     $xamlPath = Resolve-WinQStepPath "scripts\gui\WinQStep.xaml"
     [xml]$xaml = [System.IO.File]::ReadAllText($xamlPath, [System.Text.Encoding]::UTF8)
@@ -27,10 +30,20 @@ function New-WinQStepWindow {
     $controls = @{}
     $names = @(
         "WorkflowModeRadio", "ExistingInputModeRadio",
+        "JobInputsGroup",
+        "ModeLabel", "ConfigPathLabel", "TemplatePathLabel", "StructurePathLabel",
+        "ExistingInputPathLabel", "JobFolderLabel", "ProjectLabel",
         "ConfigPathBox", "TemplatePathBox", "StructurePathBox", "ExistingInputPathBox",
         "JobDirBox", "ProjectNameBox",
+        "ConfigTab", "TemplateTab", "EnvironmentTab", "StructureTab",
+        "InputPreviewTab", "JobLogTab", "ArtifactsTab", "HistoryTab",
+        "DistroLabel", "Cp2kCommandLabel", "Cp2kDataDirLabel", "MpiCommandLabel",
+        "WorkspaceLabel", "WslPreludeLabel", "TimeoutLabel",
         "DistroBox", "Cp2kCommandBox", "Cp2kDataDirBox", "MpirunCommandBox",
         "DefaultWorkspaceBox", "WslPreludeBox", "TimeoutBox", "ConfigValidationText",
+        "TemplateProjectLabel", "RunTypeLabel", "BasisFileLabel", "PotentialFileLabel",
+        "XcFunctionalLabel", "EpsScfLabel", "ChargeLabel", "MultiplicityLabel",
+        "CutoffLabel", "RelCutoffLabel", "MaxScfLabel", "OptimizerLabel", "GeoMaxIterLabel",
         "TemplateProjectBox", "TemplateRunTypeBox", "BasisSetFileBox", "PotentialFileBox",
         "XcFunctionalBox", "ChargeBox", "MultiplicityBox", "CutoffBox", "RelCutoffBox",
         "EpsScfBox", "MaxScfBox", "GeoOptimizerBox", "GeoMaxIterBox", "KindsText",
@@ -46,6 +59,101 @@ function New-WinQStepWindow {
     )
     foreach ($name in $names) {
         $controls[$name] = $window.FindName($name)
+    }
+
+    $window.Title = Get-WinQStepText "app.title"
+    $contentLocalization = @{
+        LoadConfigButton = "button.load_config"
+        SaveConfigButton = "button.save_config"
+        LoadTemplateButton = "button.load_template"
+        SaveTemplateButton = "button.save_template"
+        InspectDataButton = "button.inspect_data"
+        DetectButton = "button.detect"
+        ImportButton = "button.import"
+        PreviewButton = "button.preview"
+        RunButton = "button.run"
+        CancelJobButton = "button.stop"
+        HistoryButton = "button.history"
+        ClearButton = "button.clear"
+        BrowseConfigButton = "button.browse"
+        BrowseTemplateButton = "button.browse"
+        BrowseStructureButton = "button.browse"
+        BrowseExistingInputButton = "button.browse"
+        BrowseJobDirButton = "button.browse"
+        ViewInputButton = "button.input"
+        ViewOutputButton = "button.output"
+        ViewMetadataButton = "button.metadata"
+        ViewStdoutButton = "button.stdout"
+        ViewStderrButton = "button.stderr"
+        WorkflowModeRadio = "mode.workflow"
+        ExistingInputModeRadio = "mode.existing_input"
+    }
+    foreach ($entry in $contentLocalization.GetEnumerator()) {
+        Set-WinQStepContent $controls[$entry.Key] $entry.Value
+    }
+
+    $headerLocalization = @{
+        JobInputsGroup = "group.job_inputs"
+        ConfigTab = "tab.config"
+        TemplateTab = "tab.template"
+        EnvironmentTab = "tab.environment"
+        StructureTab = "tab.structure"
+        InputPreviewTab = "tab.input_preview"
+        JobLogTab = "tab.job_log"
+        ArtifactsTab = "tab.artifacts"
+        HistoryTab = "tab.history"
+    }
+    foreach ($entry in $headerLocalization.GetEnumerator()) {
+        Set-WinQStepHeader $controls[$entry.Key] $entry.Value
+    }
+
+    $textLocalization = @{
+        ModeLabel = "label.mode"
+        ConfigPathLabel = "label.config"
+        TemplatePathLabel = "label.template"
+        StructurePathLabel = "label.structure"
+        ExistingInputPathLabel = "label.existing_input"
+        JobFolderLabel = "label.job_folder"
+        ProjectLabel = "label.project"
+        DistroLabel = "label.distro"
+        Cp2kCommandLabel = "label.cp2k_command"
+        Cp2kDataDirLabel = "label.cp2k_data_dir"
+        MpiCommandLabel = "label.mpi_command"
+        WorkspaceLabel = "label.workspace"
+        WslPreludeLabel = "label.wsl_prelude"
+        TimeoutLabel = "label.timeout"
+        TemplateProjectLabel = "label.project"
+        RunTypeLabel = "label.run_type"
+        BasisFileLabel = "label.basis_file"
+        PotentialFileLabel = "label.potential_file"
+        XcFunctionalLabel = "label.xc_functional"
+        EpsScfLabel = "label.eps_scf"
+        ChargeLabel = "label.charge"
+        MultiplicityLabel = "label.multiplicity"
+        CutoffLabel = "label.cutoff"
+        RelCutoffLabel = "label.rel_cutoff"
+        MaxScfLabel = "label.max_scf"
+        OptimizerLabel = "label.optimizer"
+        GeoMaxIterLabel = "label.geo_max_iter"
+        StatusText = "status.ready"
+    }
+    foreach ($entry in $textLocalization.GetEnumerator()) {
+        Set-WinQStepText $controls[$entry.Key] $entry.Value
+    }
+
+    if ($controls["DataLabelsGrid"].Columns.Count -ge 3) {
+        $controls["DataLabelsGrid"].Columns[0].Header = Get-WinQStepText "column.element"
+        $controls["DataLabelsGrid"].Columns[1].Header = Get-WinQStepText "column.basis_sets"
+        $controls["DataLabelsGrid"].Columns[2].Header = Get-WinQStepText "column.potentials"
+    }
+    if ($controls["HistoryGrid"].Columns.Count -ge 7) {
+        $controls["HistoryGrid"].Columns[0].Header = Get-WinQStepText "column.completed"
+        $controls["HistoryGrid"].Columns[1].Header = Get-WinQStepText "column.mode"
+        $controls["HistoryGrid"].Columns[2].Header = Get-WinQStepText "column.status"
+        $controls["HistoryGrid"].Columns[3].Header = Get-WinQStepText "column.code"
+        $controls["HistoryGrid"].Columns[4].Header = Get-WinQStepText "column.warnings"
+        $controls["HistoryGrid"].Columns[5].Header = Get-WinQStepText "column.project_input"
+        $controls["HistoryGrid"].Columns[6].Header = Get-WinQStepText "column.output"
     }
 
     $controls["ConfigPathBox"].Text = Resolve-WinQStepPath "examples\winqstep.config.json"
@@ -125,10 +233,10 @@ function New-WinQStepWindow {
         catch {
             $message = $_.Exception.Message
             & $AppendLog "ERROR: $message"
-            [System.Windows.MessageBox]::Show($window, $message, "WinQStep", "OK", "Error") | Out-Null
+            [System.Windows.MessageBox]::Show($window, $message, (Get-WinQStepText "message.title"), "OK", (Get-WinQStepText "message.error_caption")) | Out-Null
         }
         finally {
-            & $SetBusy $false "Ready"
+            & $SetBusy $false (Get-WinQStepText "status.ready")
         }
     }.GetNewClosure()
 
@@ -366,7 +474,7 @@ function New-WinQStepWindow {
         }
 
         if ($null -ne $metadata) {
-            $finalStatus = if ([bool]$State["Cancelled"]) { "Cancelled" } elseif ($exitCode -eq 0) { "Ready" } else { "Finished with errors" }
+            $finalStatus = if ([bool]$State["Cancelled"]) { Get-WinQStepText "status.cancelled" } elseif ($exitCode -eq 0) { Get-WinQStepText "status.ready" } else { Get-WinQStepText "status.finished_with_errors" }
             $logText = & $FormatLogWithSummary $metadata $stdout
             if (-not [string]::IsNullOrWhiteSpace($stderr)) {
                 $logText = "$logText`r`n`r`n--- wrapper stderr ---`r`n$stderr"
@@ -383,7 +491,7 @@ function New-WinQStepWindow {
                 $parts += "--- wrapper stderr ---`r`n$stderr"
             }
             $controls["LogText"].Text = ($parts -join "`r`n`r`n")
-            $finalStatus = if ([bool]$State["Cancelled"]) { "Cancelled" } else { "Finished with errors" }
+            $finalStatus = if ([bool]$State["Cancelled"]) { Get-WinQStepText "status.cancelled" } else { Get-WinQStepText "status.finished_with_errors" }
             & $SetJobStatusText "Last job: status=$finalStatus | metadata=$($State["MetadataPath"])"
         }
 
@@ -1038,7 +1146,7 @@ function New-WinQStepWindow {
             return
         }
 
-        & $SetBusy $true "Preparing CP2K job"
+        & $SetBusy $true (Get-WinQStepText "status.preparing_cp2k_job")
         try {
             $preflight = & $ValidateActiveInputs
             $preflightText = & $FormatPreflightValidation $preflight
@@ -1076,14 +1184,14 @@ function New-WinQStepWindow {
             }
             $controls["LogText"].Text = "$preflightText`r`n`r`n$(& $BuildAsyncJobLog $jobState["Current"])"
             & $SetJobStatusText (& $FormatRunningJobStatus $jobState["Current"])
-            & $SetAsyncJobRunning $true "Running CP2K (PID $($process.Id))"
+            & $SetAsyncJobRunning $true (Format-WinQStepText "status.running_cp2k_pid" @($process.Id))
             $jobTimer.Start()
         }
         catch {
             $message = $_.Exception.Message
             & $AppendLog "ERROR: $message"
-            [System.Windows.MessageBox]::Show($window, $message, "WinQStep", "OK", "Error") | Out-Null
-            & $SetBusy $false "Ready"
+            [System.Windows.MessageBox]::Show($window, $message, (Get-WinQStepText "message.title"), "OK", (Get-WinQStepText "message.error_caption")) | Out-Null
+            & $SetBusy $false (Get-WinQStepText "status.ready")
         }
     }.GetNewClosure()
 
@@ -1094,7 +1202,7 @@ function New-WinQStepWindow {
         }
         $current["Cancelled"] = $true
         $controls["CancelJobButton"].IsEnabled = $false
-        $controls["StatusText"].Text = "Cancelling CP2K"
+        $controls["StatusText"].Text = Get-WinQStepText "status.cancelling_cp2k"
         & $AppendLog "Cancellation requested."
         try {
             Stop-WinQStepProcessTree ([System.Diagnostics.Process]$current["Process"])
@@ -1118,51 +1226,51 @@ function New-WinQStepWindow {
         }
 
         $eventArgs.Cancel = $true
-        $message = "A CP2K job is still running.`r`n`r`nPID: $($process.Id)`r`nMetadata: $($current["MetadataPath"])`r`nOutput: $($current["OutputPath"])`r`n`r`nUse Stop before closing WinQStep."
+        $message = Format-WinQStepText "message.close_blocked" @($process.Id, [string]$current["MetadataPath"], [string]$current["OutputPath"])
         & $SetJobStatusText (& $FormatRunningJobStatus $current)
         & $AppendLog "Close blocked: CP2K job PID $($process.Id) is still running."
-        [System.Windows.MessageBox]::Show($window, $message, "WinQStep", "OK", "Warning") | Out-Null
+        [System.Windows.MessageBox]::Show($window, $message, (Get-WinQStepText "message.title"), "OK", (Get-WinQStepText "message.warning_caption")) | Out-Null
     }.GetNewClosure())
 
     $controls["LoadConfigButton"].Add_Click({
-        & $InvokeGuiAction "Loading config" {
+        & $InvokeGuiAction (Get-WinQStepText "status.loading_config") {
             $null = & $LoadConfigFields $true
         }
     }.GetNewClosure())
 
     $controls["SaveConfigButton"].Add_Click({
-        & $InvokeGuiAction "Saving config" {
+        & $InvokeGuiAction (Get-WinQStepText "status.saving_config") {
             $null = & $SaveConfigFields $false $true
         }
     }.GetNewClosure())
 
     $controls["LoadTemplateButton"].Add_Click({
-        & $InvokeGuiAction "Loading template" {
+        & $InvokeGuiAction (Get-WinQStepText "status.loading_template") {
             $null = & $LoadTemplateFields $true
         }
     }.GetNewClosure())
 
     $controls["SaveTemplateButton"].Add_Click({
-        & $InvokeGuiAction "Saving template" {
+        & $InvokeGuiAction (Get-WinQStepText "status.saving_template") {
             $null = & $SaveTemplateFields $true
         }
     }.GetNewClosure())
 
     $controls["InspectDataButton"].Add_Click({
-        & $InvokeGuiAction "Inspecting CP2K data" {
+        & $InvokeGuiAction (Get-WinQStepText "status.inspecting_cp2k_data") {
             $null = & $InspectCp2kData $true
         }
     }.GetNewClosure())
 
     $controls["BrowseConfigButton"].Add_Click({
         & $SelectFilePath $controls["ConfigPathBox"] "JSON files (*.json)|*.json|All files (*.*)|*.*"
-        & $InvokeGuiAction "Loading config" {
+        & $InvokeGuiAction (Get-WinQStepText "status.loading_config") {
             $null = & $LoadConfigFields $true
         }
     }.GetNewClosure())
     $controls["BrowseTemplateButton"].Add_Click({
         & $SelectFilePath $controls["TemplatePathBox"] "JSON files (*.json)|*.json|All files (*.*)|*.*"
-        & $InvokeGuiAction "Loading template" {
+        & $InvokeGuiAction (Get-WinQStepText "status.loading_template") {
             $null = & $LoadTemplateFields $true
         }
     }.GetNewClosure())
@@ -1173,7 +1281,7 @@ function New-WinQStepWindow {
     $controls["ExistingInputModeRadio"].Add_Checked({ & $UpdateModeControls }.GetNewClosure())
 
     $controls["DetectButton"].Add_Click({
-        & $InvokeGuiAction "Detecting environment" {
+        & $InvokeGuiAction (Get-WinQStepText "status.detecting_environment") {
             $null = & $SaveConfigFields $false $false
             $result = Invoke-WinQStepPython @("scripts\detect_environment.py", "--config", $controls["ConfigPathBox"].Text)
             $controls["EnvironmentText"].Text = $result.Output
@@ -1182,7 +1290,7 @@ function New-WinQStepWindow {
     }.GetNewClosure())
 
     $controls["ImportButton"].Add_Click({
-        & $InvokeGuiAction "Importing structure" {
+        & $InvokeGuiAction (Get-WinQStepText "status.importing_structure") {
             $result = Invoke-WinQStepPython @("scripts\import_structure.py", "--input", $controls["StructurePathBox"].Text)
             $controls["StructureText"].Text = $result.Output
             & $AppendLog "import_structure.py exited with code $($result.ExitCode)"
@@ -1190,7 +1298,7 @@ function New-WinQStepWindow {
     }.GetNewClosure())
 
     $controls["PreviewButton"].Add_Click({
-        $status = if (& $TestIsExistingInputMode) { "Preparing existing input preview" } else { "Preparing workflow input preview" }
+        $status = if (& $TestIsExistingInputMode) { Get-WinQStepText "status.preparing_existing_input_preview" } else { Get-WinQStepText "status.preparing_workflow_input_preview" }
         & $InvokeGuiAction $status {
             $preflight = & $ValidateActiveInputs
             $preflightText = & $FormatPreflightValidation $preflight
@@ -1217,37 +1325,37 @@ function New-WinQStepWindow {
     }.GetNewClosure())
 
     $controls["ViewInputButton"].Add_Click({
-        & $InvokeGuiAction "Viewing input artifact" {
+        & $InvokeGuiAction (Get-WinQStepText "status.viewing_input_artifact") {
             & $ViewArtifact "input"
         }
     }.GetNewClosure())
 
     $controls["ViewOutputButton"].Add_Click({
-        & $InvokeGuiAction "Viewing output artifact" {
+        & $InvokeGuiAction (Get-WinQStepText "status.viewing_output_artifact") {
             & $ViewArtifact "output"
         }
     }.GetNewClosure())
 
     $controls["ViewMetadataButton"].Add_Click({
-        & $InvokeGuiAction "Viewing metadata artifact" {
+        & $InvokeGuiAction (Get-WinQStepText "status.viewing_metadata_artifact") {
             & $ViewArtifact "metadata"
         }
     }.GetNewClosure())
 
     $controls["ViewStdoutButton"].Add_Click({
-        & $InvokeGuiAction "Viewing stdout artifact" {
+        & $InvokeGuiAction (Get-WinQStepText "status.viewing_stdout_artifact") {
             & $ViewArtifact "stdout"
         }
     }.GetNewClosure())
 
     $controls["ViewStderrButton"].Add_Click({
-        & $InvokeGuiAction "Viewing stderr artifact" {
+        & $InvokeGuiAction (Get-WinQStepText "status.viewing_stderr_artifact") {
             & $ViewArtifact "stderr"
         }
     }.GetNewClosure())
 
     $controls["HistoryButton"].Add_Click({
-        & $InvokeGuiAction "Loading job history" {
+        & $InvokeGuiAction (Get-WinQStepText "status.loading_job_history") {
             & $LoadHistory
         }
     }.GetNewClosure())
@@ -1425,7 +1533,11 @@ if ($SmokeTest) {
     $configWorkspace = [string]$window.FindName("DefaultWorkspaceBox").Text
     $report["xaml_loaded"] = ($window -is [System.Windows.Window])
     $report["title"] = $window.Title
+    $report["ui_language"] = Get-WinQStepLanguage
     $report["action_button_panel_wraps"] = ($window.FindName("ActionButtonPanel") -is [System.Windows.Controls.WrapPanel])
+    $report["preview_button_text"] = [string]$window.FindName("PreviewButton").Content
+    $report["config_tab_header"] = [string]$window.FindName("ConfigTab").Header
+    $report["status_text_initial"] = [string]$window.FindName("StatusText").Text
     $report["cancel_button_loaded"] = ($window.FindName("CancelJobButton") -is [System.Windows.Controls.Button])
     $report["cancel_button_initially_disabled"] = (-not [bool]$window.FindName("CancelJobButton").IsEnabled)
     $report["job_status_text_loaded"] = ($window.FindName("JobStatusText") -is [System.Windows.Controls.TextBlock])

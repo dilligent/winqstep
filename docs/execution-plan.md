@@ -14,8 +14,8 @@ Each round should end with a focused commit.
   history, config editing, template editing, CP2K data inspection, and
   asynchronous GUI job execution, GUI job lifecycle hardening, GUI output
   inspection, job input preflight validation, startup diagnostics, and GUI
-  modularization.
-- Next active round: Round 20, GUI localization foundation.
+  modularization, and GUI localization.
+- Next active round: Round 21, localization coverage and preferences.
 - Known local facts:
   - WSL2 is available.
   - Default distro is `Ubuntu`.
@@ -639,8 +639,19 @@ Commit boundary:
 
 ## Round 20: GUI Localization Foundation
 
+Status: implemented.
+
 Goal: prepare the GUI for Chinese and English UI text without localizing CP2K
 keywords, metadata schemas, or raw scientific output.
+
+Local verification:
+
+- `resources/i18n/en-US.json` and `resources/i18n/zh-CN.json` provide GUI
+  string resources.
+- `scripts/start_gui.ps1 -SmokeTest -Language en-US` and `-Language zh-CN`
+  verify that the GUI can start from either resource file.
+- Startup diagnostics and GUI prerequisite checks include both localization
+  resource files.
 
 Tasks:
 
@@ -663,6 +674,29 @@ Commit boundary:
 
 - One commit for localization resources, lookup helper, focused GUI wiring,
   tests, and docs.
+
+## Round 21: Localization Coverage and Preferences
+
+Goal: make localization selection more ergonomic and broaden coverage without
+changing CP2K-facing interfaces.
+
+Tasks:
+
+- Decide whether `ui_language` belongs in the WinQStep config schema.
+- Add a GUI language selector or documented config override if useful.
+- Continue moving high-value GUI status text and common user-facing diagnostics
+  into resource files.
+- Add resource completeness checks that compare supported languages key-for-key.
+
+Acceptance:
+
+- Users can persist or clearly control their preferred GUI language, and missing
+  localization keys are caught by deterministic tests.
+
+Commit boundary:
+
+- One commit for preference plumbing, coverage tests, focused GUI wiring, and
+  docs.
 
 ## Working Rules
 

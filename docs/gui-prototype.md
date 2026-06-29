@@ -41,10 +41,20 @@ still owns event wiring and GUI workflows, but the WPF layout now lives in
 `scripts/gui/WinQStep.xaml`, while reusable host/process/file helpers live in
 `scripts/gui/WinQStep.GuiHost.ps1`.
 
+Round 20 adds GUI localization resources for `en-US` and `zh-CN`. The GUI
+defaults from Windows UI culture, and `-Language` can force a specific language
+for local testing or daily use.
+
 ## Start
 
 ```powershell
 .\WinQStep.ps1
+```
+
+Force a language when needed:
+
+```powershell
+.\WinQStep.ps1 -Language zh-CN
 ```
 
 The lower-level command remains available:
@@ -86,6 +96,8 @@ commands.
 The GUI layout is intentionally separate from event wiring. Edit
 `scripts/gui/WinQStep.xaml` for controls and layout, and edit
 `scripts/start_gui.ps1` for event handlers and view-state behavior.
+User-facing GUI strings live in `resources/i18n/`, while CP2K keywords, JSON
+keys, metadata, paths, and raw CP2K output remain untranslated.
 
 Double-clicking a row in the history grid loads the selected metadata into the
 job log pane and the selected CP2K output file into the input preview pane.

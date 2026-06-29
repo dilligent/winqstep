@@ -24,6 +24,8 @@ REQUIRED_FILES = (
     "scripts/start_gui.ps1",
     "scripts/gui/WinQStep.GuiHost.ps1",
     "scripts/gui/WinQStep.xaml",
+    "resources/i18n/en-US.json",
+    "resources/i18n/zh-CN.json",
     "scripts/detect_environment.py",
     "scripts/import_structure.py",
     "scripts/run_workflow.py",
