@@ -47,6 +47,7 @@ function Test-WinQStepGuiPrerequisites {
         "scripts\run_existing_input.py",
         "scripts\list_job_history.py",
         "scripts\manage_config.py",
+        "scripts\manage_template.py",
         "examples\winqstep.config.json",
         "examples\templates\energy_pbe.json",
         "tests\fixtures\structures\water.xyz",
@@ -154,6 +155,8 @@ function New-WinQStepWindow {
       <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
         <Button x:Name="LoadConfigButton" Content="Load Config"/>
         <Button x:Name="SaveConfigButton" Content="Save Config"/>
+        <Button x:Name="LoadTemplateButton" Content="Load Template"/>
+        <Button x:Name="SaveTemplateButton" Content="Save Template"/>
         <Button x:Name="DetectButton" Content="Detect"/>
         <Button x:Name="ImportButton" Content="Import"/>
         <Button x:Name="PreviewButton" Content="Preview"/>
@@ -259,6 +262,71 @@ function New-WinQStepWindow {
                    IsReadOnly="True"/>
         </Grid>
       </TabItem>
+      <TabItem Header="Template">
+        <Grid Margin="8">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="150"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="150"/>
+            <ColumnDefinition Width="*"/>
+          </Grid.ColumnDefinitions>
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="90"/>
+          </Grid.RowDefinitions>
+
+          <TextBlock Grid.Row="0" Grid.Column="0" Text="Project"/>
+          <TextBox x:Name="TemplateProjectBox" Grid.Row="0" Grid.Column="1"/>
+          <TextBlock Grid.Row="0" Grid.Column="2" Text="Run Type"/>
+          <TextBox x:Name="TemplateRunTypeBox" Grid.Row="0" Grid.Column="3"/>
+
+          <TextBlock Grid.Row="1" Grid.Column="0" Text="Basis File"/>
+          <TextBox x:Name="BasisSetFileBox" Grid.Row="1" Grid.Column="1"/>
+          <TextBlock Grid.Row="1" Grid.Column="2" Text="Potential File"/>
+          <TextBox x:Name="PotentialFileBox" Grid.Row="1" Grid.Column="3"/>
+
+          <TextBlock Grid.Row="2" Grid.Column="0" Text="XC Functional"/>
+          <TextBox x:Name="XcFunctionalBox" Grid.Row="2" Grid.Column="1"/>
+          <TextBlock Grid.Row="2" Grid.Column="2" Text="EPS SCF"/>
+          <TextBox x:Name="EpsScfBox" Grid.Row="2" Grid.Column="3"/>
+
+          <TextBlock Grid.Row="3" Grid.Column="0" Text="Charge"/>
+          <TextBox x:Name="ChargeBox" Grid.Row="3" Grid.Column="1"/>
+          <TextBlock Grid.Row="3" Grid.Column="2" Text="Multiplicity"/>
+          <TextBox x:Name="MultiplicityBox" Grid.Row="3" Grid.Column="3"/>
+
+          <TextBlock Grid.Row="4" Grid.Column="0" Text="Cutoff"/>
+          <TextBox x:Name="CutoffBox" Grid.Row="4" Grid.Column="1"/>
+          <TextBlock Grid.Row="4" Grid.Column="2" Text="Rel Cutoff"/>
+          <TextBox x:Name="RelCutoffBox" Grid.Row="4" Grid.Column="3"/>
+
+          <TextBlock Grid.Row="5" Grid.Column="0" Text="Max SCF"/>
+          <TextBox x:Name="MaxScfBox" Grid.Row="5" Grid.Column="1"/>
+          <TextBlock Grid.Row="5" Grid.Column="2" Text="Optimizer"/>
+          <TextBox x:Name="GeoOptimizerBox" Grid.Row="5" Grid.Column="3"/>
+
+          <TextBlock Grid.Row="6" Grid.Column="0" Text="GEO Max Iter"/>
+          <TextBox x:Name="GeoMaxIterBox" Grid.Row="6" Grid.Column="1"/>
+
+          <TextBox x:Name="KindsText" Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="4"
+                   FontFamily="Cascadia Mono, Consolas, Microsoft YaHei UI, Microsoft YaHei, SimSun"
+                   FontSize="12" AcceptsReturn="True" AcceptsTab="True" TextWrapping="NoWrap"
+                   HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"/>
+
+          <TextBox x:Name="TemplateValidationText" Grid.Row="8" Grid.Column="0" Grid.ColumnSpan="4"
+                   FontFamily="Cascadia Mono, Consolas, Microsoft YaHei UI, Microsoft YaHei, SimSun"
+                   FontSize="12" AcceptsReturn="True" TextWrapping="Wrap"
+                   HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
+                   IsReadOnly="True"/>
+        </Grid>
+      </TabItem>
       <TabItem Header="Environment">
         <TextBox x:Name="EnvironmentText" FontFamily="Cascadia Mono, Consolas, Microsoft YaHei UI, Microsoft YaHei, SimSun" FontSize="12"
                  AcceptsReturn="True" AcceptsTab="True" TextWrapping="NoWrap"
@@ -315,8 +383,12 @@ function New-WinQStepWindow {
         "JobDirBox", "ProjectNameBox",
         "DistroBox", "Cp2kCommandBox", "Cp2kDataDirBox", "MpirunCommandBox",
         "DefaultWorkspaceBox", "WslPreludeBox", "TimeoutBox", "ConfigValidationText",
+        "TemplateProjectBox", "TemplateRunTypeBox", "BasisSetFileBox", "PotentialFileBox",
+        "XcFunctionalBox", "ChargeBox", "MultiplicityBox", "CutoffBox", "RelCutoffBox",
+        "EpsScfBox", "MaxScfBox", "GeoOptimizerBox", "GeoMaxIterBox", "KindsText",
+        "TemplateValidationText",
         "EnvironmentText", "StructureText", "PreviewText", "LogText", "HistoryGrid", "StatusText",
-        "LoadConfigButton", "SaveConfigButton", "DetectButton", "ImportButton",
+        "LoadConfigButton", "SaveConfigButton", "LoadTemplateButton", "SaveTemplateButton", "DetectButton", "ImportButton",
         "PreviewButton", "RunButton", "HistoryButton", "ClearButton",
         "BrowseConfigButton", "BrowseTemplateButton", "BrowseStructureButton",
         "BrowseExistingInputButton", "BrowseJobDirButton"
@@ -333,8 +405,9 @@ function New-WinQStepWindow {
     $controls["ProjectNameBox"].Text = "gui_preview"
 
     $actionButtons = @(
-        $controls["LoadConfigButton"], $controls["SaveConfigButton"], $controls["DetectButton"],
-        $controls["ImportButton"], $controls["PreviewButton"], $controls["RunButton"],
+        $controls["LoadConfigButton"], $controls["SaveConfigButton"],
+        $controls["LoadTemplateButton"], $controls["SaveTemplateButton"],
+        $controls["DetectButton"], $controls["ImportButton"], $controls["PreviewButton"], $controls["RunButton"],
         $controls["HistoryButton"], $controls["ClearButton"], $controls["BrowseConfigButton"],
         $controls["BrowseTemplateButton"], $controls["BrowseStructureButton"],
         $controls["BrowseExistingInputButton"], $controls["BrowseJobDirButton"]
@@ -586,6 +659,118 @@ function New-WinQStepWindow {
         return $payload
     }.GetNewClosure()
 
+    $FormatTemplateValidation = {
+        param([Parameter(Mandatory = $true)]$Payload)
+        $validation = $Payload.validation
+        $lines = @()
+        if ($null -ne $validation -and [bool]$validation.valid) {
+            $lines += "Template valid"
+        }
+        else {
+            $lines += "Template invalid"
+        }
+        if ($null -ne $validation -and $null -ne $validation.errors) {
+            foreach ($errorText in @($validation.errors)) {
+                $lines += "ERROR: $errorText"
+            }
+        }
+        if ($null -ne $validation -and $null -ne $validation.warnings) {
+            foreach ($warningText in @($validation.warnings)) {
+                $lines += "WARNING: $warningText"
+            }
+        }
+        return ($lines -join "`r`n")
+    }.GetNewClosure()
+
+    $SetTemplateFieldsFromPayload = {
+        param([Parameter(Mandatory = $true)]$Payload)
+        $template = $Payload.template
+        $dft = $template.dft
+        $geoOpt = $template.geo_opt
+        $controls["TemplateProjectBox"].Text = & $GetJsonProperty $template "project_name"
+        $controls["TemplateRunTypeBox"].Text = & $GetJsonProperty $template "run_type"
+        $controls["BasisSetFileBox"].Text = & $GetJsonProperty $dft "basis_set_file_name"
+        $controls["PotentialFileBox"].Text = & $GetJsonProperty $dft "potential_file_name"
+        $controls["XcFunctionalBox"].Text = & $GetJsonProperty $dft "xc_functional"
+        $controls["ChargeBox"].Text = & $GetJsonProperty $dft "charge"
+        $controls["MultiplicityBox"].Text = & $GetJsonProperty $dft "multiplicity"
+        $controls["CutoffBox"].Text = & $GetJsonProperty $dft "cutoff"
+        $controls["RelCutoffBox"].Text = & $GetJsonProperty $dft "rel_cutoff"
+        $controls["EpsScfBox"].Text = & $GetJsonProperty $dft "eps_scf"
+        $controls["MaxScfBox"].Text = & $GetJsonProperty $dft "max_scf"
+        $controls["GeoOptimizerBox"].Text = & $GetJsonProperty $geoOpt "optimizer"
+        $controls["GeoMaxIterBox"].Text = & $GetJsonProperty $geoOpt "max_iter"
+        $controls["KindsText"].Text = & $GetJsonProperty $Payload "kinds_text"
+        $controls["TemplateValidationText"].Text = & $FormatTemplateValidation $Payload
+    }.GetNewClosure()
+
+    $ReadTemplateManagerResult = {
+        param([Parameter(Mandatory = $true)]$Result)
+        try {
+            $payload = $Result.Output | ConvertFrom-Json
+        }
+        catch {
+            throw "Command did not return JSON. Raw output:`n$($Result.Output)"
+        }
+        if ($null -ne $payload.template) {
+            & $SetTemplateFieldsFromPayload $payload
+        }
+        if ($Result.ExitCode -ne 0) {
+            throw (& $FormatTemplateValidation $payload)
+        }
+        return $payload
+    }.GetNewClosure()
+
+    $GetTemplateFieldsJson = {
+        $fields = [ordered]@{
+            project_name = $controls["TemplateProjectBox"].Text
+            run_type = $controls["TemplateRunTypeBox"].Text
+            basis_set_file_name = $controls["BasisSetFileBox"].Text
+            potential_file_name = $controls["PotentialFileBox"].Text
+            xc_functional = $controls["XcFunctionalBox"].Text
+            charge = $controls["ChargeBox"].Text
+            multiplicity = $controls["MultiplicityBox"].Text
+            cutoff = $controls["CutoffBox"].Text
+            rel_cutoff = $controls["RelCutoffBox"].Text
+            eps_scf = $controls["EpsScfBox"].Text
+            max_scf = $controls["MaxScfBox"].Text
+            optimizer = $controls["GeoOptimizerBox"].Text
+            geo_opt_max_iter = $controls["GeoMaxIterBox"].Text
+            kinds_text = $controls["KindsText"].Text
+        }
+        return ($fields | ConvertTo-Json -Compress)
+    }.GetNewClosure()
+
+    $LoadTemplateFields = {
+        param([bool]$WriteLog)
+        $result = Invoke-WinQStepPython @(
+            "scripts\manage_template.py",
+            "--template", $controls["TemplatePathBox"].Text,
+            "--compact"
+        )
+        $payload = & $ReadTemplateManagerResult $result
+        if ($WriteLog) {
+            $controls["LogText"].Text = $result.Output
+        }
+        return $payload
+    }.GetNewClosure()
+
+    $SaveTemplateFields = {
+        param([bool]$WriteLog)
+        $result = Invoke-WinQStepPython @(
+            "scripts\manage_template.py",
+            "--template", $controls["TemplatePathBox"].Text,
+            "--write",
+            "--fields-json", (& $GetTemplateFieldsJson),
+            "--compact"
+        )
+        $payload = & $ReadTemplateManagerResult $result
+        if ($WriteLog) {
+            $controls["LogText"].Text = $result.Output
+        }
+        return $payload
+    }.GetNewClosure()
+
     $LoadHistory = {
         $result = Invoke-WinQStepPython @(
             "scripts\list_job_history.py",
@@ -640,13 +825,30 @@ function New-WinQStepWindow {
         }
     }.GetNewClosure())
 
+    $controls["LoadTemplateButton"].Add_Click({
+        & $InvokeGuiAction "Loading template" {
+            $null = & $LoadTemplateFields $true
+        }
+    }.GetNewClosure())
+
+    $controls["SaveTemplateButton"].Add_Click({
+        & $InvokeGuiAction "Saving template" {
+            $null = & $SaveTemplateFields $true
+        }
+    }.GetNewClosure())
+
     $controls["BrowseConfigButton"].Add_Click({
         & $SelectFilePath $controls["ConfigPathBox"] "JSON files (*.json)|*.json|All files (*.*)|*.*"
         & $InvokeGuiAction "Loading config" {
             $null = & $LoadConfigFields $true
         }
     }.GetNewClosure())
-    $controls["BrowseTemplateButton"].Add_Click({ & $SelectFilePath $controls["TemplatePathBox"] "JSON files (*.json)|*.json|All files (*.*)|*.*" }.GetNewClosure())
+    $controls["BrowseTemplateButton"].Add_Click({
+        & $SelectFilePath $controls["TemplatePathBox"] "JSON files (*.json)|*.json|All files (*.*)|*.*"
+        & $InvokeGuiAction "Loading template" {
+            $null = & $LoadTemplateFields $true
+        }
+    }.GetNewClosure())
     $controls["BrowseStructureButton"].Add_Click({ & $SelectFilePath $controls["StructurePathBox"] "Structures (*.xyz;*.cif;POSCAR;CONTCAR)|*.xyz;*.cif;POSCAR;CONTCAR|All files (*.*)|*.*" }.GetNewClosure())
     $controls["BrowseExistingInputButton"].Add_Click({ & $SelectFilePath $controls["ExistingInputPathBox"] "CP2K input files (*.inp)|*.inp|All files (*.*)|*.*" }.GetNewClosure())
     $controls["BrowseJobDirButton"].Add_Click({ & $SelectFolderPath $controls["JobDirBox"] }.GetNewClosure())
@@ -674,6 +876,9 @@ function New-WinQStepWindow {
         $status = if (& $TestIsExistingInputMode) { "Preparing existing input preview" } else { "Preparing workflow input preview" }
         & $InvokeGuiAction $status {
             $null = & $SaveConfigFields $true $false
+            if (-not (& $TestIsExistingInputMode)) {
+                $null = & $SaveTemplateFields $false
+            }
             $result = Invoke-WinQStepPython (& $GetActiveJobArguments $true)
             $metadata = Get-JsonResult $result
             $inputPath = & $GetActiveInputPreviewPath $metadata
@@ -690,6 +895,9 @@ function New-WinQStepWindow {
     $controls["RunButton"].Add_Click({
         & $InvokeGuiAction "Running CP2K" {
             $null = & $SaveConfigFields $true $false
+            if (-not (& $TestIsExistingInputMode)) {
+                $null = & $SaveTemplateFields $false
+            }
             $result = Invoke-WinQStepPython (& $GetActiveJobArguments $false)
             $metadata = Get-JsonResult $result
             $logText = & $FormatLogWithSummary $metadata $result.Output
@@ -725,6 +933,12 @@ function New-WinQStepWindow {
     }
     catch {
         $controls["ConfigValidationText"].Text = $_.Exception.Message
+    }
+    try {
+        $null = & $LoadTemplateFields $false
+    }
+    catch {
+        $controls["TemplateValidationText"].Text = $_.Exception.Message
     }
     & $UpdateModeControls
     return $window
@@ -813,6 +1027,12 @@ if ($SmokeTest) {
     $report["config_workspace_path"] = $configWorkspace
     $report["config_workspace_encoding_ok"] = $configWorkspace.Contains($chineseFolderName)
     $report["config_validation_text"] = [string]$window.FindName("ConfigValidationText").Text
+    $report["template_tab_loaded"] = ($window.FindName("TemplateProjectBox") -is [System.Windows.Controls.TextBox])
+    $report["template_project_name"] = [string]$window.FindName("TemplateProjectBox").Text
+    $report["template_run_type"] = [string]$window.FindName("TemplateRunTypeBox").Text
+    $report["template_cutoff"] = [string]$window.FindName("CutoffBox").Text
+    $report["template_kinds_has_oxygen"] = ([string]$window.FindName("KindsText").Text).Contains("O")
+    $report["template_validation_text"] = [string]$window.FindName("TemplateValidationText").Text
     $report["history_grid_loaded"] = ($window.FindName("HistoryGrid") -is [System.Windows.Controls.DataGrid])
     $report["console_output_encoding"] = [Console]::OutputEncoding.WebName
     $report["pythonioencoding"] = $env:PYTHONIOENCODING

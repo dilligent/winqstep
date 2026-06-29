@@ -11,8 +11,8 @@ Each round should end with a focused commit.
 - Current code: standard-library Python core commands plus unit tests.
 - Current docs: product scope, architecture, WSL execution rules, CP2K input
   model, workflow, GUI prototype, existing-input jobs, output summaries, job
-  history, and config editing.
-- Next active round: Round 12, QuickStep template editor.
+  history, config editing, and template editing.
+- Next active round: Round 13, CP2K data file inspection.
 - Known local facts:
   - WSL2 is available.
   - Default distro is `Ubuntu`.
@@ -378,8 +378,17 @@ Commit boundary:
 
 ## Round 12: QuickStep Template Editor
 
+Status: implemented.
+
 Goal: let users adjust common QuickStep calculation settings without editing
 template JSON by hand.
+
+Local verification:
+
+- `scripts/manage_template.py` validates and writes workflow templates with
+  stable UTF-8 JSON.
+- `scripts/start_gui.ps1 -SmokeTest` validates the GUI template tab without
+  launching CP2K.
 
 Tasks:
 
@@ -397,6 +406,28 @@ Acceptance:
 Commit boundary:
 
 - One commit for template editing, validation tests, and docs.
+
+## Round 13: CP2K Data File Inspection
+
+Goal: help users choose basis sets and potentials from the configured CP2K data
+directory.
+
+Tasks:
+
+- Inspect `BASIS*` and `*POTENTIAL*` files from the configured WSL CP2K data
+  directory.
+- Extract available basis and potential labels for common elements.
+- Surface selectable values in the template editor.
+- Keep inspection read-only and cache results in job-independent metadata.
+
+Acceptance:
+
+- The GUI can populate basis/potential choices from the configured CP2K data
+  directory instead of requiring manual label entry.
+
+Commit boundary:
+
+- One commit for data inspection, GUI population, tests, and docs.
 
 ## Working Rules
 

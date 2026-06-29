@@ -11,6 +11,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from winqstep.runner import load_json_file
+from winqstep.template import TemplateError, load_template
 from winqstep.workflow import WorkflowError, run_quickstep_workflow
 
 
@@ -34,7 +35,7 @@ def main() -> int:
     try:
         metadata = run_quickstep_workflow(
             config=load_json_file(args.config),
-            template_data=load_json_file(args.template),
+            template_data=load_template(args.template),
             structure_path=args.structure,
             windows_job_dir=args.job_dir,
             structure_format=args.format,
@@ -43,7 +44,7 @@ def main() -> int:
             mpi_ranks=args.mpi_ranks,
             execute=not args.prepare_only,
         )
-    except (OSError, WorkflowError, ValueError) as exc:
+    except (OSError, TemplateError, WorkflowError, ValueError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
 

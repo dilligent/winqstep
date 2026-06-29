@@ -52,3 +52,17 @@ middle of the selected cell.
 
 The workflow selects only KIND entries needed by the imported elements. Missing
 KIND definitions fail before CP2K is started.
+
+## Template Editing
+
+Use `scripts/manage_template.py` to validate or rewrite template files with
+stable UTF-8 JSON:
+
+```powershell
+python .\scripts\manage_template.py --template .\examples\templates\energy_pbe.json
+```
+
+The GUI `Template` tab uses the same command. It exposes project name, run type,
+DFT settings, GEO_OPT settings, and KIND basis/potential entries. Workflow
+preview and run actions save and validate the current template before rendering
+input.

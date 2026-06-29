@@ -20,6 +20,10 @@ Round 11 adds the `Config` tab plus `Load Config` and `Save Config` buttons.
 The fields are loaded and saved through `scripts/manage_config.py`, so the GUI
 uses the same validation and stable UTF-8 JSON writer as the command line.
 
+Round 12 adds the `Template` tab plus `Load Template` and `Save Template`
+buttons. The tab edits the existing workflow template JSON through
+`scripts/manage_template.py`.
+
 ## Start
 
 ```powershell
@@ -37,6 +41,7 @@ same scripts used by tests:
 - `Run`: `scripts/run_workflow.py` or `scripts/run_existing_input.py`
 - `History`: `scripts/list_job_history.py`
 - `Load Config` and `Save Config`: `scripts/manage_config.py`
+- `Load Template` and `Save Template`: `scripts/manage_template.py`
 
 The GUI does not parse or generate CP2K input itself. It displays JSON, rendered
 input text, job metadata, and CP2K output summaries produced by the core
@@ -52,6 +57,10 @@ with Chinese characters render correctly in the text panes.
 save and validate the current config first, requiring `cp2k_command` and
 `cp2k_data_dir` before any job command is prepared or launched.
 
+In workflow mode, `Preview` and `Run` also save and validate the current
+template fields before rendering input. Existing-input mode skips template
+handling.
+
 ## Smoke Test
 
 Use smoke mode to validate the WPF host and default paths without showing the
@@ -62,5 +71,5 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\start_gui.ps1 -Smo
 ```
 
 The Python unit suite runs the same smoke test on Windows. Smoke mode validates
-config loading, workflow preview, existing-input preview, and history scanning
-without launching CP2K.
+config loading, template loading, workflow preview, existing-input preview, and
+history scanning without launching CP2K.
