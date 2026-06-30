@@ -22,7 +22,12 @@ $Script:Utf8NoBomEncoding = New-Object System.Text.UTF8Encoding($false)
 $Script:RequestedLanguage = $Language
 $SuppressGuiMessageBoxes = [bool]($ButtonSmokeTest -or $EditedPreviewSmokeTest -or $AsyncRunSmokeTest)
 $EditedPreviewSmokeTestEnabled = [bool]$EditedPreviewSmokeTest
-$EditedPreviewSmokeState = @{ Report = $null }
+$EditedPreviewSmokeState = @{
+    Report = $null
+    ConfirmationRequested = $false
+    ConfirmationSuppressed = $false
+    ConfirmationResult = ""
+}
 $Script:SuppressGuiMessageBoxes = $SuppressGuiMessageBoxes
 $Script:EditedPreviewSmokeStartAsyncJob = $null
 $Script:EnvironmentDisplaySmokeFormatter = $null
@@ -1951,6 +1956,37 @@ function New-WinQStepWindow {
         return $stem
     }.GetNewClosure()
 
+    $ConfirmEditedInputPreviewRun = {
+        param([Parameter(Mandatory = $true)]$EditedPreview)
+        if ($EditedPreviewSmokeTestEnabled) {
+            $EditedPreviewSmokeState["ConfirmationRequested"] = $true
+        }
+        if ($SuppressGuiMessageBoxes) {
+            if ($EditedPreviewSmokeTestEnabled) {
+                $EditedPreviewSmokeState["ConfirmationSuppressed"] = $true
+                $EditedPreviewSmokeState["ConfirmationResult"] = "suppressed_yes"
+            }
+            & $AppendLog "Edited input preview confirmation suppressed for GUI smoke test."
+            return $true
+        }
+        $result = [System.Windows.MessageBox]::Show(
+            $window,
+            (Get-WinQStepText "message.edited_preview_confirm"),
+            (Get-WinQStepText "message.edited_preview_caption"),
+            [System.Windows.MessageBoxButton]::YesNo,
+            [System.Windows.MessageBoxImage]::Warning,
+            [System.Windows.MessageBoxResult]::No
+        )
+        if ($EditedPreviewSmokeTestEnabled) {
+            $EditedPreviewSmokeState["ConfirmationResult"] = [string]$result
+        }
+        if ($result -ne [System.Windows.MessageBoxResult]::Yes) {
+            & $AppendLog (Get-WinQStepText "message.edited_preview_cancelled")
+            return $false
+        }
+        return $true
+    }.GetNewClosure()
+
     $SaveEditedInputPreview = {
         param([Parameter(Mandatory = $true)]$EditedPreview)
         $jobDirText = $controls["JobDirBox"].Text
@@ -2124,6 +2160,10 @@ function New-WinQStepWindow {
             $editedPreview = & $GetEditedInputPreview
             $editedInputPath = ""
             if ($null -ne $editedPreview) {
+                if (-not (& $ConfirmEditedInputPreviewRun $editedPreview)) {
+                    & $SetBusy $false (Get-WinQStepText "status.ready")
+                    return
+                }
                 $editedInputPath = & $SaveEditedInputPreview $editedPreview
                 $preflight = & $ValidateExistingInputPath $editedInputPath
                 $preflightText = & $FormatPreflightValidation $preflight
@@ -2163,6 +2203,9 @@ function New-WinQStepWindow {
                 }
                 $EditedPreviewSmokeState["Report"] = [ordered]@{
                     edited_preview_used = ($null -ne $editedPreview)
+                    edited_preview_confirmation_requested = [bool]$EditedPreviewSmokeState["ConfirmationRequested"]
+                    edited_preview_confirmation_suppressed = [bool]$EditedPreviewSmokeState["ConfirmationSuppressed"]
+                    edited_preview_confirmation_result = [string]$EditedPreviewSmokeState["ConfirmationResult"]
                     original_preview_input_path = if ($null -ne $editedPreview) { [string]$editedPreview["InputPath"] } else { "" }
                     edited_input_path = $editedInputPath
                     prepared_input_path = [string]$preparedMetadata.files.input.path
@@ -2711,6 +2754,9 @@ if ($EditedPreviewSmokeTest) {
     $report["preview_original_has_global"] = $originalPreviewText.Contains("&GLOBAL")
     $report["edited_preview_reported"] = ($null -ne $runReport)
     $report["edited_preview_used"] = if ($null -ne $runReport) { [bool]$runReport["edited_preview_used"] } else { $false }
+    $report["edited_preview_confirmation_requested"] = if ($null -ne $runReport) { [bool]$runReport["edited_preview_confirmation_requested"] } else { $false }
+    $report["edited_preview_confirmation_suppressed"] = if ($null -ne $runReport) { [bool]$runReport["edited_preview_confirmation_suppressed"] } else { $false }
+    $report["edited_preview_confirmation_result"] = if ($null -ne $runReport) { [string]$runReport["edited_preview_confirmation_result"] } else { "" }
     $report["edited_input_path"] = if ($null -ne $runReport) { [string]$runReport["edited_input_path"] } else { "" }
     $report["prepared_input_path"] = if ($null -ne $runReport) { [string]$runReport["prepared_input_path"] } else { "" }
     $report["prepared_job_mode"] = if ($null -ne $runReport) { [string]$runReport["prepared_job_mode"] } else { "" }
@@ -2729,6 +2775,9 @@ if ($EditedPreviewSmokeTest) {
         $report["preview_original_has_global"] -and
         $report["edited_preview_reported"] -and
         $report["edited_preview_used"] -and
+        $report["edited_preview_confirmation_requested"] -and
+        $report["edited_preview_confirmation_suppressed"] -and
+        $report["edited_preview_confirmation_result"] -eq "suppressed_yes" -and
         $report["prepared_job_mode"] -eq "existing_input" -and
         $report["edited_input_contains_marker"] -and
         $report["prepared_input_contains_marker"] -and

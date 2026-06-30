@@ -1548,6 +1548,36 @@ Commit boundary:
 
 - One commit for Environment display formatting, smoke tests, and docs.
 
+## Round 45: Edited Preview Run Confirmation
+
+Status: implemented.
+
+Goal: prevent accidental edits in the editable `Input Preview` pane from being
+silently used as the CP2K input when the user presses `Run`.
+
+Tasks:
+
+- Detect manual changes in `Input Preview` as before, but ask for confirmation
+  before saving or running the edited text.
+- Use a warning dialog with `Yes/No` buttons and `No` as the default result.
+- Keep confirmed edited-preview runs on the existing-input path and continue to
+  save the edited copy as `*_edited.inp`.
+- Localize the confirmation and cancellation text.
+- Extend edited-preview smoke coverage to prove the confirmation path is reached
+  before the edited input is accepted.
+
+Acceptance:
+
+- Unchanged previews still run without extra confirmation.
+- Changed previews require explicit confirmation before CP2K starts.
+- Cancelling the prompt leaves the job unstarted and keeps the preview text
+  available for review.
+- Existing original input files are still not overwritten.
+
+Commit boundary:
+
+- One commit for edited-preview confirmation, tests, resources, and docs.
+
 ## Working Rules
 
 - Keep each round small enough to review.

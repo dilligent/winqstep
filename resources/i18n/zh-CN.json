@@ -127,5 +127,8 @@
   "message.title": "WinQStep",
   "message.error_caption": "错误",
   "message.warning_caption": "警告",
+  "message.edited_preview_caption": "运行已修改输入？",
+  "message.edited_preview_confirm": "输入预览自生成或加载后已被修改。\r\n\r\n是否将这段已修改文本作为 CP2K 输入运行？\r\n\r\n选择“是”会在作业文件夹保存一个 *_edited.inp 副本并运行该副本。\r\n选择“否”会取消本次运行，方便你重新检查预览或再次点击预览。",
+  "message.edited_preview_cancelled": "已取消运行，因为输入预览包含手工修改。",
   "message.close_blocked": "CP2K 作业仍在运行。\r\n\r\nPID: {0}\r\n元数据: {1}\r\n输出: {2}\r\n\r\n请先使用停止按钮再关闭 WinQStep。"
 }

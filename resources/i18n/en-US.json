@@ -127,5 +127,8 @@
   "message.title": "WinQStep",
   "message.error_caption": "Error",
   "message.warning_caption": "Warning",
+  "message.edited_preview_caption": "Run edited input?",
+  "message.edited_preview_confirm": "Input Preview has changed since it was generated or loaded.\r\n\r\nRun this edited text as the CP2K input?\r\n\r\nYes saves a *_edited.inp copy in the job folder and runs that copy.\r\nNo cancels this run so you can review the preview or press Preview again.",
+  "message.edited_preview_cancelled": "Run cancelled because Input Preview contains manual edits.",
   "message.close_blocked": "A CP2K job is still running.\r\n\r\nPID: {0}\r\nMetadata: {1}\r\nOutput: {2}\r\n\r\nUse Stop before closing WinQStep."
 }

@@ -146,10 +146,12 @@ file exists and warns in the preview/log panes when referenced basis or
 potential files are obviously missing from the cached CP2K data inspection.
 
 After `Preview`, the `Input Preview` pane is editable. If the text differs from
-the last generated or loaded preview when `Run` is pressed, the GUI writes the
-edited text to `*_edited.inp` in the selected job folder and runs that saved file
-through the existing-input path. This preserves the original generated preview
-file and never overwrites a user-provided existing input file silently.
+the last generated or loaded preview when `Run` is pressed, the GUI asks for
+confirmation before using the edited text. Confirming writes the edited text to
+`*_edited.inp` in the selected job folder and runs that saved file through the
+existing-input path. Cancelling leaves the job unstarted so the user can review
+or regenerate the preview. This preserves the original generated preview file
+and never overwrites a user-provided existing input file silently.
 
 The single-line fields on the `Template` tab are editable drop-down controls:
 users can select common values from the list or type a custom value directly.
