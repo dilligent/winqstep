@@ -179,6 +179,9 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="90"/>
@@ -404,10 +407,35 @@
             <ComboBoxItem Content="0 0 20"/>
             <ComboBoxItem Content="0 0 5.43"/>
           </ComboBox>
-          <CheckBox x:Name="CenterAtomsBox" Grid.Row="15" Grid.Column="0" Grid.ColumnSpan="2"
+          <TextBlock x:Name="KpointsSchemeLabel" Grid.Row="15" Grid.Column="0" Text="KPOINTS Scheme"/>
+          <ComboBox x:Name="KpointsSchemeBox" Grid.Row="15" Grid.Column="1" IsEditable="True">
+            <ComboBoxItem Content="NONE"/>
+            <ComboBoxItem Content="GAMMA"/>
+            <ComboBoxItem Content="MONKHORST-PACK"/>
+          </ComboBox>
+          <TextBlock x:Name="KpointsGridLabel" Grid.Row="15" Grid.Column="2" Text="KPOINTS Grid"/>
+          <ComboBox x:Name="KpointsGridBox" Grid.Row="15" Grid.Column="3" IsEditable="True">
+            <ComboBoxItem Content="1 1 1"/>
+            <ComboBoxItem Content="2 2 2"/>
+            <ComboBoxItem Content="3 3 3"/>
+            <ComboBoxItem Content="4 4 4"/>
+            <ComboBoxItem Content="6 6 6"/>
+          </ComboBox>
+
+          <CheckBox x:Name="KpointsFullGridBox" Grid.Row="16" Grid.Column="0"
+                    Content="Full K Grid" Margin="6,4" VerticalAlignment="Center"/>
+          <CheckBox x:Name="KpointsSymmetryBox" Grid.Row="16" Grid.Column="1"
+                    Content="KPOINTS Symmetry" Margin="6,4" VerticalAlignment="Center"/>
+          <TextBlock x:Name="KpointsWavefunctionsLabel" Grid.Row="16" Grid.Column="2" Text="Wavefunctions"/>
+          <ComboBox x:Name="KpointsWavefunctionsBox" Grid.Row="16" Grid.Column="3" IsEditable="True">
+            <ComboBoxItem Content="COMPLEX"/>
+            <ComboBoxItem Content="REAL"/>
+          </ComboBox>
+
+          <CheckBox x:Name="CenterAtomsBox" Grid.Row="17" Grid.Column="0" Grid.ColumnSpan="2"
                     Content="Center Atoms" Margin="6,4" VerticalAlignment="Center"/>
 
-          <DataGrid x:Name="KindEntriesGrid" Grid.Row="16" Grid.Column="0" Grid.ColumnSpan="4"
+          <DataGrid x:Name="KindEntriesGrid" Grid.Row="18" Grid.Column="0" Grid.ColumnSpan="4"
                     AutoGenerateColumns="False" CanUserAddRows="True" CanUserDeleteRows="True"
                     SelectionMode="Single" HeadersVisibility="Column" GridLinesVisibility="Horizontal" FontSize="12">
             <DataGrid.Columns>
@@ -416,12 +444,12 @@
               <DataGridTextColumn Header="Potential" Binding="{Binding potential, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="*"/>
             </DataGrid.Columns>
           </DataGrid>
-          <TextBox x:Name="KindsText" Grid.Row="16" Grid.Column="0" Grid.ColumnSpan="4" Visibility="Collapsed"
+          <TextBox x:Name="KindsText" Grid.Row="18" Grid.Column="0" Grid.ColumnSpan="4" Visibility="Collapsed"
                    FontFamily="Cascadia Mono, Consolas, Microsoft YaHei UI, Microsoft YaHei, SimSun"
                    FontSize="12" AcceptsReturn="True" AcceptsTab="True" TextWrapping="NoWrap"
                    HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"/>
 
-          <DataGrid x:Name="DataLabelsGrid" Grid.Row="17" Grid.Column="0" Grid.ColumnSpan="4"
+          <DataGrid x:Name="DataLabelsGrid" Grid.Row="19" Grid.Column="0" Grid.ColumnSpan="4"
                     Height="130" Visibility="Collapsed"
                     AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single"
                     HeadersVisibility="Column" GridLinesVisibility="Horizontal" FontSize="12">
@@ -432,7 +460,7 @@
             </DataGrid.Columns>
           </DataGrid>
 
-          <TextBox x:Name="TemplateValidationText" Grid.Row="18" Grid.Column="0" Grid.ColumnSpan="4"
+          <TextBox x:Name="TemplateValidationText" Grid.Row="20" Grid.Column="0" Grid.ColumnSpan="4"
                    FontFamily="Cascadia Mono, Consolas, Microsoft YaHei UI, Microsoft YaHei, SimSun"
                    FontSize="12" AcceptsReturn="True" TextWrapping="Wrap"
                    HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"

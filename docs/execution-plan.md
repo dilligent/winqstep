@@ -19,9 +19,10 @@ Each round should end with a focused commit.
   release-candidate workflow walkthrough, release handoff notes, final release
   artifact build, release install smoke, live CP2K release validation, and user
   guide polish, GUI async run completion hardening, and window-level GUI
-  overflow scrolling, QuickStep CELL/PERIODIC template support, and QuickStep
-  SCF control expansion.
-- Next active round: Round 37, QuickStep KPOINTS support.
+  overflow scrolling, QuickStep CELL/PERIODIC template support, QuickStep SCF
+  control expansion, and QuickStep KPOINTS support.
+- Next active round: Round 38, expand QuickStep coverage from the next selected
+  CP2K feature area.
 - Known local facts:
   - WSL2 is available.
   - Default distro is `Ubuntu`.
@@ -1283,6 +1284,42 @@ Acceptance:
 Commit boundary:
 
 - One commit for SCF model, renderer, template/GUI controls, tests, and docs.
+
+## Round 37: QuickStep KPOINTS Support
+
+Status: implemented.
+
+Goal: add a conservative, locally validated KPOINTS path for periodic
+QuickStep calculations without exposing the advanced GENERAL or MACDONALD
+schemes yet.
+
+Tasks:
+
+- Add typed DFT fields for `KPOINTS/SCHEME`, Monkhorst-Pack grid dimensions,
+  `FULL_GRID`, `SYMMETRY`, and `WAVEFUNCTIONS`.
+- Render `DFT/&KPOINTS` only when the scheme is not `NONE`, preserving existing
+  default ENERGY, ENERGY_FORCE, and GEO_OPT input snapshots.
+- Support `GAMMA` and `MONKHORST-PACK` schemes from the CP2K input manual.
+- Reject KPOINTS for nonperiodic systems before CP2K is started.
+- Expose the new fields in `scripts/manage_template.py` and the GUI Template
+  tab with editable drop-downs and checkboxes.
+- Add renderer, template, GUI, fast-profile, and local CP2K live validation.
+
+Acceptance:
+
+- Default templates keep `kpoints_scheme` at `NONE` and do not render
+  `&KPOINTS`.
+- Periodic templates can render `SCHEME GAMMA` or
+  `SCHEME MONKHORST-PACK nx ny nz`.
+- Optional `FULL_GRID`, `SYMMETRY`, and non-default `WAVEFUNCTIONS` render only
+  inside `&KPOINTS`.
+- The GUI loads, edits, saves, and smoke-tests KPOINTS fields through the same
+  template path used by workflows.
+
+Commit boundary:
+
+- One commit for KPOINTS model, renderer, template/GUI controls, tests, docs,
+  and local CP2K validation.
 
 ## Working Rules
 

@@ -10,6 +10,8 @@ RunType = Literal["ENERGY", "ENERGY_FORCE", "GEO_OPT"]
 RUN_TYPES = {"ENERGY", "ENERGY_FORCE", "GEO_OPT"}
 PERIODIC_VALUES = {"NONE", "X", "Y", "Z", "XY", "XZ", "YZ", "XYZ"}
 SCF_METHODS = {"DEFAULT", "OT", "DIAGONALIZATION"}
+KPOINTS_SCHEMES = {"NONE", "GAMMA", "MONKHORST-PACK"}
+KPOINTS_WAVEFUNCTIONS = {"COMPLEX", "REAL"}
 OT_MINIMIZERS = {"SD", "CG", "DIIS", "BROYDEN"}
 OT_PRECONDITIONERS = {
     "FULL_ALL",
@@ -79,6 +81,11 @@ class DftSettings:
     smearing_enabled: bool = False
     smearing_method: str = "FERMI_DIRAC"
     electronic_temperature: str = "300"
+    kpoints_scheme: str = "NONE"
+    kpoints_grid: tuple[int, int, int] = (1, 1, 1)
+    kpoints_full_grid: bool = False
+    kpoints_symmetry: bool = False
+    kpoints_wavefunctions: str = "COMPLEX"
 
 
 @dataclass(frozen=True)
@@ -124,6 +131,23 @@ def _bool_value(data: dict[str, Any], key: str, default: bool) -> bool:
     if not isinstance(value, bool):
         raise QuickStepInputError(f"{key} must be a boolean")
     return value
+
+
+def _int_triplet(value: Any, key: str) -> tuple[int, int, int]:
+    if isinstance(value, str):
+        value = [part for part in value.replace(",", " ").split() if part]
+    if not isinstance(value, list | tuple) or len(value) != 3:
+        raise QuickStepInputError(f"{key} must be a 3-integer vector")
+    parsed_values: list[int] = []
+    for item in value:
+        if isinstance(item, bool) or not isinstance(item, int | str):
+            raise QuickStepInputError(f"{key} must contain integer values")
+        try:
+            parsed_values.append(int(item))
+        except ValueError as exc:
+            raise QuickStepInputError(f"{key} must contain integer values") from exc
+    parsed = (parsed_values[0], parsed_values[1], parsed_values[2])
+    return parsed
 
 
 def _vector(value: Any, key: str) -> tuple[float, float, float]:
@@ -179,6 +203,11 @@ def _parse_dft(data: dict[str, Any]) -> DftSettings:
         smearing_enabled=_bool_value(data, "smearing_enabled", False),
         smearing_method=_optional_string(data, "smearing_method", "FERMI_DIRAC").upper(),
         electronic_temperature=_optional_string(data, "electronic_temperature", "300"),
+        kpoints_scheme=_optional_string(data, "kpoints_scheme", "NONE").upper(),
+        kpoints_grid=_int_triplet(data.get("kpoints_grid", (1, 1, 1)), "dft.kpoints_grid"),
+        kpoints_full_grid=_bool_value(data, "kpoints_full_grid", False),
+        kpoints_symmetry=_bool_value(data, "kpoints_symmetry", False),
+        kpoints_wavefunctions=_optional_string(data, "kpoints_wavefunctions", "COMPLEX").upper(),
     )
 
 
@@ -258,6 +287,12 @@ def validate_quickstep_input(model: QuickStepInput) -> None:
         raise QuickStepInputError("dft.mixing_method has an unsupported value")
     if model.dft.smearing_method not in SMEARING_METHODS:
         raise QuickStepInputError("dft.smearing_method has an unsupported value")
+    if model.dft.kpoints_scheme not in KPOINTS_SCHEMES:
+        raise QuickStepInputError("dft.kpoints_scheme has an unsupported value")
+    if model.dft.kpoints_wavefunctions not in KPOINTS_WAVEFUNCTIONS:
+        raise QuickStepInputError("dft.kpoints_wavefunctions has an unsupported value")
+    if any(value <= 0 for value in model.dft.kpoints_grid):
+        raise QuickStepInputError("dft.kpoints_grid values must be positive")
     if model.dft.mixing_enabled and model.dft.scf_method != "DIAGONALIZATION":
         raise QuickStepInputError("SCF mixing requires dft.scf_method DIAGONALIZATION")
     if model.dft.smearing_enabled and model.dft.scf_method != "DIAGONALIZATION":
@@ -267,6 +302,12 @@ def validate_quickstep_input(model: QuickStepInput) -> None:
     _positive_float(model.dft.mixing_alpha, "dft.mixing_alpha")
     _positive_float(model.dft.mixing_beta, "dft.mixing_beta")
     _positive_float(model.dft.electronic_temperature, "dft.electronic_temperature")
+    if model.dft.kpoints_scheme != "NONE" and model.cell.periodic == "NONE":
+        raise QuickStepInputError("KPOINTS require a periodic cell")
+    if model.dft.kpoints_scheme == "NONE" and (
+        model.dft.kpoints_full_grid or model.dft.kpoints_symmetry or model.dft.kpoints_wavefunctions != "COMPLEX"
+    ):
+        raise QuickStepInputError("KPOINTS options require dft.kpoints_scheme other than NONE")
     if model.geo_opt.max_iter <= 0:
         raise QuickStepInputError("geo_opt.max_iter must be positive")
 
@@ -295,6 +336,7 @@ def render_quickstep_input(model: QuickStepInput) -> str:
         "    &POISSON",
         f"      PERIODIC {model.cell.periodic}",
         "    &END POISSON",
+        *_render_kpoints(model),
         "    &SCF",
         f"      EPS_SCF {model.dft.eps_scf}",
         f"      MAX_SCF {model.dft.max_scf}",
@@ -390,8 +432,32 @@ def _render_scf_extras(dft: DftSettings) -> list[str]:
     return lines
 
 
+def _render_kpoints(model: QuickStepInput) -> list[str]:
+    dft = model.dft
+    if dft.kpoints_scheme == "NONE":
+        return []
+
+    lines = ["    &KPOINTS"]
+    if dft.kpoints_scheme == "MONKHORST-PACK":
+        lines.append(f"      SCHEME MONKHORST-PACK {_format_int_triplet(dft.kpoints_grid)}")
+    else:
+        lines.append("      SCHEME GAMMA")
+    if dft.kpoints_full_grid:
+        lines.append("      FULL_GRID T")
+    if dft.kpoints_symmetry:
+        lines.append("      SYMMETRY T")
+    if dft.kpoints_wavefunctions != "COMPLEX":
+        lines.append(f"      WAVEFUNCTIONS {dft.kpoints_wavefunctions}")
+    lines.append("    &END KPOINTS")
+    return lines
+
+
 def _format_vector(vector: tuple[float, float, float]) -> str:
     return " ".join(f"{value:.10g}" for value in vector)
+
+
+def _format_int_triplet(vector: tuple[int, int, int]) -> str:
+    return " ".join(str(value) for value in vector)
 
 
 def _vector_norm(vector: tuple[float, float, float]) -> float:

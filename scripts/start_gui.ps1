@@ -63,7 +63,8 @@ function New-WinQStepWindow {
         "ScfMethodLabel", "AddedMosLabel", "DiagonalizationAlgorithmLabel",
         "OtMinimizerLabel", "OtPreconditionerLabel", "MixingMethodLabel",
         "MixingAlphaLabel", "MixingBetaLabel", "SmearingMethodLabel",
-        "ElectronicTemperatureLabel",
+        "ElectronicTemperatureLabel", "KpointsSchemeLabel", "KpointsGridLabel",
+        "KpointsWavefunctionsLabel",
         "FallbackPeriodicLabel", "FallbackCellALabel", "FallbackCellBLabel", "FallbackCellCLabel",
         "TemplateProjectBox", "TemplateRunTypeBox", "BasisSetFileBox", "PotentialFileBox",
         "XcFunctionalBox", "ChargeBox", "MultiplicityBox", "CutoffBox", "RelCutoffBox",
@@ -71,7 +72,9 @@ function New-WinQStepWindow {
         "ScfMethodBox", "AddedMosBox", "DiagonalizationAlgorithmBox",
         "OtMinimizerBox", "OtPreconditionerBox", "MixingMethodBox",
         "MixingAlphaBox", "MixingBetaBox", "SmearingMethodBox",
-        "ElectronicTemperatureBox", "MixingEnabledBox", "SmearingEnabledBox",
+        "ElectronicTemperatureBox", "KpointsSchemeBox", "KpointsGridBox",
+        "KpointsWavefunctionsBox", "MixingEnabledBox", "SmearingEnabledBox",
+        "KpointsFullGridBox", "KpointsSymmetryBox",
         "FallbackPeriodicBox", "FallbackCellABox", "FallbackCellBBox", "FallbackCellCBox",
         "CenterAtomsBox", "KindsText",
         "KindEntriesGrid", "DataLabelsGrid", "TemplateValidationText",
@@ -120,6 +123,8 @@ function New-WinQStepWindow {
         ExistingInputModeRadio = "mode.existing_input"
         MixingEnabledBox = "label.mixing_enabled"
         SmearingEnabledBox = "label.smearing_enabled"
+        KpointsFullGridBox = "label.kpoints_full_grid"
+        KpointsSymmetryBox = "label.kpoints_symmetry"
         CenterAtomsBox = "label.center_atoms"
         }
         foreach ($entry in $contentLocalization.GetEnumerator()) {
@@ -178,6 +183,9 @@ function New-WinQStepWindow {
         MixingBetaLabel = "label.mixing_beta"
         SmearingMethodLabel = "label.smearing_method"
         ElectronicTemperatureLabel = "label.electronic_temperature"
+        KpointsSchemeLabel = "label.kpoints_scheme"
+        KpointsGridLabel = "label.kpoints_grid"
+        KpointsWavefunctionsLabel = "label.kpoints_wavefunctions"
         OptimizerLabel = "label.optimizer"
         GeoMaxIterLabel = "label.geo_max_iter"
         FallbackPeriodicLabel = "label.fallback_periodic"
@@ -1333,6 +1341,11 @@ function New-WinQStepWindow {
         $controls["SmearingEnabledBox"].IsChecked = @("1", "true", "yes", "on").Contains((& $GetJsonProperty $dft "smearing_enabled" "False").ToLowerInvariant())
         $controls["SmearingMethodBox"].Text = & $GetJsonProperty $dft "smearing_method"
         $controls["ElectronicTemperatureBox"].Text = & $GetJsonProperty $dft "electronic_temperature"
+        $controls["KpointsSchemeBox"].Text = & $GetJsonProperty $dft "kpoints_scheme"
+        $controls["KpointsGridBox"].Text = & $GetJsonVectorText $dft "kpoints_grid"
+        $controls["KpointsFullGridBox"].IsChecked = @("1", "true", "yes", "on").Contains((& $GetJsonProperty $dft "kpoints_full_grid" "False").ToLowerInvariant())
+        $controls["KpointsSymmetryBox"].IsChecked = @("1", "true", "yes", "on").Contains((& $GetJsonProperty $dft "kpoints_symmetry" "False").ToLowerInvariant())
+        $controls["KpointsWavefunctionsBox"].Text = & $GetJsonProperty $dft "kpoints_wavefunctions"
         $controls["GeoOptimizerBox"].Text = & $GetJsonProperty $geoOpt "optimizer"
         $controls["GeoMaxIterBox"].Text = & $GetJsonProperty $geoOpt "max_iter"
         $controls["FallbackPeriodicBox"].Text = & $GetJsonProperty $fallbackCell "periodic"
@@ -1396,6 +1409,11 @@ function New-WinQStepWindow {
             smearing_enabled = [bool]$controls["SmearingEnabledBox"].IsChecked
             smearing_method = $controls["SmearingMethodBox"].Text
             electronic_temperature = $controls["ElectronicTemperatureBox"].Text
+            kpoints_scheme = $controls["KpointsSchemeBox"].Text
+            kpoints_grid = $controls["KpointsGridBox"].Text
+            kpoints_full_grid = [bool]$controls["KpointsFullGridBox"].IsChecked
+            kpoints_symmetry = [bool]$controls["KpointsSymmetryBox"].IsChecked
+            kpoints_wavefunctions = $controls["KpointsWavefunctionsBox"].Text
             optimizer = $controls["GeoOptimizerBox"].Text
             geo_opt_max_iter = $controls["GeoMaxIterBox"].Text
             fallback_cell_periodic = $controls["FallbackPeriodicBox"].Text
@@ -2821,7 +2839,8 @@ if ($SmokeTest) {
         "ScfMethodBox", "AddedMosBox", "DiagonalizationAlgorithmBox",
         "OtMinimizerBox", "OtPreconditionerBox", "MixingMethodBox",
         "MixingAlphaBox", "MixingBetaBox", "SmearingMethodBox",
-        "ElectronicTemperatureBox",
+        "ElectronicTemperatureBox", "KpointsSchemeBox", "KpointsGridBox",
+        "KpointsWavefunctionsBox",
         "FallbackPeriodicBox", "FallbackCellABox", "FallbackCellBBox", "FallbackCellCBox"
     )
     $report["template_tab_loaded"] = ($window.FindName("TemplateProjectBox") -is [System.Windows.Controls.ComboBox])
@@ -2836,6 +2855,11 @@ if ($SmokeTest) {
     $report["template_added_mos"] = [string]$window.FindName("AddedMosBox").Text
     $report["template_mixing_enabled"] = [bool]$window.FindName("MixingEnabledBox").IsChecked
     $report["template_smearing_enabled"] = [bool]$window.FindName("SmearingEnabledBox").IsChecked
+    $report["template_kpoints_scheme"] = [string]$window.FindName("KpointsSchemeBox").Text
+    $report["template_kpoints_grid"] = [string]$window.FindName("KpointsGridBox").Text
+    $report["template_kpoints_full_grid"] = [bool]$window.FindName("KpointsFullGridBox").IsChecked
+    $report["template_kpoints_symmetry"] = [bool]$window.FindName("KpointsSymmetryBox").IsChecked
+    $report["template_kpoints_wavefunctions"] = [string]$window.FindName("KpointsWavefunctionsBox").Text
     $report["template_fallback_periodic"] = [string]$window.FindName("FallbackPeriodicBox").Text
     $report["template_fallback_cell_a"] = [string]$window.FindName("FallbackCellABox").Text
     $report["template_center_atoms"] = [bool]$window.FindName("CenterAtomsBox").IsChecked

@@ -66,6 +66,13 @@ The resolved periodicity is rendered consistently in both `SUBSYS/&CELL` and
 `DFT/&POISSON`. Supported periodicity labels are `NONE`, `X`, `Y`, `Z`, `XY`,
 `XZ`, `YZ`, and `XYZ`; periodic cells must have non-zero A, B, and C vectors.
 
+Templates can optionally enable `DFT/&KPOINTS` for periodic structures.
+`kpoints_scheme` defaults to `NONE`; supported rendered schemes are `GAMMA` and
+`MONKHORST-PACK`, with `kpoints_grid` providing the three Monkhorst-Pack
+subdivision counts. Optional `kpoints_full_grid`, `kpoints_symmetry`, and
+`kpoints_wavefunctions` fields map to the corresponding CP2K KPOINTS keywords.
+KPOINTS are rejected for `PERIODIC NONE` inputs.
+
 The workflow selects only KIND entries needed by the imported elements. Missing
 KIND definitions fail before CP2K is started. The GUI runs the same preflight
 check before `Preview` and `Run` so those errors appear in the `Template` and
@@ -81,7 +88,8 @@ python .\scripts\manage_template.py --template .\examples\templates\energy_pbe.j
 ```
 
 The GUI `Template` tab uses the same command. It exposes project name, run type,
-DFT settings, SCF solver controls, GEO_OPT settings, fallback cell/periodicity
-settings, centering, and KIND basis/potential entries. Supported QuickStep run
-types are `ENERGY`, `ENERGY_FORCE`, and `GEO_OPT`. Workflow preview and run
-actions save and validate the current template before rendering input.
+DFT settings, SCF solver controls, KPOINTS controls, GEO_OPT settings, fallback
+cell/periodicity settings, centering, and KIND basis/potential entries.
+Supported QuickStep run types are `ENERGY`, `ENERGY_FORCE`, and `GEO_OPT`.
+Workflow preview and run actions save and validate the current template before
+rendering input.

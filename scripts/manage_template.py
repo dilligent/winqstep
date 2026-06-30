@@ -44,6 +44,11 @@ FIELD_ARGS = {
     "smearing_enabled": "smearing_enabled",
     "smearing_method": "smearing_method",
     "electronic_temperature": "electronic_temperature",
+    "kpoints_scheme": "kpoints_scheme",
+    "kpoints_grid": "kpoints_grid",
+    "kpoints_full_grid": "kpoints_full_grid",
+    "kpoints_symmetry": "kpoints_symmetry",
+    "kpoints_wavefunctions": "kpoints_wavefunctions",
     "optimizer": "optimizer",
     "geo_opt_max_iter": "geo_opt_max_iter",
     "fallback_cell_periodic": "fallback_cell_periodic",
@@ -85,6 +90,11 @@ def main() -> int:
     parser.add_argument("--smearing-enabled")
     parser.add_argument("--smearing-method")
     parser.add_argument("--electronic-temperature")
+    parser.add_argument("--kpoints-scheme")
+    parser.add_argument("--kpoints-grid")
+    parser.add_argument("--kpoints-full-grid")
+    parser.add_argument("--kpoints-symmetry")
+    parser.add_argument("--kpoints-wavefunctions")
     parser.add_argument("--optimizer")
     parser.add_argument("--geo-opt-max-iter")
     parser.add_argument("--fallback-cell-periodic")

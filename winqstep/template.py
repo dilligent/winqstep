@@ -9,6 +9,8 @@ from typing import Any
 
 from .quickstep import (
     DIAGONALIZATION_ALGORITHMS,
+    KPOINTS_SCHEMES,
+    KPOINTS_WAVEFUNCTIONS,
     MIXING_METHODS,
     OT_MINIMIZERS,
     OT_PRECONDITIONERS,
@@ -51,6 +53,11 @@ DFT_KEY_ORDER = (
     "smearing_enabled",
     "smearing_method",
     "electronic_temperature",
+    "kpoints_scheme",
+    "kpoints_grid",
+    "kpoints_full_grid",
+    "kpoints_symmetry",
+    "kpoints_wavefunctions",
 )
 GEO_OPT_KEY_ORDER = ("optimizer", "max_iter")
 FALLBACK_CELL_FIELD_KEYS = (
@@ -294,6 +301,25 @@ def _normalize_dft(data: dict[str, Any], errors: list[str]) -> dict[str, Any]:
             "dft.electronic_temperature",
             errors,
         ),
+        "kpoints_scheme": _choice_value(
+            data.get("kpoints_scheme", defaults.kpoints_scheme),
+            "dft.kpoints_scheme",
+            KPOINTS_SCHEMES,
+            errors,
+        ),
+        "kpoints_grid": _positive_int_triplet_value(
+            data.get("kpoints_grid", defaults.kpoints_grid),
+            "dft.kpoints_grid",
+            errors,
+        ),
+        "kpoints_full_grid": _bool_value(data.get("kpoints_full_grid", defaults.kpoints_full_grid)),
+        "kpoints_symmetry": _bool_value(data.get("kpoints_symmetry", defaults.kpoints_symmetry)),
+        "kpoints_wavefunctions": _choice_value(
+            data.get("kpoints_wavefunctions", defaults.kpoints_wavefunctions),
+            "dft.kpoints_wavefunctions",
+            KPOINTS_WAVEFUNCTIONS,
+            errors,
+        ),
     }
     if dft["mixing_enabled"] and dft["scf_method"] != "DIAGONALIZATION":
         errors.append("dft.mixing_enabled requires dft.scf_method DIAGONALIZATION")
@@ -301,6 +327,10 @@ def _normalize_dft(data: dict[str, Any], errors: list[str]) -> dict[str, Any]:
         errors.append("dft.smearing_enabled requires dft.scf_method DIAGONALIZATION")
     if dft["smearing_enabled"] and dft["added_mos"] == 0:
         errors.append("dft.smearing_enabled requires dft.added_mos to add unoccupied orbitals")
+    if dft["kpoints_scheme"] == "NONE" and (
+        dft["kpoints_full_grid"] or dft["kpoints_symmetry"] or dft["kpoints_wavefunctions"] != "COMPLEX"
+    ):
+        errors.append("KPOINTS options require dft.kpoints_scheme other than NONE")
     return {key: dft[key] for key in DFT_KEY_ORDER}
 
 
@@ -429,6 +459,28 @@ def _positive_int_value(value: Any, key: str, errors: list[str]) -> int:
     parsed = _int_value(value, key, errors)
     if parsed <= 0:
         errors.append(f"{key} must be positive")
+    return parsed
+
+
+def _positive_int_triplet_value(value: Any, key: str, errors: list[str]) -> list[int]:
+    if isinstance(value, str):
+        value = [part for part in value.replace(",", " ").split() if part]
+    if not isinstance(value, list | tuple) or len(value) != 3:
+        errors.append(f"{key} must be a 3-integer vector")
+        return [1, 1, 1]
+
+    parsed: list[int] = []
+    for item in value:
+        if isinstance(item, bool) or not isinstance(item, int | str):
+            errors.append(f"{key} must contain integer values")
+            return [1, 1, 1]
+        try:
+            parsed.append(int(item))
+        except ValueError:
+            errors.append(f"{key} must contain integer values")
+            return [1, 1, 1]
+    if any(item <= 0 for item in parsed):
+        errors.append(f"{key} values must be positive")
     return parsed
 
 

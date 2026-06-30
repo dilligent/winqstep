@@ -96,6 +96,28 @@ class TemplateTests(unittest.TestCase):
         self.assertTrue(dft["smearing_enabled"])
         self.assertEqual(dft["electronic_temperature"], "500")
 
+    def test_merge_fields_updates_kpoints_controls(self) -> None:
+        template = load_template(ENERGY_TEMPLATE)
+        merged = merge_template_fields(
+            template,
+            {
+                "kpoints_scheme": "monkhorst-pack",
+                "kpoints_grid": "2 2 1",
+                "kpoints_full_grid": True,
+                "kpoints_symmetry": "yes",
+                "kpoints_wavefunctions": "real",
+            },
+        )
+        validation = validate_template(merged)
+
+        self.assertTrue(validation["valid"], validation["errors"])
+        dft = validation["template"]["dft"]
+        self.assertEqual(dft["kpoints_scheme"], "MONKHORST-PACK")
+        self.assertEqual(dft["kpoints_grid"], [2, 2, 1])
+        self.assertTrue(dft["kpoints_full_grid"])
+        self.assertTrue(dft["kpoints_symmetry"])
+        self.assertEqual(dft["kpoints_wavefunctions"], "REAL")
+
     def test_validate_rejects_smearing_without_added_mos(self) -> None:
         template = load_template(ENERGY_TEMPLATE)
         merged = merge_template_fields(
@@ -110,6 +132,28 @@ class TemplateTests(unittest.TestCase):
 
         self.assertFalse(validation["valid"])
         self.assertIn("dft.smearing_enabled requires dft.added_mos", "\n".join(validation["errors"]))
+
+    def test_validate_rejects_kpoints_options_without_scheme(self) -> None:
+        template = load_template(ENERGY_TEMPLATE)
+        merged = merge_template_fields(template, {"kpoints_full_grid": True})
+        validation = validate_template(merged)
+
+        self.assertFalse(validation["valid"])
+        self.assertIn("KPOINTS options require dft.kpoints_scheme", "\n".join(validation["errors"]))
+
+    def test_validate_rejects_noninteger_kpoints_grid(self) -> None:
+        template = load_template(ENERGY_TEMPLATE)
+        merged = merge_template_fields(
+            template,
+            {
+                "kpoints_scheme": "MONKHORST-PACK",
+                "kpoints_grid": [2, 2.5, 2],
+            },
+        )
+        validation = validate_template(merged)
+
+        self.assertFalse(validation["valid"])
+        self.assertIn("dft.kpoints_grid must contain integer values", validation["errors"])
 
     def test_blank_geo_fields_do_not_break_energy_template(self) -> None:
         template = load_template(ENERGY_TEMPLATE)
@@ -184,6 +228,11 @@ class TemplateTests(unittest.TestCase):
                 "smearing_enabled",
                 "smearing_method",
                 "electronic_temperature",
+                "kpoints_scheme",
+                "kpoints_grid",
+                "kpoints_full_grid",
+                "kpoints_symmetry",
+                "kpoints_wavefunctions",
             ])
             self.assertFalse(template_path.read_bytes().startswith(b"\xef\xbb\xbf"))
 

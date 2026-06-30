@@ -102,6 +102,48 @@ class QuickStepTests(unittest.TestCase):
             rendered,
         )
 
+    def test_renders_monkhorst_pack_kpoints_section(self) -> None:
+        data = json.loads((ROOT / "examples" / "quickstep_energy.json").read_text(encoding="utf-8"))
+        data["dft"].update(
+            {
+                "kpoints_scheme": "monkhorst-pack",
+                "kpoints_grid": "2 2 1",
+                "kpoints_full_grid": True,
+                "kpoints_symmetry": True,
+                "kpoints_wavefunctions": "real",
+            }
+        )
+
+        rendered = render_quickstep_input(quickstep_input_from_dict(data))
+
+        self.assertIn(
+            "    &KPOINTS\n"
+            "      SCHEME MONKHORST-PACK 2 2 1\n"
+            "      FULL_GRID T\n"
+            "      SYMMETRY T\n"
+            "      WAVEFUNCTIONS REAL\n"
+            "    &END KPOINTS\n",
+            rendered,
+        )
+
+    def test_renders_gamma_kpoints_without_grid(self) -> None:
+        data = json.loads((ROOT / "examples" / "quickstep_energy.json").read_text(encoding="utf-8"))
+        data["dft"]["kpoints_scheme"] = "gamma"
+
+        rendered = render_quickstep_input(quickstep_input_from_dict(data))
+
+        self.assertIn("    &KPOINTS\n      SCHEME GAMMA\n    &END KPOINTS\n", rendered)
+        self.assertNotIn("SCHEME GAMMA 1 1 1", rendered)
+
+    def test_rejects_kpoints_for_nonperiodic_cell(self) -> None:
+        data = json.loads((ROOT / "examples" / "quickstep_energy.json").read_text(encoding="utf-8"))
+        data["structure"]["cell"]["periodic"] = "NONE"
+        data["dft"]["kpoints_scheme"] = "MONKHORST-PACK"
+        data["dft"]["kpoints_grid"] = [2, 2, 2]
+
+        with self.assertRaisesRegex(QuickStepInputError, "KPOINTS require"):
+            quickstep_input_from_dict(data)
+
     def test_rejects_mixing_without_diagonalization(self) -> None:
         data = json.loads((ROOT / "examples" / "quickstep_energy.json").read_text(encoding="utf-8"))
         data["dft"]["mixing_enabled"] = True

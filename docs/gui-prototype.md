@@ -148,6 +148,9 @@ SCF controls include method selection, ADDED_MOS, OT minimizer/preconditioner,
 diagonalization algorithm, optional mixing, and optional smearing. Mixing and
 smearing remain disabled by default and validate through the same template
 writer before preview or run.
+KPOINTS controls include scheme, grid, full-grid, symmetry, and wavefunction
+selection. They default to `NONE` and validate through the same template writer
+and QuickStep renderer before preview or run.
 Fallback periodicity and fallback cell A/B/C vectors are edited there too, and
 `center_atoms` is a checkbox because it only applies when the fallback cell is
 used.
