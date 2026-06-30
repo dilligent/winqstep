@@ -54,6 +54,7 @@
   "label.uks_enabled": "UKS",
   "label.cutoff": "截断能",
   "label.rel_cutoff": "相对截断",
+  "label.poisson_solver": "Poisson 求解器",
   "label.max_scf": "最大 SCF",
   "label.scf_method": "SCF 方法",
   "label.added_mos": "额外轨道",

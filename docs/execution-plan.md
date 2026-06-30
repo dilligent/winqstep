@@ -32,9 +32,10 @@ Each round should end with a focused commit.
   section display with escaped CP2K underscores in GUI headers, and CP2K-tree
   ordering for Template section groups, and a Template tab hyperlink to the
   CP2K INPUT manual, and separated tracked example JSON files from ignored
-  local config/template working copies.
-- Next active round: Round 62, refine QuickStep electrostatic boundary controls
-  by extending the existing `DFT/&POISSON/PERIODIC` support.
+  local config/template working copies, and optional QuickStep
+  `DFT/&POISSON/POISSON_SOLVER` controls.
+- Next active round: Round 63, add conservative QuickStep `DFT/&PRINT` output
+  controls.
 - Known local facts:
   - WSL2 is available.
   - Default distro is `Ubuntu`.
@@ -2114,7 +2115,7 @@ Commit boundary:
 
 ## Round 62: QuickStep POISSON Boundary Controls
 
-Status: planned.
+Status: implemented.
 
 Goal: make QuickStep electrostatic boundary handling more explicit without
 disturbing the existing synchronized `SUBSYS/&CELL/PERIODIC` and

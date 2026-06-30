@@ -27,10 +27,10 @@ Editable fields include:
   `SILENT`, `LOW`, `MEDIUM`, `HIGH`, and `DEBUG`
 - DFT fields: basis file, potential file, XC functional, optional PBE
   parametrization, optional DFT-D3 dispersion, charge, multiplicity, UKS spin
-  polarization, cutoff, relative cutoff, EPS_SCF, MAX_SCF, SCF method,
-  optional OUTER_SCF settings, ADDED_MOS, OT settings, diagonalization
-  settings, mixing settings, and electronic-temperature smearing settings,
-  plus KPOINTS scheme/grid,
+  polarization, cutoff, relative cutoff, optional POISSON solver, EPS_SCF,
+  MAX_SCF, SCF method, optional OUTER_SCF settings, ADDED_MOS, OT settings,
+  diagonalization settings, mixing settings, and electronic-temperature
+  smearing settings, plus KPOINTS scheme/grid,
   full-grid, symmetry, and wavefunction controls
 - GEO_OPT fields: optimizer and max iterations
 - CELL_OPT fields: optimizer, max iterations, optimization type, pressure
@@ -51,6 +51,7 @@ details. Related controls are grouped by their CP2K input-section path with
 left indentation for nested CP2K sections. The display order follows the input
 tree from `&GLOBAL` through DFT and SUBSYS to MOTION, so
 `&GLOBAL`, `&FORCE_EVAL / &DFT`,
+`&FORCE_EVAL / &DFT / &POISSON`,
 `&FORCE_EVAL / &DFT / &XC`,
 `&FORCE_EVAL / &DFT / &SCF`, nested blocks such as
 `&FORCE_EVAL / &DFT / &SCF / &OUTER_SCF`,
@@ -75,6 +76,9 @@ UKS is exposed as a checkbox in the `&FORCE_EVAL / &DFT` group because it maps
 to the top-level `DFT/UKS` keyword.
 OUTER_SCF fields expose common outer-loop thresholds and iteration counts while
 remaining editable.
+POISSON fields expose an optional `POISSON_SOLVER` selector. Leaving it blank
+preserves the historical generated input; explicit choices are normalized and
+validated by the same template and QuickStep model code as other DFT fields.
 KPOINTS fields expose `NONE`, `GAMMA`, and `MONKHORST-PACK`, common
 Monkhorst-Pack grids, `FULL_GRID`, `SYMMETRY`, and `WAVEFUNCTIONS` choices.
 The controls remain editable, so values not listed in the drop-down can still
@@ -87,11 +91,12 @@ manual pages for `GLOBAL/RUN_TYPE`, `GLOBAL/PRINT_LEVEL`,
 `FORCE_EVAL/DFT/MGRID`, `FORCE_EVAL/DFT/SCF`, and
 `MOTION/GEO_OPT`, plus
 `FORCE_EVAL/SUBSYS/CELL`, `FORCE_EVAL/DFT/POISSON`,
-`FORCE_EVAL/DFT/SCF/OT`, `FORCE_EVAL/DFT/SCF/DIAGONALIZATION`,
+`FORCE_EVAL/DFT/SCF/OT`,
+`FORCE_EVAL/DFT/SCF/DIAGONALIZATION`,
 `FORCE_EVAL/DFT/SCF/OUTER_SCF`, `FORCE_EVAL/DFT/SCF/MIXING`,
 `FORCE_EVAL/DFT/SCF/SMEAR`, and `FORCE_EVAL/DFT/KPOINTS` for periodicity,
-SCF solver, and k-point controls, plus `MOTION/CELL_OPT` for direct cell
-optimization controls.
+POISSON solver, SCF solver, and k-point controls, plus `MOTION/CELL_OPT` for
+direct cell optimization controls.
 
 KIND entries are shown in an editable `Element`, `Basis Set`, `Potential` table
 instead of a raw text box. The GUI still serializes that table through
@@ -107,8 +112,11 @@ open-shell multiplicity values unless UKS is enabled. It rejects
 mixing or smearing unless the SCF method is `DIAGONALIZATION`; smearing also
 requires `ADDED_MOS` to add unoccupied orbitals. Enabled OUTER_SCF settings
 must use a positive max iteration count and an outer `EPS_SCF` no looser than
-the inner SCF threshold. KPOINTS options are rejected unless a KPOINTS scheme
-is selected, and rendered workflow inputs reject KPOINTS for nonperiodic cells.
+the inner SCF threshold. The template validator rejects unsupported
+`POISSON_SOLVER` values, while the QuickStep renderer rejects explicit
+solver/periodicity combinations that WinQStep does not support. KPOINTS options
+are rejected unless a KPOINTS scheme is selected, and rendered workflow inputs
+reject KPOINTS for nonperiodic cells.
 CELL_OPT inputs reject nonperiodic cells and currently support the
 `DIRECT_CELL_OPT` path. When a CP2K data inspection cache is available, the GUI
 preflight step also compares template data-file names and KIND basis/potential

@@ -105,6 +105,29 @@ class QuickStepTests(unittest.TestCase):
             rendered,
         )
 
+    def test_renders_explicit_poisson_solver_when_set(self) -> None:
+        data = json.loads((ROOT / "examples" / "quickstep_energy.json").read_text(encoding="utf-8"))
+        data["dft"]["poisson_solver"] = "periodic"
+
+        rendered = render_quickstep_input(quickstep_input_from_dict(data))
+
+        self.assertIn(
+            "    &POISSON\n"
+            "      PERIODIC XYZ\n"
+            "      POISSON_SOLVER PERIODIC\n"
+            "    &END POISSON\n",
+            rendered,
+        )
+
+    def test_blank_poisson_solver_preserves_existing_poisson_output(self) -> None:
+        data = json.loads((ROOT / "examples" / "quickstep_energy.json").read_text(encoding="utf-8"))
+        data["dft"]["poisson_solver"] = ""
+
+        rendered = render_quickstep_input(quickstep_input_from_dict(data))
+
+        self.assertIn("    &POISSON\n      PERIODIC XYZ\n    &END POISSON\n", rendered)
+        self.assertNotIn("POISSON_SOLVER", rendered)
+
     def test_rejects_non_quickstep_run_type(self) -> None:
         data = json.loads((ROOT / "examples" / "quickstep_energy.json").read_text(encoding="utf-8"))
         data["run_type"] = "MD"
@@ -239,6 +262,14 @@ class QuickStepTests(unittest.TestCase):
         data["dft"]["kpoints_scheme"] = "NONE"
 
         with self.assertRaisesRegex(QuickStepInputError, "CELL_OPT requires"):
+            quickstep_input_from_dict(data)
+
+    def test_rejects_poisson_solver_for_unsupported_periodicity(self) -> None:
+        data = json.loads((ROOT / "examples" / "quickstep_energy.json").read_text(encoding="utf-8"))
+        data["structure"]["cell"]["periodic"] = "XY"
+        data["dft"]["poisson_solver"] = "PERIODIC"
+
+        with self.assertRaisesRegex(QuickStepInputError, "poisson_solver PERIODIC"):
             quickstep_input_from_dict(data)
 
     def test_rejects_mixing_without_diagonalization(self) -> None:

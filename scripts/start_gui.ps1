@@ -97,7 +97,7 @@ function New-WinQStepWindow {
         "XcFunctionalLabel", "XcPbeParametrizationLabel", "DispersionTypeLabel",
         "DispersionParameterFileLabel", "DispersionReferenceFunctionalLabel",
         "EpsScfLabel", "ChargeLabel", "MultiplicityLabel",
-        "CutoffLabel", "RelCutoffLabel", "PrintLevelLabel", "MaxScfLabel", "OptimizerLabel", "GeoMaxIterLabel",
+        "CutoffLabel", "RelCutoffLabel", "PoissonSolverLabel", "PrintLevelLabel", "MaxScfLabel", "OptimizerLabel", "GeoMaxIterLabel",
         "CellOptTypeLabel", "CellOptOptimizerLabel", "CellOptMaxIterLabel",
         "CellOptPressureToleranceLabel",
         "ScfMethodLabel", "AddedMosLabel", "DiagonalizationAlgorithmLabel",
@@ -109,6 +109,7 @@ function New-WinQStepWindow {
         "KpointsWavefunctionsLabel",
         "FallbackPeriodicLabel", "FallbackCellALabel", "FallbackCellBLabel", "FallbackCellCLabel",
         "TemplateProjectBox", "TemplateRunTypeBox", "PrintLevelBox", "BasisSetFileBox", "PotentialFileBox",
+        "PoissonSolverBox",
         "XcFunctionalBox", "XcPbeParametrizationBox", "DispersionTypeBox",
         "DispersionParameterFileBox", "DispersionReferenceFunctionalBox",
         "ChargeBox", "MultiplicityBox", "CutoffBox", "RelCutoffBox",
@@ -235,6 +236,7 @@ function New-WinQStepWindow {
         MultiplicityLabel = "label.multiplicity"
         CutoffLabel = "label.cutoff"
         RelCutoffLabel = "label.rel_cutoff"
+        PoissonSolverLabel = "label.poisson_solver"
         MaxScfLabel = "label.max_scf"
         ScfMethodLabel = "label.scf_method"
         AddedMosLabel = "label.added_mos"
@@ -2038,6 +2040,7 @@ function New-WinQStepWindow {
         $controls["UksEnabledBox"].IsChecked = @("1", "true", "yes", "on").Contains((& $GetJsonProperty $dft "uks_enabled" "False").ToLowerInvariant())
         $controls["CutoffBox"].Text = & $GetJsonProperty $dft "cutoff"
         $controls["RelCutoffBox"].Text = & $GetJsonProperty $dft "rel_cutoff"
+        $controls["PoissonSolverBox"].Text = & $GetJsonProperty $dft "poisson_solver"
         $controls["EpsScfBox"].Text = & $GetJsonProperty $dft "eps_scf"
         $controls["MaxScfBox"].Text = & $GetJsonProperty $dft "max_scf"
         $controls["OuterScfEnabledBox"].IsChecked = @("1", "true", "yes", "on").Contains((& $GetJsonProperty $dft "outer_scf_enabled" "False").ToLowerInvariant())
@@ -2122,6 +2125,7 @@ function New-WinQStepWindow {
             uks_enabled = [bool]$controls["UksEnabledBox"].IsChecked
             cutoff = $controls["CutoffBox"].Text
             rel_cutoff = $controls["RelCutoffBox"].Text
+            poisson_solver = $controls["PoissonSolverBox"].Text
             eps_scf = $controls["EpsScfBox"].Text
             max_scf = $controls["MaxScfBox"].Text
             outer_scf_enabled = [bool]$controls["OuterScfEnabledBox"].IsChecked
@@ -3980,6 +3984,7 @@ if ($SmokeTest) {
     $templateManualLink = $window.FindName("Cp2kInputManualLink")
     $templateComboNames = @(
         "TemplateProjectBox", "TemplateRunTypeBox", "PrintLevelBox", "BasisSetFileBox", "PotentialFileBox",
+        "PoissonSolverBox",
         "XcFunctionalBox", "XcPbeParametrizationBox", "DispersionTypeBox",
         "DispersionParameterFileBox", "DispersionReferenceFunctionalBox",
         "EpsScfBox", "ChargeBox", "MultiplicityBox",
@@ -3995,7 +4000,7 @@ if ($SmokeTest) {
         "FallbackPeriodicBox", "FallbackCellABox", "FallbackCellBBox", "FallbackCellCBox"
     )
     $templateSectionGroupNames = @(
-        "TemplateGlobalGroup", "TemplateDftGroup", "TemplateXcGroup", "TemplateScfGroup", "TemplateOuterScfGroup",
+        "TemplateGlobalGroup", "TemplateDftGroup", "TemplatePoissonGroup", "TemplateXcGroup", "TemplateScfGroup", "TemplateOuterScfGroup",
         "TemplateMixingGroup", "TemplateSmearingGroup", "TemplateKpointsGroup", "TemplateCellGroup",
         "TemplateKindGroup", "TemplateGeoOptGroup", "TemplateCellOptGroup"
     )
@@ -4022,6 +4027,7 @@ if ($SmokeTest) {
     $report["template_combo_fields_editable"] = $templateComboNames.Where({ [bool]$window.FindName($_).IsEditable }).Count
     $report["template_run_type_options"] = @($window.FindName("TemplateRunTypeBox").Items | ForEach-Object { [string]$_.Content })
     $report["template_print_level_options"] = @($window.FindName("PrintLevelBox").Items | ForEach-Object { [string]$_.Content })
+    $report["template_poisson_solver_options"] = @($window.FindName("PoissonSolverBox").Items | ForEach-Object { [string]$_.Content })
     $report["template_optimizer_options"] = @($window.FindName("GeoOptimizerBox").Items | ForEach-Object { [string]$_.Content })
     $report["template_cell_opt_type_options"] = @($window.FindName("CellOptTypeBox").Items | ForEach-Object { [string]$_.Content })
     $report["template_project_name"] = [string]$window.FindName("TemplateProjectBox").Text
@@ -4034,6 +4040,7 @@ if ($SmokeTest) {
     $report["template_dispersion_parameter_file"] = [string]$window.FindName("DispersionParameterFileBox").Text
     $report["template_dispersion_reference_functional"] = [string]$window.FindName("DispersionReferenceFunctionalBox").Text
     $report["template_cutoff"] = [string]$window.FindName("CutoffBox").Text
+    $report["template_poisson_solver"] = [string]$window.FindName("PoissonSolverBox").Text
     $report["template_uks_enabled"] = [bool]$window.FindName("UksEnabledBox").IsChecked
     $report["template_scf_method"] = [string]$window.FindName("ScfMethodBox").Text
     $report["template_added_mos"] = [string]$window.FindName("AddedMosBox").Text

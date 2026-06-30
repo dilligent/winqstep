@@ -333,6 +333,31 @@
             </Grid>
           </GroupBox>
 
+          <GroupBox x:Name="TemplatePoissonGroup" Header="&amp;FORCE__EVAL / &amp;DFT / &amp;POISSON" Style="{StaticResource TemplateSectionLevel2GroupBoxStyle}">
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="150"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="150"/>
+                <ColumnDefinition Width="*"/>
+              </Grid.ColumnDefinitions>
+              <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+              </Grid.RowDefinitions>
+
+              <TextBlock x:Name="PoissonSolverLabel" Grid.Row="0" Grid.Column="0" Text="Poisson Solver"/>
+              <ComboBox x:Name="PoissonSolverBox" Grid.Row="0" Grid.Column="1" IsEditable="True">
+                <ComboBoxItem Content=""/>
+                <ComboBoxItem Content="PERIODIC"/>
+                <ComboBoxItem Content="ANALYTIC"/>
+                <ComboBoxItem Content="MT"/>
+                <ComboBoxItem Content="MULTIPOLE"/>
+                <ComboBoxItem Content="WAVELET"/>
+                <ComboBoxItem Content="IMPLICIT"/>
+              </ComboBox>
+            </Grid>
+          </GroupBox>
+
           <GroupBox x:Name="TemplateXcGroup" Header="&amp;FORCE__EVAL / &amp;DFT / &amp;XC" Style="{StaticResource TemplateSectionLevel2GroupBoxStyle}">
             <Grid>
               <Grid.ColumnDefinitions>

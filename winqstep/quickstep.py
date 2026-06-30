@@ -10,6 +10,7 @@ RunType = Literal["ENERGY", "ENERGY_FORCE", "GEO_OPT", "CELL_OPT"]
 RUN_TYPES = {"ENERGY", "ENERGY_FORCE", "GEO_OPT", "CELL_OPT"}
 PRINT_LEVELS = {"SILENT", "LOW", "MEDIUM", "HIGH", "DEBUG"}
 PERIODIC_VALUES = {"NONE", "X", "Y", "Z", "XY", "XZ", "YZ", "XYZ"}
+POISSON_SOLVERS = {"ANALYTIC", "IMPLICIT", "MT", "MULTIPOLE", "PERIODIC", "WAVELET"}
 SCF_METHODS = {"DEFAULT", "OT", "DIAGONALIZATION"}
 KPOINTS_SCHEMES = {"NONE", "GAMMA", "MONKHORST-PACK"}
 KPOINTS_WAVEFUNCTIONS = {"COMPLEX", "REAL"}
@@ -78,6 +79,7 @@ class DftSettings:
     uks_enabled: bool = False
     cutoff: int = 400
     rel_cutoff: int = 40
+    poisson_solver: str | None = None
     eps_scf: str = "1.0E-6"
     max_scf: int = 50
     outer_scf_enabled: bool = False
@@ -233,6 +235,7 @@ def _parse_dft(data: dict[str, Any]) -> DftSettings:
         uks_enabled=_bool_value(data, "uks_enabled", False),
         cutoff=_int_value(data, "cutoff", 400),
         rel_cutoff=_int_value(data, "rel_cutoff", 40),
+        poisson_solver=_optional_choice(data, "poisson_solver"),
         eps_scf=_optional_string(data, "eps_scf", "1.0E-6"),
         max_scf=_int_value(data, "max_scf", 50),
         outer_scf_enabled=_bool_value(data, "outer_scf_enabled", False),
@@ -327,6 +330,9 @@ def validate_quickstep_input(model: QuickStepInput) -> None:
         raise QuickStepInputError("print_level has an unsupported value")
     if model.cell.periodic not in PERIODIC_VALUES:
         raise QuickStepInputError("cell.periodic has an unsupported value")
+    if model.dft.poisson_solver is not None and model.dft.poisson_solver not in POISSON_SOLVERS:
+        raise QuickStepInputError("dft.poisson_solver has an unsupported value")
+    _validate_poisson_solver_periodicity(model.dft.poisson_solver, model.cell.periodic)
     if model.cell.periodic != "NONE" and any(
         _vector_norm(vector) == 0.0 for vector in (model.cell.a, model.cell.b, model.cell.c)
     ):
@@ -431,6 +437,7 @@ def render_quickstep_input(model: QuickStepInput) -> str:
         "    &END MGRID",
         "    &POISSON",
         f"      PERIODIC {model.cell.periodic}",
+        *_render_poisson_solver(model.dft),
         "    &END POISSON",
         *_render_kpoints(model),
         "    &SCF",
@@ -489,6 +496,12 @@ def _render_spin_keywords(dft: DftSettings) -> list[str]:
     if not dft.uks_enabled:
         return []
     return ["    UKS T"]
+
+
+def _render_poisson_solver(dft: DftSettings) -> list[str]:
+    if dft.poisson_solver is None:
+        return []
+    return [f"      POISSON_SOLVER {dft.poisson_solver}"]
 
 
 def _render_xc(dft: DftSettings) -> list[str]:
@@ -636,6 +649,21 @@ def _positive_float(value: str, key: str) -> float:
     if parsed <= 0:
         raise QuickStepInputError(f"{key} must be positive")
     return parsed
+
+
+def _validate_poisson_solver_periodicity(poisson_solver: str | None, periodic: str) -> None:
+    if poisson_solver is None:
+        return
+    supported_periodicities = {
+        "PERIODIC": {"XYZ"},
+        "MULTIPOLE": {"NONE"},
+        "MT": {"NONE", "XY", "XZ", "YZ"},
+        "ANALYTIC": {"NONE", "X", "Y", "Z", "XY", "XZ", "YZ"},
+        "WAVELET": {"NONE", "XY", "XZ", "YZ", "XYZ"},
+        "IMPLICIT": PERIODIC_VALUES,
+    }[poisson_solver]
+    if periodic not in supported_periodicities:
+        raise QuickStepInputError(f"dft.poisson_solver {poisson_solver} is unsupported for PERIODIC {periodic}")
 
 
 def _render_atoms(atoms: Iterable[Atom]) -> list[str]:

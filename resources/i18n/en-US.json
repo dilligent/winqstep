@@ -54,6 +54,7 @@
   "label.uks_enabled": "UKS",
   "label.cutoff": "Cutoff",
   "label.rel_cutoff": "Rel Cutoff",
+  "label.poisson_solver": "Poisson Solver",
   "label.max_scf": "Max SCF",
   "label.scf_method": "SCF Method",
   "label.added_mos": "Added MOs",

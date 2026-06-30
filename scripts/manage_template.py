@@ -37,6 +37,7 @@ FIELD_ARGS = {
     "uks_enabled": "uks_enabled",
     "cutoff": "cutoff",
     "rel_cutoff": "rel_cutoff",
+    "poisson_solver": "poisson_solver",
     "eps_scf": "eps_scf",
     "max_scf": "max_scf",
     "outer_scf_enabled": "outer_scf_enabled",
@@ -99,6 +100,7 @@ def main() -> int:
     parser.add_argument("--uks-enabled")
     parser.add_argument("--cutoff")
     parser.add_argument("--rel-cutoff")
+    parser.add_argument("--poisson-solver")
     parser.add_argument("--eps-scf")
     parser.add_argument("--max-scf")
     parser.add_argument("--outer-scf-enabled")

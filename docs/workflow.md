@@ -67,6 +67,11 @@ Periodic POSCAR and CIF imports keep their imported cell and coordinates.
 The resolved periodicity is rendered consistently in both `SUBSYS/&CELL` and
 `DFT/&POISSON`. Supported periodicity labels are `NONE`, `X`, `Y`, `Z`, `XY`,
 `XZ`, `YZ`, and `XYZ`; periodic cells must have non-zero A, B, and C vectors.
+Templates can also set `dft.poisson_solver` to render an explicit
+`DFT/&POISSON/POISSON_SOLVER` keyword. Leaving the field blank keeps the
+historical generated input and leaves CP2K's default implicit. Explicit solver
+choices are validated before rendering so unsupported solver/periodicity
+combinations do not reach CP2K.
 
 Templates can enable spin-polarized QuickStep DFT with `uks_enabled`, which
 renders `UKS T` inside `&DFT`. Multiplicity values greater than 1 require UKS,
@@ -107,9 +112,10 @@ python .\scripts\manage_template.py --template .\examples\templates\energy_pbe.e
 ```
 
 The GUI `Template` tab uses the same command. It exposes project name, run type,
-DFT settings, XC/PBE/DFT-D3 controls, UKS, SCF solver and OUTER_SCF controls,
-KPOINTS controls, GEO_OPT settings, CELL_OPT settings, fallback
-cell/periodicity settings, centering, and KIND basis/potential entries.
+DFT settings, XC/PBE/DFT-D3 controls, UKS, POISSON solver controls, SCF solver
+and OUTER_SCF controls, KPOINTS controls, GEO_OPT settings, CELL_OPT settings,
+fallback cell/periodicity settings, centering, and KIND basis/potential
+entries.
 Supported QuickStep run types are `ENERGY`,
 `ENERGY_FORCE`, `GEO_OPT`, and `CELL_OPT`. Workflow preview and run actions
 save and validate the current template before rendering input.

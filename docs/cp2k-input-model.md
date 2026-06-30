@@ -29,6 +29,7 @@ The first generator should target:
 - `&DFT`
 - `DFT/UKS`
 - `DFT/&POISSON`
+- `DFT/&POISSON/POISSON_SOLVER`
 - `DFT/&KPOINTS`
 - `DFT/&XC`
 - `DFT/&XC/&XC_FUNCTIONAL`
@@ -73,7 +74,8 @@ Top-level fields:
   default print level implicit
 - `dft`: basis/potential file names, XC functional settings, optional DFT-D3
   dispersion, charge, multiplicity, optional UKS spin polarization, MGRID
-  cutoff, SCF controls, and optional KPOINTS controls
+  cutoff, optional POISSON solver controls, SCF controls, and optional KPOINTS
+  controls
 - `geo_opt`: optimizer and max iteration settings for `GEO_OPT`
 - `cell_opt`: optimizer, max iteration, type, pressure tolerance, and simple
   cell-shape constraints for `CELL_OPT`
@@ -85,6 +87,11 @@ prints an atom-by-atom force table that WinQStep can summarize.
 The renderer writes the resolved periodicity to both `SUBSYS/&CELL/PERIODIC`
 and `DFT/&POISSON/PERIODIC`. Supported values are `NONE`, `X`, `Y`, `Z`, `XY`,
 `XZ`, `YZ`, and `XYZ`. Periodic cells must provide non-zero A, B, and C vectors.
+`dft.poisson_solver` is optional; when it is blank or omitted, WinQStep does not
+render `POISSON_SOLVER` and leaves CP2K's default implicit. Supported explicit
+solver values are `PERIODIC`, `ANALYTIC`, `MT`, `MULTIPOLE`, `WAVELET`, and
+`IMPLICIT`. WinQStep rejects explicit solver/periodicity combinations that the
+current model does not deliberately support.
 
 Spin polarization is opt-in through `dft.uks_enabled`. When it is true, the
 renderer writes `UKS T` in `&DFT`; when false, the keyword is omitted. Templates
@@ -146,6 +153,7 @@ QuickStep subset with tests.
 - Optional `print_level` renders only as `GLOBAL/PRINT_LEVEL` when explicitly
   set.
 - CELL and POISSON periodicity must stay synchronized.
+- `POISSON_SOLVER` renders only when explicitly selected.
 - PBE parametrization renders only when explicitly non-default.
 - DFT-D3 renders only when explicitly enabled.
 - UKS is generated only when explicitly enabled.
@@ -163,6 +171,7 @@ The generator should validate before writing:
 
 - required structure data exists;
 - periodic cell data exists when periodic mode is selected;
+- explicit POISSON solver choices are compatible with the resolved periodicity;
 - basis and potential file names are available in `CP2K_DATA_DIR`;
 - calculation type is supported by the current generator;
 - required CP2K commands were detected.

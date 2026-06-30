@@ -20,6 +20,7 @@ class TemplateTests(unittest.TestCase):
 
         self.assertEqual(template["run_type"], "ENERGY")
         self.assertEqual(template["dft"]["charge"], 0)
+        self.assertEqual(template["dft"]["poisson_solver"], "")
         self.assertEqual(template["dft"]["eps_scf"], "1.0E-6")
         self.assertEqual(template["kinds"][0]["element"], "H")
 
@@ -170,6 +171,19 @@ class TemplateTests(unittest.TestCase):
         self.assertTrue(dft["kpoints_symmetry"])
         self.assertEqual(dft["kpoints_wavefunctions"], "REAL")
 
+    def test_merge_fields_updates_poisson_solver(self) -> None:
+        template = load_template(ENERGY_TEMPLATE)
+        merged = merge_template_fields(template, {"poisson_solver": "wavelet"})
+        validation = validate_template(merged)
+
+        self.assertTrue(validation["valid"], validation["errors"])
+        self.assertEqual(validation["template"]["dft"]["poisson_solver"], "WAVELET")
+
+        cleared = merge_template_fields(validation["template"], {"poisson_solver": ""})
+        cleared_validation = validate_template(cleared)
+        self.assertTrue(cleared_validation["valid"], cleared_validation["errors"])
+        self.assertEqual(cleared_validation["template"]["dft"]["poisson_solver"], "")
+
     def test_merge_fields_updates_cell_opt_controls(self) -> None:
         template = load_template(ENERGY_TEMPLATE)
         merged = merge_template_fields(
@@ -254,6 +268,14 @@ class TemplateTests(unittest.TestCase):
 
         self.assertFalse(validation["valid"])
         self.assertIn("KPOINTS options require dft.kpoints_scheme", "\n".join(validation["errors"]))
+
+    def test_validate_rejects_unknown_poisson_solver(self) -> None:
+        template = load_template(ENERGY_TEMPLATE)
+        merged = merge_template_fields(template, {"poisson_solver": "not_a_solver"})
+        validation = validate_template(merged)
+
+        self.assertFalse(validation["valid"])
+        self.assertIn("dft.poisson_solver has an unsupported value", validation["errors"])
 
     def test_validate_rejects_noninteger_kpoints_grid(self) -> None:
         template = load_template(ENERGY_TEMPLATE)
@@ -344,6 +366,7 @@ class TemplateTests(unittest.TestCase):
                 "uks_enabled",
                 "cutoff",
                 "rel_cutoff",
+                "poisson_solver",
                 "eps_scf",
                 "max_scf",
                 "outer_scf_enabled",

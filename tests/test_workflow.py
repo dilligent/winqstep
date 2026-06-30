@@ -65,6 +65,15 @@ class WorkflowTests(unittest.TestCase):
 
         self.assertEqual(quickstep_data["print_level"], "LOW")
 
+    def test_builds_workflow_data_with_poisson_solver(self) -> None:
+        imported = import_structure(STRUCTURES / "water.xyz")
+        template = json.loads(json.dumps(self.template))
+        template["dft"]["poisson_solver"] = "WAVELET"
+
+        quickstep_data = build_quickstep_data(template, imported, project_name="water_wavelet")
+
+        self.assertEqual(quickstep_data["dft"]["poisson_solver"], "WAVELET")
+
     def test_builds_cell_opt_workflow_data(self) -> None:
         imported = import_structure(STRUCTURES / "POSCAR")
         template = load_json_file(ROOT / "examples" / "templates" / "energy_pbe.example.json")

@@ -18,6 +18,7 @@ from .quickstep import (
     OT_PRECONDITIONERS,
     PBE_PARAMETRIZATIONS,
     PERIODIC_VALUES,
+    POISSON_SOLVERS,
     PRINT_LEVELS,
     RUN_TYPES,
     SCF_METHODS,
@@ -53,6 +54,7 @@ DFT_KEY_ORDER = (
     "uks_enabled",
     "cutoff",
     "rel_cutoff",
+    "poisson_solver",
     "eps_scf",
     "max_scf",
     "outer_scf_enabled",
@@ -325,6 +327,12 @@ def _normalize_dft(data: dict[str, Any], errors: list[str]) -> dict[str, Any]:
         "rel_cutoff": _positive_int_value(
             data.get("rel_cutoff", defaults.rel_cutoff),
             "dft.rel_cutoff",
+            errors,
+        ),
+        "poisson_solver": _optional_choice_value(
+            data.get("poisson_solver"),
+            "dft.poisson_solver",
+            POISSON_SOLVERS,
             errors,
         ),
         "eps_scf": _eps_value(data.get("eps_scf", defaults.eps_scf), errors),
