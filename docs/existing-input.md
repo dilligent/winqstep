@@ -30,3 +30,42 @@ removed. The input file is never rewritten or copied over.
 
 Completed metadata includes a `cp2k_output` summary with warning count and
 whether CP2K printed its `PROGRAM ENDED AT` marker.
+
+## Batch Command
+
+Existing-input jobs can also be processed as a serial batch:
+
+```powershell
+python .\scripts\run_existing_input_batch.py --config .\examples\winqstep.config.example.json --input-dir D:\path\to\inputs --job-dir .\outputs\batch-existing --prepare-only
+```
+
+Inputs can be supplied in three ways, and the command de-duplicates resolved
+paths while preserving first-seen order:
+
+- repeat `--input D:\path\to\job.inp` for explicit files;
+- use `--input-dir D:\path\to\inputs` with `--glob *.inp` to scan a directory;
+- use `--input-list inputs.txt`, a UTF-8 text file with one input path per line
+  and `#` comments allowed. Relative paths in the list are resolved from the
+  list file's folder.
+
+By default, each input runs in a stable subdirectory under `--job-dir`, using
+the input stem as the subdirectory name. If two inputs share the same stem, the
+later item gets a short hash suffix so output files do not collide. The command
+writes a batch index named `batch.winqstep-batch.json` in `--job-dir`; this file
+records item status, return code, metadata path, output path, and error text.
+It deliberately does not use the `*.winqstep.json` suffix, so History scans only
+the per-item job metadata files.
+
+Use `--prepare-only` to create per-item metadata without launching CP2K. During
+real execution the batch is serial by default. A failed item is recorded and the
+next item continues unless `--stop-on-failure` is set.
+
+If an existing CP2K input relies on relative include/data paths from its own
+folder, use:
+
+```powershell
+python .\scripts\run_existing_input_batch.py --config .\examples\winqstep.config.example.json --input-list .\inputs.txt --job-dir .\outputs\batch-existing --job-layout input-dirs
+```
+
+`--job-layout input-dirs` keeps each job's working directory beside its input
+file while still writing the batch index to `--job-dir`.

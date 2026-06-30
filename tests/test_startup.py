@@ -49,6 +49,7 @@ class StartupDiagnosticsTests(unittest.TestCase):
         self.assertTrue(required["scripts/smoke_release_install.py"])
         self.assertTrue(required["scripts/run_checks.py"])
         self.assertTrue(required["scripts/release_candidate_walkthrough.py"])
+        self.assertTrue(required["scripts/run_existing_input_batch.py"])
         self.assertTrue(required["scripts/gui/WinQStep.GuiHost.ps1"])
         self.assertTrue(required["scripts/gui/WinQStep.GuiControls.ps1"])
         self.assertTrue(required["scripts/gui/WinQStep.xaml"])

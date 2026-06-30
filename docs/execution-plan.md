@@ -2537,19 +2537,66 @@ Commit boundary:
 - One commit for DFT PRINT cube controls, generated artifact discovery, tests,
   and docs.
 
+## Round 72: Existing Input Batch CLI Core
+
+Status: implemented.
+
+Goal: add a command-line batch path for running existing CP2K input files
+without changing the single-job runner or GUI workflows.
+
+Rationale:
+
+- Existing-input execution, metadata, generated artifact discovery, output
+  summaries, and history scanning already work for one input.
+- A serial batch wrapper can reuse that stable path while giving users a way to
+  process many prepared `.inp` files.
+- GUI queue controls, cancellation semantics, and parallel execution should be
+  separate follow-up work after the CLI contract is tested.
+
+Tasks:
+
+- Add `winqstep.batch` helpers to resolve explicit inputs, input directories,
+  and UTF-8 input-list files.
+- Add `scripts/run_existing_input_batch.py` for serial batch execution with
+  `--prepare-only`, `--stop-on-failure`, `--job-layout`, and compact JSON
+  output.
+- Write one per-input job metadata file plus a separate
+  `batch.winqstep-batch.json` index that does not pollute History scans.
+- Add tests for prepare-only batches, duplicate input stems, failure
+  continuation, stop-on-failure, input resolution, CLI usage, startup
+  diagnostics, and release inclusion.
+- Update existing-input documentation and this execution plan.
+
+Acceptance:
+
+- A batch can be prepared without launching CP2K and each item has normal
+  existing-input metadata.
+- Runtime failures are recorded per item and do not stop later inputs unless
+  requested.
+- The batch index records per-item metadata paths and status while History
+  continues to discover only actual job metadata files.
+- Fast checks pass.
+
+Commit boundary:
+
+- One commit for the batch CLI core, tests, diagnostics/release inclusion, and
+  docs.
+
 ## QuickStep Feature Backlog
 
-Status: planned queue after Round 71.
+Status: planned queue after Round 72.
 
 Priority order:
 
-1. Continue `DFT/&PRINT` output coverage beyond PDOS and the first cube
+1. Add a GUI entry point for existing-input batch processing, using the Round
+   72 CLI/core contract before considering parallel execution.
+2. Continue `DFT/&PRINT` output coverage beyond PDOS and the first cube
    controls. Add file-generating print keys only together with artifact
    discovery and clear GUI presentation.
-2. `RUN_TYPE MD` with `MOTION/&MD`. Treat this as a larger milestone because it
+3. `RUN_TYPE MD` with `MOTION/&MD`. Treat this as a larger milestone because it
    changes run duration, log expectations, trajectory artifacts, and Template
    defaults.
-3. Extended XC/dispersion coverage. Add only conservative, well-tested
+4. Extended XC/dispersion coverage. Add only conservative, well-tested
    functionals or dispersion paths at first; hybrid-functional support should
    wait until ADMM/HF/screening choices can be modeled coherently.
 
