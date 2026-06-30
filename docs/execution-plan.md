@@ -2582,21 +2582,47 @@ Commit boundary:
 - One commit for the batch CLI core, tests, diagnostics/release inclusion, and
   docs.
 
+## Round 73 - GUI Existing-Input Batch Mode
+
+Status: completed.
+
+Scope:
+
+- Add a third GUI job mode, `Existing input batch`, that reuses the existing
+  input path box for a batch folder or typed input-list path.
+- Use `scripts/run_existing_input_batch.py --prepare-only` for GUI Preview and
+  show the resulting batch summary in Input Preview, Job Log, and Artifacts.
+- Start real serial batch execution from Run after a prepare-only check
+  succeeds, and refresh the running log from `batch.winqstep-batch.json`.
+- Keep single workflow and single existing-input Preview/Run behavior
+  unchanged.
+- Add GUI smoke coverage for batch preview plus run-check integration.
+
+Acceptance:
+
+- `-BatchSmokeTest` can preview a folder with two existing `.inp` files and
+  enables batch summary metadata/results artifacts.
+- The general button smoke clicks workflow Preview, existing-input Preview, and
+  existing-input batch Preview.
+- `run_checks.py --profile gui` includes the batch smoke check.
+
+Commit boundary:
+
+- One commit for GUI batch controls, PowerShell wiring, tests, and docs.
+
 ## QuickStep Feature Backlog
 
-Status: planned queue after Round 72.
+Status: planned queue after Round 73.
 
 Priority order:
 
-1. Add a GUI entry point for existing-input batch processing, using the Round
-   72 CLI/core contract before considering parallel execution.
-2. Continue `DFT/&PRINT` output coverage beyond PDOS and the first cube
+1. Continue `DFT/&PRINT` output coverage beyond PDOS and the first cube
    controls. Add file-generating print keys only together with artifact
    discovery and clear GUI presentation.
-3. `RUN_TYPE MD` with `MOTION/&MD`. Treat this as a larger milestone because it
+2. `RUN_TYPE MD` with `MOTION/&MD`. Treat this as a larger milestone because it
    changes run duration, log expectations, trajectory artifacts, and Template
    defaults.
-4. Extended XC/dispersion coverage. Add only conservative, well-tested
+3. Extended XC/dispersion coverage. Add only conservative, well-tested
    functionals or dispersion paths at first; hybrid-functional support should
    wait until ADMM/HF/screening choices can be modeled coherently.
 

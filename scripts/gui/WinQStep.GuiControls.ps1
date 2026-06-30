@@ -1,7 +1,7 @@
 function Get-WinQStepGuiControlNames {
     return @(
         "MainScrollViewer", "MainTabs",
-        "WorkflowModeRadio", "ExistingInputModeRadio",
+        "WorkflowModeRadio", "ExistingInputModeRadio", "ExistingInputBatchModeRadio", "BatchStopOnFailureBox",
         "JobInputsGroup",
         "ModeLabel", "ConfigPathLabel", "TemplatePathLabel", "StructurePathLabel",
         "ExistingInputPathLabel", "JobFolderLabel", "ProjectLabel",
@@ -109,6 +109,8 @@ function Set-WinQStepLocalizedControls {
     ViewStderrButton = "button.stderr"
     WorkflowModeRadio = "mode.workflow"
     ExistingInputModeRadio = "mode.existing_input"
+    ExistingInputBatchModeRadio = "mode.existing_input_batch"
+    BatchStopOnFailureBox = "label.batch_stop_on_failure"
     MixingEnabledBox = "label.mixing_enabled"
     SmearingEnabledBox = "label.smearing_enabled"
     UksEnabledBox = "label.uks_enabled"

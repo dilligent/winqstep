@@ -404,6 +404,7 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn("$EditedPreviewSmokeTest", script_text)
         self.assertIn("$AsyncRunSmokeTest", script_text)
         self.assertIn("$PythonInvokeSmokeTest", script_text)
+        self.assertIn("$BatchSmokeTest", script_text)
         self.assertIn("Add_DispatcherUnhandledException", script_text)
         self.assertIn("$Script:SuppressGuiMessageBoxes", script_text)
         self.assertIn("SaveEditedInputPreview", script_text)
@@ -421,6 +422,17 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn("stderr_has_native_wrapper", script_text)
         self.assertIn("PreviewWorkflowButton", script_text)
         self.assertIn("PreviewExistingInputButton", script_text)
+        self.assertIn("PreviewExistingInputBatchButton", script_text)
+        self.assertIn("ExistingInputBatchModeRadio", xaml_text)
+        self.assertIn("BatchStopOnFailureBox", xaml_text)
+        self.assertIn("GetExistingInputBatchArguments", script_text)
+        self.assertIn("FormatBatchSummary", script_text)
+        self.assertIn("SetArtifactsFromBatchSummary", script_text)
+        self.assertIn("GetBatchSummaryResult", script_text)
+        self.assertIn("scripts\\run_existing_input_batch.py", helper_text)
+        self.assertIn("mode.existing_input_batch", english_text)
+        self.assertIn("label.batch_stop_on_failure", english_text)
+        self.assertIn("status.preparing_existing_input_batch_preview", english_text)
         self.assertIn("async_run_smoke", script_text)
         self.assertIn("run_completed", script_text)
         self.assertIn("HistoryGridDoubleClick", script_text)
@@ -479,6 +491,7 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn("scripts\\gui\\WinQStep.xaml", report["checked_files"])
         self.assertIn("scripts\\check_startup.py", report["checked_files"])
         self.assertIn("scripts\\validate_job_inputs.py", report["checked_files"])
+        self.assertIn("scripts\\run_existing_input_batch.py", report["checked_files"])
         self.assertTrue(report["xaml_loaded"])
         self.assertEqual(report["title"], "WinQStep")
         self.assertTrue(report["main_scroll_viewer_loaded"])
@@ -590,12 +603,23 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertTrue(report["existing_preview_input_exists"])
         self.assertEqual(report["existing_preview_summary_status"], "not_available")
         self.assertTrue(report["existing_preview_path_encoding_ok"], report["existing_preview_input_path"])
+        self.assertEqual(report["existing_batch_preview_exit_code"], 0)
+        self.assertEqual(report["existing_batch_preview_mode"], "existing_input_batch")
+        self.assertEqual(report["existing_batch_preview_status"], "prepared")
+        self.assertEqual(report["existing_batch_preview_item_count"], 1)
+        self.assertTrue(report["existing_batch_preview_summary_exists"])
         self.assertEqual(report["history_exit_code"], 0)
         self.assertGreaterEqual(report["history_job_count"], 1)
         self.assertEqual(report["history_first_mode"], "existing_input")
         self.assertEqual(report["history_first_warning_count"], 0)
         self.assertTrue(report["existing_mode_input_enabled"])
         self.assertFalse(report["existing_mode_import_enabled"])
+        self.assertTrue(report["existing_input_batch_mode_loaded"])
+        self.assertTrue(report["batch_stop_on_failure_loaded"])
+        self.assertTrue(report["batch_mode_input_enabled"])
+        self.assertFalse(report["batch_mode_import_enabled"])
+        self.assertTrue(report["batch_mode_stop_on_failure_enabled"])
+        self.assertEqual(report["batch_mode_label_text"], "Batch Inputs")
 
     @unittest.skipUnless(platform.system() == "Windows", "WPF prototype is Windows-only")
     def test_wpf_smoke_can_load_chinese_language(self) -> None:
@@ -699,6 +723,7 @@ class GuiPrototypeTests(unittest.TestCase):
             "StructureResetViewButton",
             "PreviewWorkflowButton",
             "PreviewExistingInputButton",
+            "PreviewExistingInputBatchButton",
             "HistoryButton",
             "HistoryGridDoubleClick",
             "ViewResultsButton",
@@ -742,6 +767,12 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertEqual(report["history_selected_project"], "button_history")
         self.assertTrue(report["history_log_has_jobs"])
         self.assertTrue(report["existing_mode_import_disabled"])
+        self.assertTrue(report["batch_mode_import_disabled"])
+        self.assertTrue(report["batch_mode_stop_on_failure_enabled"])
+        self.assertTrue(report["batch_preview_has_summary"])
+        self.assertTrue(report["batch_preview_has_items"])
+        self.assertTrue(report["batch_artifact_summary_has_batch"])
+        self.assertTrue(report["batch_summary_exists"])
         self.assertTrue(report["workflow_preview_has_global"])
         self.assertTrue(report["existing_preview_has_global"])
         self.assertTrue(report["artifact_summary_has_history"])
@@ -763,6 +794,49 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertTrue(report["clear_disabled_structure_reset"])
         self.assertTrue(report["clear_disabled_artifact_buttons"])
         self.assertTrue(report["clear_removed_history_items"])
+
+    @unittest.skipUnless(platform.system() == "Windows", "WPF prototype is Windows-only")
+    def test_batch_smoke_can_preview_existing_input_directory(self) -> None:
+        powershell = shutil.which("powershell") or shutil.which("pwsh")
+        if not powershell:
+            self.skipTest("PowerShell is not available")
+
+        completed = subprocess.run(
+            [
+                powershell,
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                str(ROOT / "scripts" / "start_gui.ps1"),
+                "-BatchSmokeTest",
+                "-Language",
+                "en-US",
+            ],
+            capture_output=True,
+            check=False,
+        )
+
+        stderr = completed.stderr.decode("utf-8", errors="replace")
+        stdout = completed.stdout.decode("utf-8-sig", errors="replace")
+        self.assertEqual(completed.returncode, 0, stderr)
+        report = json.loads(stdout)
+        self.assertEqual(report["mode"], "batch_smoke")
+        self.assertTrue(report["preview_ok"], report["preview_error"])
+        self.assertTrue(report["batch_mode_loaded"])
+        self.assertTrue(report["batch_stop_on_failure_loaded"])
+        self.assertTrue(report["batch_input_enabled"])
+        self.assertTrue(report["batch_stop_on_failure_enabled"])
+        self.assertTrue(report["batch_import_disabled"])
+        self.assertEqual(report["batch_input_label"], "Batch Inputs")
+        self.assertTrue(report["preview_text_has_summary"])
+        self.assertTrue(report["preview_text_has_items"])
+        self.assertTrue(report["artifact_summary_has_batch"])
+        self.assertTrue(report["summary_exists"])
+        self.assertEqual(report["summary_status"], "prepared")
+        self.assertEqual(report["summary_item_count"], 2)
+        self.assertTrue(report["metadata_button_enabled"])
+        self.assertTrue(report["results_button_enabled"])
 
     @unittest.skipUnless(platform.system() == "Windows", "WPF prototype is Windows-only")
     def test_edited_preview_smoke_runs_saved_input_copy(self) -> None:

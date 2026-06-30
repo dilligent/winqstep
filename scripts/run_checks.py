@@ -79,6 +79,13 @@ def build_check_plan(
                         timeout=120,
                     ),
                     powershell_check(
+                        "gui-batch-smoke-offline",
+                        profile,
+                        powershell,
+                        ["-BatchSmokeTest", "-Language", "zh-CN"],
+                        timeout=120,
+                    ),
+                    powershell_check(
                         "gui-lifecycle-smoke",
                         profile,
                         powershell,

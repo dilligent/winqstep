@@ -69,3 +69,20 @@ python .\scripts\run_existing_input_batch.py --config .\examples\winqstep.config
 
 `--job-layout input-dirs` keeps each job's working directory beside its input
 file while still writing the batch index to `--job-dir`.
+
+## GUI Batch Mode
+
+The GUI has an `Existing input batch` mode in the top `Mode` selector. In this
+mode the `Existing Input` path box is relabeled as `Batch Inputs`; the `Browse`
+button selects a folder, and `Preview` runs
+`scripts/run_existing_input_batch.py --prepare-only` to write and display
+`batch.winqstep-batch.json`.
+
+`Run` first performs the same prepare-only batch check. If that summary is
+valid, the GUI starts the real serial batch in the background and updates `Job
+Log` from the batch index while it runs. `Artifacts` exposes the batch summary
+as metadata and as a result-summary view. Per-input job metadata remains visible
+through `History` after users load the batch job folder.
+
+For input-list files, type the list file path directly into `Batch Inputs`;
+folder browsing is the default shortcut for the common case.

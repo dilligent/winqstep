@@ -8,6 +8,7 @@ param(
     [switch]$AsyncRunSmokeTest,
     [switch]$PythonInvokeSmokeTest,
     [switch]$EnvironmentDisplaySmokeTest,
+    [switch]$BatchSmokeTest,
     [switch]$Diagnostics,
     [switch]$SkipLiveProbes,
     [string]$Language = ""
@@ -20,7 +21,7 @@ $Script:RepoRoot = Split-Path -Parent $PSScriptRoot
 $Script:PythonCommand = "python"
 $Script:Utf8NoBomEncoding = New-Object System.Text.UTF8Encoding($false)
 $Script:RequestedLanguage = $Language
-$SuppressGuiMessageBoxes = [bool]($ButtonSmokeTest -or $EditedPreviewSmokeTest -or $AsyncRunSmokeTest)
+$SuppressGuiMessageBoxes = [bool]($ButtonSmokeTest -or $EditedPreviewSmokeTest -or $AsyncRunSmokeTest -or $BatchSmokeTest)
 $EditedPreviewSmokeTestEnabled = [bool]$EditedPreviewSmokeTest
 $EditedPreviewSmokeState = @{
     Report = $null
@@ -185,21 +186,44 @@ function New-WinQStepWindow {
         if ($null -ne $UpdateStructureSelectionControls) {
             & $UpdateStructureSelectionControls
         }
+        if ($null -ne $UpdateModeControls) {
+            & $UpdateModeControls
+        }
     }.GetNewClosure()
 
     $TestIsExistingInputMode = {
         return [bool]$controls["ExistingInputModeRadio"].IsChecked
     }.GetNewClosure()
 
+    $TestIsExistingInputBatchMode = {
+        return [bool]$controls["ExistingInputBatchModeRadio"].IsChecked
+    }.GetNewClosure()
+
+    $TestUsesExistingInputPath = {
+        return ((& $TestIsExistingInputMode) -or (& $TestIsExistingInputBatchMode))
+    }.GetNewClosure()
+
+    $UpdateExistingInputPathLabel = {
+        if (& $TestIsExistingInputBatchMode) {
+            Set-WinQStepText $controls["ExistingInputPathLabel"] "label.batch_inputs"
+        }
+        else {
+            Set-WinQStepText $controls["ExistingInputPathLabel"] "label.existing_input"
+        }
+    }.GetNewClosure()
+
     $UpdateModeControls = {
-        $isExistingInputMode = & $TestIsExistingInputMode
+        $usesExistingInputPath = & $TestUsesExistingInputPath
+        $isBatchMode = & $TestIsExistingInputBatchMode
         foreach ($name in @("TemplatePathBox", "BrowseTemplateButton", "StructurePathBox", "BrowseStructureButton", "ProjectNameBox")) {
-            $controls[$name].IsEnabled = -not $isExistingInputMode
+            $controls[$name].IsEnabled = -not $usesExistingInputPath
         }
         foreach ($name in @("ExistingInputPathBox", "BrowseExistingInputButton")) {
-            $controls[$name].IsEnabled = $isExistingInputMode
+            $controls[$name].IsEnabled = $usesExistingInputPath
         }
-        $controls["ImportButton"].IsEnabled = -not $isExistingInputMode
+        $controls["BatchStopOnFailureBox"].IsEnabled = $isBatchMode
+        $controls["ImportButton"].IsEnabled = -not $usesExistingInputPath
+        & $UpdateExistingInputPathLabel
     }.GetNewClosure()
 
     $UpdateArtifactControls = {
@@ -336,8 +360,49 @@ function New-WinQStepWindow {
         return (& $GetExistingInputArgumentsForPath $controls["ExistingInputPathBox"].Text $PrepareOnly)
     }.GetNewClosure()
 
+    $GetExistingInputBatchSelectionArguments = {
+        $inputText = ([string]$controls["ExistingInputPathBox"].Text).Trim()
+        if ([string]::IsNullOrWhiteSpace($inputText)) {
+            throw "Batch inputs path is empty."
+        }
+        if ([System.IO.Directory]::Exists($inputText)) {
+            return @("--input-dir", $inputText)
+        }
+        if ([System.IO.File]::Exists($inputText)) {
+            $extension = [System.IO.Path]::GetExtension($inputText)
+            if ($extension.Equals(".inp", [System.StringComparison]::OrdinalIgnoreCase)) {
+                return @("--input", $inputText)
+            }
+            return @("--input-list", $inputText)
+        }
+        return @("--input", $inputText)
+    }.GetNewClosure()
+
+    $GetExistingInputBatchArguments = {
+        param([bool]$PrepareOnly)
+        $arguments = @(
+            "scripts\run_existing_input_batch.py",
+            "--config", $controls["ConfigPathBox"].Text
+        )
+        $arguments += (& $GetExistingInputBatchSelectionArguments)
+        $arguments += @(
+            "--job-dir", $controls["JobDirBox"].Text,
+            "--job-layout", "subdirs"
+        )
+        if ([bool]$controls["BatchStopOnFailureBox"].IsChecked) {
+            $arguments += "--stop-on-failure"
+        }
+        if ($PrepareOnly) {
+            $arguments += "--prepare-only"
+        }
+        return $arguments
+    }.GetNewClosure()
+
     $GetActiveJobArguments = {
         param([bool]$PrepareOnly)
+        if (& $TestIsExistingInputBatchMode) {
+            return (& $GetExistingInputBatchArguments $PrepareOnly)
+        }
         if (& $TestIsExistingInputMode) {
             return (& $GetExistingInputArguments $PrepareOnly)
         }
@@ -388,6 +453,9 @@ function New-WinQStepWindow {
     $FormatRunningJobStatus = {
         param([Parameter(Mandatory = $true)][hashtable]$State)
         $process = [System.Diagnostics.Process]$State["Process"]
+        if ([string]$State["Mode"] -eq "existing_input_batch") {
+            return "Running batch PID $($process.Id) | job=$($State["JobDir"]) | summary=$($State["BatchSummaryPath"])"
+        }
         return "Running PID $($process.Id) | job=$($State["JobDir"]) | output=$($State["OutputPath"])"
     }.GetNewClosure()
 
@@ -458,6 +526,18 @@ function New-WinQStepWindow {
     $BuildAsyncJobLog = {
         param([Parameter(Mandatory = $true)][hashtable]$State)
         $process = [System.Diagnostics.Process]$State["Process"]
+        if ([string]$State["Mode"] -eq "existing_input_batch") {
+            $sections = @(
+                "Existing input batch running asynchronously.`r`nPID=$($process.Id)`r`njob_dir=$($State["JobDir"])`r`nsummary=$($State["BatchSummaryPath"])`r`nwrapper_stdout=$($State["WrapperStdoutPath"])`r`nwrapper_stderr=$($State["WrapperStderrPath"])"
+            )
+            $summary = & $ReadMetadataFile ([string]$State["BatchSummaryPath"])
+            if ($null -ne $summary) {
+                $sections += (& $FormatBatchSummary $summary)
+            }
+            $sections = & $AddTailSection $sections "wrapper stdout tail" ([string]$State["WrapperStdoutPath"]) 40
+            $sections = & $AddTailSection $sections "wrapper stderr tail" ([string]$State["WrapperStderrPath"]) 40
+            return ($sections -join "`r`n`r`n")
+        }
         $sections = @(
             "CP2K job running asynchronously.`r`nPID=$($process.Id)`r`njob_dir=$($State["JobDir"])`r`ninput=$($State["InputPath"])`r`noutput=$($State["OutputPath"])`r`nmetadata=$($State["MetadataPath"])`r`nwrapper_stdout=$($State["WrapperStdoutPath"])`r`nwrapper_stderr=$($State["WrapperStderrPath"])"
         )
@@ -563,6 +643,82 @@ function New-WinQStepWindow {
     $GetMetadataFilePath = {
         param($Metadata, [Parameter(Mandatory = $true)][string]$Key)
         return (& $GetNestedPath $Metadata @("files", $Key, "path"))
+    }.GetNewClosure()
+
+    $GetBatchSummaryResult = {
+        param([Parameter(Mandatory = $true)]$Result)
+        if (-not [string]::IsNullOrWhiteSpace([string]$Result.Output)) {
+            try {
+                return ($Result.Output | ConvertFrom-Json)
+            }
+            catch {
+            }
+        }
+        if ($Result.ExitCode -ne 0 -and -not [string]::IsNullOrWhiteSpace([string]$Result.Error)) {
+            throw $Result.Error
+        }
+        $raw = [string]$Result.Output
+        if (-not [string]::IsNullOrWhiteSpace([string]$Result.Error)) {
+            $raw = (($raw, [string]$Result.Error) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }) -join "`r`n"
+        }
+        throw "Batch command did not return JSON. Raw output:`n$raw"
+    }.GetNewClosure()
+
+    $GetBatchSummaryItems = {
+        param($Summary)
+        if ($null -eq $Summary -or $null -eq $Summary.items) {
+            return @()
+        }
+        return @($Summary.items)
+    }.GetNewClosure()
+
+    $FormatBatchSummary = {
+        param([Parameter(Mandatory = $true)]$Summary)
+        $items = @(& $GetBatchSummaryItems $Summary)
+        $lines = @(
+            "Existing input batch: status=$(& $GetJsonProperty $Summary "status")",
+            "inputs=$(& $GetJsonProperty $Summary "input_count"), items=$(& $GetJsonProperty $Summary "item_count"), prepared=$(& $GetJsonProperty $Summary "prepared_count"), succeeded=$(& $GetJsonProperty $Summary "succeeded_count"), failed=$(& $GetJsonProperty $Summary "failed_count"), errors=$(& $GetJsonProperty $Summary "error_count")",
+            "prepare_only=$(& $GetJsonProperty $Summary "prepare_only"), stop_on_failure=$(& $GetJsonProperty $Summary "stop_on_failure"), stopped_on_failure=$(& $GetJsonProperty $Summary "stopped_on_failure")",
+            "job_dir=$(& $GetJsonProperty $Summary "job_dir")",
+            "summary=$(& $GetJsonProperty $Summary "summary_path")"
+        )
+        if ($items.Count -gt 0) {
+            $lines += ""
+            $lines += "Items"
+            $maxRows = 20
+            foreach ($item in @($items | Select-Object -First $maxRows)) {
+                $itemIndex = & $GetJsonProperty $item "index"
+                $itemStatus = & $GetJsonProperty $item "status"
+                $itemInputPath = & $GetJsonProperty $item "input_path"
+                $line = "#{0}: status={1} input={2}" -f $itemIndex, $itemStatus, $itemInputPath
+                $outputPath = & $GetJsonProperty $item "output_path"
+                if (-not [string]::IsNullOrWhiteSpace($outputPath)) {
+                    $line += " output=$outputPath"
+                }
+                $errorText = & $GetJsonProperty $item "error"
+                if (-not [string]::IsNullOrWhiteSpace($errorText)) {
+                    $line += " error=$errorText"
+                }
+                $lines += $line
+            }
+            if ($items.Count -gt $maxRows) {
+                $lines += "... $($items.Count - $maxRows) more item(s)"
+            }
+        }
+        return ($lines -join "`r`n")
+    }.GetNewClosure()
+
+    $BuildBatchArtifactSummary = {
+        param([Parameter(Mandatory = $true)]$Summary)
+        $summaryPath = & $GetJsonProperty $Summary "summary_path"
+        $exists = if (-not [string]::IsNullOrWhiteSpace($summaryPath) -and [System.IO.File]::Exists($summaryPath)) { "exists" } else { "missing" }
+        return (@(
+            "mode=existing_input_batch",
+            "status=$(& $GetJsonProperty $Summary "status")",
+            "inputs=$(& $GetJsonProperty $Summary "input_count"), items=$(& $GetJsonProperty $Summary "item_count"), prepared=$(& $GetJsonProperty $Summary "prepared_count"), succeeded=$(& $GetJsonProperty $Summary "succeeded_count"), failed=$(& $GetJsonProperty $Summary "failed_count"), errors=$(& $GetJsonProperty $Summary "error_count")",
+            "job_dir=$(& $GetJsonProperty $Summary "job_dir")",
+            "summary=[$exists] $summaryPath"
+        ) -join "`r`n")
     }.GetNewClosure()
 
     $FormatResultValue = {
@@ -1591,6 +1747,39 @@ function New-WinQStepWindow {
         & $SetJobStatusText (& $FormatFinishedJobStatus $Metadata ([string]$artifacts["status"]))
     }.GetNewClosure()
 
+    $SetArtifactsFromBatchSummary = {
+        param([Parameter(Mandatory = $true)]$Summary)
+        $summaryPath = & $GetJsonProperty $Summary "summary_path"
+        $summaryText = & $FormatBatchSummary $Summary
+        $artifacts = @{
+            status = (& $GetJsonProperty $Summary "status" "")
+            returncode = ""
+            mode = "existing_input_batch"
+            project_name = ""
+            run_type = ""
+            output_status = ""
+            warning_count = ""
+            program_ended = ""
+            ended_at = (& $GetJsonProperty $Summary "completed_at" "")
+            total_energy_hartree = ""
+            total_atomic_force = ""
+            force_unit = ""
+            paths = @{
+                input = ""
+                output = ""
+                metadata = $summaryPath
+                stdout = ""
+                stderr = ""
+            }
+            generated_artifacts = @()
+            result_text = $summaryText
+        }
+        $artifactState["Current"] = $artifacts
+        $controls["ArtifactSummaryText"].Text = & $BuildBatchArtifactSummary $Summary
+        & $UpdateArtifactControls
+        & $SetJobStatusText "Batch: status=$($artifacts["status"]) | summary=$summaryPath"
+    }.GetNewClosure()
+
     $CompleteAsyncJob = {
         param([Parameter(Mandatory = $true)][hashtable]$State)
         $jobTimer.Stop()
@@ -1600,6 +1789,47 @@ function New-WinQStepWindow {
         $captured = Save-WinQStepProcessOutput $process ([string]$State["WrapperStdoutPath"]) ([string]$State["WrapperStderrPath"])
         $stdout = [string]$captured.Stdout
         $stderr = [string]$captured.Stderr
+        if ([string]$State["Mode"] -eq "existing_input_batch") {
+            $summary = $null
+            if (-not [string]::IsNullOrWhiteSpace($stdout)) {
+                try {
+                    $summary = ($stdout | ConvertFrom-Json)
+                }
+                catch {
+                    $summary = $null
+                }
+            }
+            if ($null -eq $summary) {
+                $summary = & $ReadMetadataFile ([string]$State["BatchSummaryPath"])
+            }
+
+            if ($null -ne $summary) {
+                $finalStatus = if ([bool]$State["Cancelled"]) { Get-WinQStepText "status.cancelled" } elseif ($exitCode -eq 0) { Get-WinQStepText "status.ready" } else { Get-WinQStepText "status.finished_with_errors" }
+                $logSections = @(& $FormatBatchSummary $summary)
+                if (-not [string]::IsNullOrWhiteSpace($stderr)) {
+                    $logSections += "--- wrapper stderr ---`r`n$stderr"
+                }
+                $controls["LogText"].Text = ($logSections -join "`r`n`r`n")
+                & $SetArtifactsFromBatchSummary $summary
+            }
+            else {
+                $parts = @("Existing input batch wrapper exited without JSON summary. exit_code=$exitCode")
+                if (-not [string]::IsNullOrWhiteSpace($stdout)) {
+                    $parts += "--- wrapper stdout ---`r`n$stdout"
+                }
+                if (-not [string]::IsNullOrWhiteSpace($stderr)) {
+                    $parts += "--- wrapper stderr ---`r`n$stderr"
+                }
+                $controls["LogText"].Text = ($parts -join "`r`n`r`n")
+                $finalStatus = if ([bool]$State["Cancelled"]) { Get-WinQStepText "status.cancelled" } else { Get-WinQStepText "status.finished_with_errors" }
+                & $SetJobStatusText "Batch: status=$finalStatus | summary=$($State["BatchSummaryPath"])"
+            }
+
+            $controls["LogText"].ScrollToEnd()
+            $jobState["Current"] = $null
+            & $SetAsyncJobRunning $false $finalStatus
+            return
+        }
         $metadata = $null
         if (-not [string]::IsNullOrWhiteSpace($stdout)) {
             try {
@@ -2629,7 +2859,85 @@ function New-WinQStepWindow {
         }
     }.GetNewClosure()
 
+    $StartExistingInputBatchJob = {
+        if ($null -ne $jobState["Current"]) {
+            & $AppendLog "A CP2K job is already running."
+            return
+        }
+
+        & $SetBusy $true (Get-WinQStepText "status.preparing_cp2k_job")
+        try {
+            $null = & $SaveConfigFields $true $false
+            $prepareArguments = @(& $GetExistingInputBatchArguments $true)
+            $prepareArguments += "--compact"
+            $prepareResult = Invoke-WinQStepPython $prepareArguments
+            $preparedSummary = & $GetBatchSummaryResult $prepareResult
+            $summaryText = & $FormatBatchSummary $preparedSummary
+            & $ClearInputPreviewState
+            $controls["PreviewText"].Text = $summaryText
+            $controls["LogText"].Text = $summaryText
+            & $SetArtifactsFromBatchSummary $preparedSummary
+            if ($prepareResult.ExitCode -ne 0 -or (& $GetJsonProperty $preparedSummary "status") -ne "prepared") {
+                throw $summaryText
+            }
+
+            $batchDir = & $GetJsonProperty $preparedSummary "job_dir"
+            if ([string]::IsNullOrWhiteSpace($batchDir)) {
+                $batchDir = & $ResolveWindowsWorkspacePath $controls["JobDirBox"].Text
+            }
+            [System.IO.Directory]::CreateDirectory($batchDir) | Out-Null
+            $summaryPath = & $GetJsonProperty $preparedSummary "summary_path"
+            if ([string]::IsNullOrWhiteSpace($summaryPath)) {
+                $summaryPath = Join-Path $batchDir "batch.winqstep-batch.json"
+            }
+
+            $stamp = [DateTime]::UtcNow.ToString("yyyyMMddTHHmmssfffZ")
+            $wrapperStdoutPath = Join-Path $batchDir "winqstep-gui-batch-$stamp.stdout.json"
+            $wrapperStderrPath = Join-Path $batchDir "winqstep-gui-batch-$stamp.stderr.log"
+            $runArguments = @(& $GetExistingInputBatchArguments $false)
+            $runArguments += "--compact"
+            $process = Start-WinQStepPythonProcess -Arguments $runArguments -StdoutPath $wrapperStdoutPath -StderrPath $wrapperStderrPath
+
+            $jobState["Current"] = @{
+                Mode = "existing_input_batch"
+                Process = $process
+                JobDir = $batchDir
+                BatchSummaryPath = $summaryPath
+                MetadataPath = $summaryPath
+                OutputPath = ""
+                WrapperStdoutPath = $wrapperStdoutPath
+                WrapperStderrPath = $wrapperStderrPath
+                Cancelled = $false
+            }
+            $controls["LogText"].Text = ($summaryText, (& $BuildAsyncJobLog $jobState["Current"])) -join "`r`n`r`n"
+            & $SetJobStatusText (& $FormatRunningJobStatus $jobState["Current"])
+            & $SetAsyncJobRunning $true (Format-WinQStepText "status.running_cp2k_pid" @($process.Id))
+            $jobTimer.Start()
+        }
+        catch {
+            $message = $_.Exception.Message
+            & $AppendLog "ERROR: $message"
+            if ($SuppressGuiMessageBoxes) {
+                & $SetBusy $false (Get-WinQStepText "status.ready")
+                throw
+            }
+            [System.Windows.MessageBox]::Show(
+                $window,
+                $message,
+                (Get-WinQStepText "message.error_caption"),
+                [System.Windows.MessageBoxButton]::OK,
+                [System.Windows.MessageBoxImage]::Error
+            ) | Out-Null
+            & $SetBusy $false (Get-WinQStepText "status.ready")
+        }
+    }.GetNewClosure()
+
     $StartAsyncJob = {
+        if (& $TestIsExistingInputBatchMode) {
+            & $StartExistingInputBatchJob
+            return
+        }
+
         if ($null -ne $jobState["Current"]) {
             & $AppendLog "A CP2K job is already running."
             return
@@ -2859,10 +3167,18 @@ function New-WinQStepWindow {
         }
     }.GetNewClosure())
     $controls["BrowseStructureButton"].Add_Click({ & $SelectFilePath $controls["StructurePathBox"] "Structures (*.xyz;*.cif;POSCAR;CONTCAR)|*.xyz;*.cif;POSCAR;CONTCAR|All files (*.*)|*.*" }.GetNewClosure())
-    $controls["BrowseExistingInputButton"].Add_Click({ & $SelectFilePath $controls["ExistingInputPathBox"] "CP2K input files (*.inp)|*.inp|All files (*.*)|*.*" }.GetNewClosure())
+    $controls["BrowseExistingInputButton"].Add_Click({
+        if (& $TestIsExistingInputBatchMode) {
+            & $SelectFolderPath $controls["ExistingInputPathBox"]
+        }
+        else {
+            & $SelectFilePath $controls["ExistingInputPathBox"] "CP2K input files (*.inp)|*.inp|All files (*.*)|*.*"
+        }
+    }.GetNewClosure())
     $controls["BrowseJobDirButton"].Add_Click({ & $SelectFolderPath $controls["JobDirBox"] }.GetNewClosure())
     $controls["WorkflowModeRadio"].Add_Checked({ & $UpdateModeControls }.GetNewClosure())
     $controls["ExistingInputModeRadio"].Add_Checked({ & $UpdateModeControls }.GetNewClosure())
+    $controls["ExistingInputBatchModeRadio"].Add_Checked({ & $UpdateModeControls }.GetNewClosure())
 
     $controls["DetectButton"].Add_Click({
         & $InvokeGuiAction -Status (Get-WinQStepText "status.detecting_environment") -Action {
@@ -2918,8 +3234,29 @@ function New-WinQStepWindow {
     }.GetNewClosure())
 
     $controls["PreviewButton"].Add_Click({
-        $status = if (& $TestIsExistingInputMode) { Get-WinQStepText "status.preparing_existing_input_preview" } else { Get-WinQStepText "status.preparing_workflow_input_preview" }
+        $status = if (& $TestIsExistingInputBatchMode) {
+            Get-WinQStepText "status.preparing_existing_input_batch_preview"
+        }
+        elseif (& $TestIsExistingInputMode) {
+            Get-WinQStepText "status.preparing_existing_input_preview"
+        }
+        else {
+            Get-WinQStepText "status.preparing_workflow_input_preview"
+        }
         & $InvokeGuiAction -Status $status -Action {
+            if (& $TestIsExistingInputBatchMode) {
+                $null = & $SaveConfigFields $true $false
+                $arguments = @(& $GetExistingInputBatchArguments $true)
+                $arguments += "--compact"
+                $result = Invoke-WinQStepPython $arguments
+                $summary = & $GetBatchSummaryResult $result
+                $summaryText = & $FormatBatchSummary $summary
+                & $ClearInputPreviewState
+                $controls["PreviewText"].Text = $summaryText
+                $controls["LogText"].Text = $summaryText
+                & $SetArtifactsFromBatchSummary $summary
+                return
+            }
             $preflight = & $ValidateActiveInputs
             $preflightText = & $FormatPreflightValidation $preflight
             $result = Invoke-WinQStepPython (& $GetActiveJobArguments $true)
@@ -3260,6 +3597,87 @@ if ($EnvironmentDisplaySmokeTest) {
         $report["environment_text_has_warning"] -and
         $report["environment_text_has_command_status"] -and
         $report["environment_text_is_not_raw_json"]
+    ) {
+        exit 0
+    }
+    exit 1
+}
+
+if ($BatchSmokeTest) {
+    $report = Test-WinQStepGuiPrerequisites
+    $window = New-WinQStepWindow
+    $smokeDir = Resolve-WinQStepPath ("outputs\gui-batch-smoke-{0}" -f ([System.Guid]::NewGuid().ToString("N")))
+    $batchInputDir = Join-Path $smokeDir "inputs"
+    $batchJobDir = Join-Path $smokeDir "jobs"
+    [System.IO.Directory]::CreateDirectory($batchInputDir) | Out-Null
+    [System.IO.Directory]::CreateDirectory($batchJobDir) | Out-Null
+    $smokeConfigPath = Join-Path $smokeDir "batch_smoke.config.json"
+    [System.IO.File]::Copy((Resolve-WinQStepPath "examples\winqstep.config.example.json"), $smokeConfigPath, $true)
+    [System.IO.File]::Copy((Resolve-WinQStepPath "tests\fixtures\quickstep_energy.inp"), (Join-Path $batchInputDir "batch_one.inp"), $true)
+    [System.IO.File]::Copy((Resolve-WinQStepPath "tests\fixtures\quickstep_energy.inp"), (Join-Path $batchInputDir "batch_two.inp"), $true)
+
+    $window.FindName("ConfigPathBox").Text = $smokeConfigPath
+    $window.FindName("ExistingInputBatchModeRadio").IsChecked = $true
+    $window.FindName("ExistingInputPathBox").Text = $batchInputDir
+    $window.FindName("JobDirBox").Text = $batchJobDir
+    [System.Windows.Forms.Application]::DoEvents()
+
+    $previewOk = $true
+    $previewError = ""
+    try {
+        $button = $window.FindName("PreviewButton")
+        $eventArgs = [System.Windows.RoutedEventArgs]::new([System.Windows.Controls.Button]::ClickEvent)
+        $button.RaiseEvent($eventArgs)
+        [System.Windows.Forms.Application]::DoEvents()
+    }
+    catch {
+        $previewOk = $false
+        $previewError = $_.Exception.Message
+    }
+
+    $previewText = [string]$window.FindName("PreviewText").Text
+    $artifactSummaryText = [string]$window.FindName("ArtifactSummaryText").Text
+    $summaryPath = Join-Path $batchJobDir "batch.winqstep-batch.json"
+    $summary = $null
+    if ([System.IO.File]::Exists($summaryPath)) {
+        $summary = [System.IO.File]::ReadAllText($summaryPath, [System.Text.Encoding]::UTF8) | ConvertFrom-Json
+    }
+
+    $report["mode"] = "batch_smoke"
+    $report["preview_ok"] = $previewOk
+    $report["preview_error"] = $previewError
+    $report["batch_mode_loaded"] = ($window.FindName("ExistingInputBatchModeRadio") -is [System.Windows.Controls.RadioButton])
+    $report["batch_stop_on_failure_loaded"] = ($window.FindName("BatchStopOnFailureBox") -is [System.Windows.Controls.CheckBox])
+    $report["batch_input_enabled"] = [bool]$window.FindName("ExistingInputPathBox").IsEnabled
+    $report["batch_stop_on_failure_enabled"] = [bool]$window.FindName("BatchStopOnFailureBox").IsEnabled
+    $report["batch_import_disabled"] = (-not [bool]$window.FindName("ImportButton").IsEnabled)
+    $report["batch_input_label"] = [string]$window.FindName("ExistingInputPathLabel").Text
+    $report["preview_text_has_summary"] = $previewText.Contains("Existing input batch: status=prepared")
+    $report["preview_text_has_items"] = ($previewText.Contains("inputs=2") -and $previewText.Contains("#1: status=prepared") -and $previewText.Contains("#2: status=prepared"))
+    $report["artifact_summary_has_batch"] = ($artifactSummaryText.Contains("mode=existing_input_batch") -and $artifactSummaryText.Contains("summary=[exists]"))
+    $report["summary_exists"] = [System.IO.File]::Exists($summaryPath)
+    $report["summary_path"] = $summaryPath
+    $report["summary_status"] = if ($null -ne $summary) { [string]$summary.status } else { "" }
+    $report["summary_item_count"] = if ($null -ne $summary) { [int]$summary.item_count } else { 0 }
+    $report["metadata_button_enabled"] = [bool]$window.FindName("ViewMetadataButton").IsEnabled
+    $report["results_button_enabled"] = [bool]$window.FindName("ViewResultsButton").IsEnabled
+    $report | ConvertTo-Json -Depth 6
+
+    if (
+        $report["preview_ok"] -and
+        $report["batch_mode_loaded"] -and
+        $report["batch_stop_on_failure_loaded"] -and
+        $report["batch_input_enabled"] -and
+        $report["batch_stop_on_failure_enabled"] -and
+        $report["batch_import_disabled"] -and
+        $report["preview_text_has_summary"] -and
+        $report["preview_text_has_items"] -and
+        $report["artifact_summary_has_batch"] -and
+        $report["summary_exists"] -and
+        $report["summary_status"] -eq "prepared" -and
+        $report["summary_item_count"] -eq 2 -and
+        $report["metadata_button_enabled"] -and
+        $report["results_button_enabled"]
     ) {
         exit 0
     }
@@ -3746,6 +4164,24 @@ if ($ButtonSmokeTest) {
     & $RecordButtonSmokeClick "PreviewButton" "PreviewExistingInputButton"
     $existingPreviewText = [string]$window.FindName("PreviewText").Text
 
+    $batchInputDir = Join-Path $historySmokeDir "batch-inputs"
+    $batchJobDir = Join-Path $historySmokeDir "batch-jobs"
+    [System.IO.Directory]::CreateDirectory($batchInputDir) | Out-Null
+    [System.IO.Directory]::CreateDirectory($batchJobDir) | Out-Null
+    [System.IO.File]::Copy((Resolve-WinQStepPath "tests\fixtures\quickstep_energy.inp"), (Join-Path $batchInputDir "button_batch_one.inp"), $true)
+    [System.IO.File]::Copy((Resolve-WinQStepPath "tests\fixtures\quickstep_energy.inp"), (Join-Path $batchInputDir "button_batch_two.inp"), $true)
+    $window.FindName("ExistingInputBatchModeRadio").IsChecked = $true
+    $window.FindName("ExistingInputPathBox").Text = $batchInputDir
+    $window.FindName("JobDirBox").Text = $batchJobDir
+    [System.Windows.Forms.Application]::DoEvents()
+    $batchModeImportDisabled = (-not [bool]$window.FindName("ImportButton").IsEnabled)
+    $batchModeStopOnFailureEnabled = [bool]$window.FindName("BatchStopOnFailureBox").IsEnabled
+    & $RecordButtonSmokeClick "PreviewButton" "PreviewExistingInputBatchButton"
+    $batchPreviewText = [string]$window.FindName("PreviewText").Text
+    $batchArtifactSummaryText = [string]$window.FindName("ArtifactSummaryText").Text
+    $batchSummaryPath = Join-Path $batchJobDir "batch.winqstep-batch.json"
+    $window.FindName("JobDirBox").Text = $historySmokeDir
+
     & $RecordButtonSmokeClick "HistoryButton"
     $historyLogText = [string]$window.FindName("LogText").Text
 
@@ -3881,6 +4317,12 @@ if ($ButtonSmokeTest) {
     $report["history_selected_project"] = if ($null -ne $selectedHistoryItem) { [string]$selectedHistoryItem.project_name } else { "" }
     $report["history_log_has_jobs"] = $historyLogText.Contains("History jobs:")
     $report["existing_mode_import_disabled"] = $existingModeImportDisabled
+    $report["batch_mode_import_disabled"] = $batchModeImportDisabled
+    $report["batch_mode_stop_on_failure_enabled"] = $batchModeStopOnFailureEnabled
+    $report["batch_preview_has_summary"] = $batchPreviewText.Contains("Existing input batch: status=prepared")
+    $report["batch_preview_has_items"] = ($batchPreviewText.Contains("inputs=2") -and $batchPreviewText.Contains("#1: status=prepared") -and $batchPreviewText.Contains("#2: status=prepared"))
+    $report["batch_artifact_summary_has_batch"] = ($batchArtifactSummaryText.Contains("mode=existing_input_batch") -and $batchArtifactSummaryText.Contains("summary=[exists]"))
+    $report["batch_summary_exists"] = [System.IO.File]::Exists($batchSummaryPath)
     $report["workflow_preview_has_global"] = $workflowPreviewText.Contains("&GLOBAL")
     $report["existing_preview_has_global"] = $existingPreviewText.Contains("&GLOBAL")
     $report["artifact_summary_has_history"] = $artifactSummaryBeforeClear.Contains("button_history")
@@ -3934,6 +4376,12 @@ if ($ButtonSmokeTest) {
         $report["history_selected_project"] -eq "button_history" -and
         $report["history_log_has_jobs"] -and
         $report["existing_mode_import_disabled"] -and
+        $report["batch_mode_import_disabled"] -and
+        $report["batch_mode_stop_on_failure_enabled"] -and
+        $report["batch_preview_has_summary"] -and
+        $report["batch_preview_has_items"] -and
+        $report["batch_artifact_summary_has_batch"] -and
+        $report["batch_summary_exists"] -and
         $report["workflow_preview_has_global"] -and
         $report["existing_preview_has_global"] -and
         $report["artifact_summary_has_history"] -and
@@ -3999,6 +4447,15 @@ if ($SmokeTest) {
         "--compact"
     )
     $existingPreviewMetadata = Get-JsonResult $existingPreviewResult
+    $existingBatchPreviewResult = Invoke-WinQStepPython @(
+        "scripts\run_existing_input_batch.py",
+        "--config", (Resolve-WinQStepPath "examples\winqstep.config.example.json"),
+        "--input", (Resolve-WinQStepPath "tests\fixtures\quickstep_energy.inp"),
+        "--job-dir", (Resolve-WinQStepPath "outputs\gui-existing-batch-smoke"),
+        "--prepare-only",
+        "--compact"
+    )
+    $existingBatchPreviewSummary = Get-JsonResult $existingBatchPreviewResult
     $historySmokeDir = Resolve-WinQStepPath "outputs\gui-history-smoke"
     [System.IO.Directory]::CreateDirectory($historySmokeDir) | Out-Null
     $historyMetadataPath = Join-Path $historySmokeDir "history_smoke.winqstep.json"
@@ -4048,6 +4505,15 @@ if ($SmokeTest) {
         $historyJobs = @($history.jobs)
     }
     $window.FindName("ExistingInputModeRadio").IsChecked = $true
+    [System.Windows.Forms.Application]::DoEvents()
+    $existingModeInputEnabled = [bool]$window.FindName("ExistingInputPathBox").IsEnabled
+    $existingModeImportEnabled = [bool]$window.FindName("ImportButton").IsEnabled
+    $window.FindName("ExistingInputBatchModeRadio").IsChecked = $true
+    [System.Windows.Forms.Application]::DoEvents()
+    $batchModeInputEnabled = [bool]$window.FindName("ExistingInputPathBox").IsEnabled
+    $batchModeImportEnabled = [bool]$window.FindName("ImportButton").IsEnabled
+    $batchModeStopOnFailureEnabled = [bool]$window.FindName("BatchStopOnFailureBox").IsEnabled
+    $batchModeLabelText = [string]$window.FindName("ExistingInputPathLabel").Text
     $configWorkspace = [string]$window.FindName("DefaultWorkspaceBox").Text
     $report["xaml_loaded"] = ($window -is [System.Windows.Window])
     $report["title"] = $window.Title
@@ -4236,12 +4702,23 @@ if ($SmokeTest) {
     $report["existing_preview_summary_status"] = $existingPreviewMetadata.cp2k_output.status
     $report["existing_preview_input_path"] = [string]$existingPreviewMetadata.files.input.path
     $report["existing_preview_path_encoding_ok"] = ([string]$existingPreviewMetadata.files.input.path).Contains($chineseFolderName)
+    $report["existing_batch_preview_exit_code"] = $existingBatchPreviewResult.ExitCode
+    $report["existing_batch_preview_mode"] = $existingBatchPreviewSummary.mode
+    $report["existing_batch_preview_status"] = $existingBatchPreviewSummary.status
+    $report["existing_batch_preview_item_count"] = $existingBatchPreviewSummary.item_count
+    $report["existing_batch_preview_summary_exists"] = [System.IO.File]::Exists([string]$existingBatchPreviewSummary.summary_path)
     $report["history_exit_code"] = $historyResult.ExitCode
     $report["history_job_count"] = $historyJobs.Count
     $report["history_first_mode"] = if ($historyJobs.Count -gt 0) { [string]$historyJobs[0].mode } else { "" }
     $report["history_first_warning_count"] = if ($historyJobs.Count -gt 0) { $historyJobs[0].warning_count } else { $null }
-    $report["existing_mode_input_enabled"] = [bool]$window.FindName("ExistingInputPathBox").IsEnabled
-    $report["existing_mode_import_enabled"] = [bool]$window.FindName("ImportButton").IsEnabled
+    $report["existing_mode_input_enabled"] = $existingModeInputEnabled
+    $report["existing_mode_import_enabled"] = $existingModeImportEnabled
+    $report["existing_input_batch_mode_loaded"] = ($window.FindName("ExistingInputBatchModeRadio") -is [System.Windows.Controls.RadioButton])
+    $report["batch_stop_on_failure_loaded"] = ($window.FindName("BatchStopOnFailureBox") -is [System.Windows.Controls.CheckBox])
+    $report["batch_mode_input_enabled"] = $batchModeInputEnabled
+    $report["batch_mode_import_enabled"] = $batchModeImportEnabled
+    $report["batch_mode_stop_on_failure_enabled"] = $batchModeStopOnFailureEnabled
+    $report["batch_mode_label_text"] = $batchModeLabelText
     $report | ConvertTo-Json -Depth 5
     exit 0
 }

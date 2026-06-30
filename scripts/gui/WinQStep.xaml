@@ -84,10 +84,12 @@
         </Grid.RowDefinitions>
 
         <TextBlock x:Name="ModeLabel" Grid.Row="0" Grid.Column="0" Text="Mode"/>
-        <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Margin="6,4">
+        <WrapPanel Grid.Row="0" Grid.Column="1" Margin="6,4">
           <RadioButton x:Name="WorkflowModeRadio" Content="Workflow" GroupName="JobMode" IsChecked="True" Margin="0,0,18,0"/>
-          <RadioButton x:Name="ExistingInputModeRadio" Content="Existing input" GroupName="JobMode"/>
-        </StackPanel>
+          <RadioButton x:Name="ExistingInputModeRadio" Content="Existing input" GroupName="JobMode" Margin="0,0,18,0"/>
+          <RadioButton x:Name="ExistingInputBatchModeRadio" Content="Existing input batch" GroupName="JobMode" Margin="0,0,18,0"/>
+          <CheckBox x:Name="BatchStopOnFailureBox" Content="Stop on failure"/>
+        </WrapPanel>
 
         <TextBlock x:Name="ConfigPathLabel" Grid.Row="1" Grid.Column="0" Text="Config"/>
         <TextBox x:Name="ConfigPathBox" Grid.Row="1" Grid.Column="1"/>

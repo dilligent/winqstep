@@ -37,6 +37,7 @@ class RunChecksTests(unittest.TestCase):
         names = [check["name"] for check in plan]
 
         self.assertIn("gui-button-smoke-offline", names)
+        self.assertIn("gui-batch-smoke-offline", names)
         self.assertIn("launcher-plan", names)
         self.assertIn("release-install-smoke", names)
         self.assertIn("release-candidate-walkthrough", names)

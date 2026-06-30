@@ -100,11 +100,13 @@ same scripts used by tests:
 
 - `Detect`: `scripts/detect_environment.py`
 - `Import`: `scripts/import_structure.py`
-- `Preview`: `scripts/run_workflow.py --prepare-only` or
-  `scripts/run_existing_input.py --prepare-only`
-- `Run`: starts `scripts/run_workflow.py` or `scripts/run_existing_input.py`
-  in a background process
-- Preflight before `Preview` or `Run`: `scripts/validate_job_inputs.py`
+- `Preview`: `scripts/run_workflow.py --prepare-only`,
+  `scripts/run_existing_input.py --prepare-only`, or
+  `scripts/run_existing_input_batch.py --prepare-only`
+- `Run`: starts `scripts/run_workflow.py`, `scripts/run_existing_input.py`, or
+  `scripts/run_existing_input_batch.py` in a background process
+- Preflight before workflow/single-input `Preview` or `Run`:
+  `scripts/validate_job_inputs.py`
 - `Stop`: requests cancellation for the running background job
 - `History`: `scripts/list_job_history.py`
 - `Load Config` and `Save Config`: `scripts/manage_config.py`
@@ -123,6 +125,15 @@ The main tab order follows the common workflow path: `Config`, `Environment`,
 and immediately inspect the generated CP2K input without crossing diagnostic
 tabs. They remain separate tabs to keep the editable template grid and editable
 input text pane from competing for vertical space.
+
+The top `Mode` selector supports three paths:
+
+- `Workflow`: generate a QuickStep input from Template and Structure.
+- `Existing input`: run one user-provided CP2K `.inp` file.
+- `Existing input batch`: scan a selected folder of `.inp` files, prepare a
+  serial batch summary, and run the batch through the existing-input runner.
+  The same input path box is reused for a folder path; UTF-8 input-list files
+  can still be typed manually.
 
 The GUI does not parse or generate CP2K input itself. It displays JSON, rendered
 input text, job metadata, and CP2K output summaries produced by the core
