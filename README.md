@@ -109,9 +109,11 @@ If `WinQStep.exe` is not present, open the same GUI with:
 .\WinQStep.ps1
 ```
 
-The sample config in `examples/winqstep.config.json` defaults job output to the
-relative `outputs` folder inside the current WinQStep directory. Edit it from
-the GUI `Config` tab or with `scripts/manage_config.py` for your own CP2K paths.
+The tracked sample config in `examples/winqstep.config.example.json` defaults
+job output to the relative `outputs` folder inside the current WinQStep
+directory. The GUI creates an ignored local working copy at
+`examples/winqstep.config.json` on first launch; edit that local copy from the
+GUI `Config` tab or with `scripts/manage_config.py` for your own CP2K paths.
 
 If startup diagnostics report that `python`, `powershell`, WPF/.NET desktop
 assemblies, `wsl.exe`, the CP2K command, or the CP2K data directory cannot be
@@ -142,38 +144,41 @@ Run it from Windows so it can call `wsl.exe`.
 For machine-specific settings, use the sample config:
 
 ```powershell
-python .\scripts\detect_environment.py --config .\examples\winqstep.config.json
+python .\scripts\detect_environment.py --config .\examples\winqstep.config.example.json
 ```
 
-To validate or rewrite that config with stable UTF-8 JSON:
+To validate the tracked sample config with stable UTF-8 JSON:
 
 ```powershell
-python .\scripts\manage_config.py --config .\examples\winqstep.config.json --require-execution
+python .\scripts\manage_config.py --config .\examples\winqstep.config.example.json --require-execution
 ```
 
-To validate or rewrite a workflow template:
+To validate the tracked sample workflow template:
 
 ```powershell
-python .\scripts\manage_template.py --template .\examples\templates\energy_pbe.json
+python .\scripts\manage_template.py --template .\examples\templates\energy_pbe.example.json
 ```
+
+For editable work, use the ignored local files created by the GUI:
+`examples/winqstep.config.json` and `examples/templates/energy_pbe.json`.
 
 To preflight-check a workflow template and structure before previewing or
 running CP2K:
 
 ```powershell
-python .\scripts\validate_job_inputs.py --mode workflow --config .\examples\winqstep.config.json --template .\examples\templates\energy_pbe.json --structure .\tests\fixtures\structures\water.xyz
+python .\scripts\validate_job_inputs.py --mode workflow --config .\examples\winqstep.config.example.json --template .\examples\templates\energy_pbe.example.json --structure .\tests\fixtures\structures\water.xyz
 ```
 
 To inspect configured CP2K basis and potential labels:
 
 ```powershell
-python .\scripts\inspect_cp2k_data.py --config .\examples\winqstep.config.json
+python .\scripts\inspect_cp2k_data.py --config .\examples\winqstep.config.example.json
 ```
 
 To preview the WSL command for a future CP2K job without running it:
 
 ```powershell
-python .\scripts\build_job_dry_run.py --config .\examples\winqstep.config.json --input D:\path\to\water.inp
+python .\scripts\build_job_dry_run.py --config .\examples\winqstep.config.example.json --input D:\path\to\water.inp
 ```
 
 To render a conservative QuickStep input from JSON:
@@ -191,7 +196,7 @@ python .\scripts\import_structure.py --input .\tests\fixtures\structures\water.x
 To combine a structure file with a calculation template and run CP2K:
 
 ```powershell
-python .\scripts\run_workflow.py --config .\examples\winqstep.config.json --template .\examples\templates\energy_pbe.json --structure .\tests\fixtures\structures\water.xyz --job-dir .\outputs\workflow-energy
+python .\scripts\run_workflow.py --config .\examples\winqstep.config.example.json --template .\examples\templates\energy_pbe.example.json --structure .\tests\fixtures\structures\water.xyz --job-dir .\outputs\workflow-energy
 ```
 
 To open the Windows GUI prototype:
@@ -231,13 +236,13 @@ access to the current job's input, output, metadata, stdout, and stderr files.
 To render and run a minimal QuickStep job through WSL/CP2K:
 
 ```powershell
-python .\scripts\run_quickstep_job.py --config .\examples\winqstep.config.json --input-json .\examples\quickstep_energy.json --job-dir .\outputs\smoke-energy
+python .\scripts\run_quickstep_job.py --config .\examples\winqstep.config.example.json --input-json .\examples\quickstep_energy.json --job-dir .\outputs\smoke-energy
 ```
 
 To run an existing CP2K input file without regenerating it:
 
 ```powershell
-python .\scripts\run_existing_input.py --config .\examples\winqstep.config.json --input D:\path\to\job.inp --job-dir .\outputs\existing-job
+python .\scripts\run_existing_input.py --config .\examples\winqstep.config.example.json --input D:\path\to\job.inp --job-dir .\outputs\existing-job
 ```
 
 Completed jobs include a compact `cp2k_output` summary in metadata with warning

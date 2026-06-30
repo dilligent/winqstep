@@ -7,20 +7,20 @@ lower-level job command.
 ## Command
 
 ```powershell
-python .\scripts\run_workflow.py --config .\examples\winqstep.config.json --template .\examples\templates\energy_pbe.json --structure .\tests\fixtures\structures\water.xyz --job-dir .\outputs\workflow-energy
+python .\scripts\run_workflow.py --config .\examples\winqstep.config.example.json --template .\examples\templates\energy_pbe.example.json --structure .\tests\fixtures\structures\water.xyz --job-dir .\outputs\workflow-energy
 ```
 
 Use `--prepare-only` to generate the input and metadata without starting CP2K:
 
 ```powershell
-python .\scripts\run_workflow.py --config .\examples\winqstep.config.json --template .\examples\templates\energy_pbe.json --structure .\tests\fixtures\structures\water.xyz --job-dir .\outputs\workflow-preview --prepare-only
+python .\scripts\run_workflow.py --config .\examples\winqstep.config.example.json --template .\examples\templates\energy_pbe.example.json --structure .\tests\fixtures\structures\water.xyz --job-dir .\outputs\workflow-preview --prepare-only
 ```
 
 Use preflight validation to check the same workflow inputs before rendering or
 running:
 
 ```powershell
-python .\scripts\validate_job_inputs.py --mode workflow --config .\examples\winqstep.config.json --template .\examples\templates\energy_pbe.json --structure .\tests\fixtures\structures\water.xyz
+python .\scripts\validate_job_inputs.py --mode workflow --config .\examples\winqstep.config.example.json --template .\examples\templates\energy_pbe.example.json --structure .\tests\fixtures\structures\water.xyz
 ```
 
 The preflight command reports missing KIND coverage as errors. If a CP2K data
@@ -103,7 +103,7 @@ Use `scripts/manage_template.py` to validate or rewrite template files with
 stable UTF-8 JSON:
 
 ```powershell
-python .\scripts\manage_template.py --template .\examples\templates\energy_pbe.json
+python .\scripts\manage_template.py --template .\examples\templates\energy_pbe.example.json
 ```
 
 The GUI `Template` tab uses the same command. It exposes project name, run type,

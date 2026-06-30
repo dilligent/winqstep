@@ -17,8 +17,8 @@ STRUCTURES = ROOT / "tests" / "fixtures" / "structures"
 
 class WorkflowTests(unittest.TestCase):
     def setUp(self) -> None:
-        self.config = load_json_file(ROOT / "examples" / "winqstep.config.json")
-        self.template = load_json_file(ROOT / "examples" / "templates" / "energy_pbe.json")
+        self.config = load_json_file(ROOT / "examples" / "winqstep.config.example.json")
+        self.template = load_json_file(ROOT / "examples" / "templates" / "energy_pbe.example.json")
 
     def test_builds_quickstep_data_from_xyz_and_template(self) -> None:
         imported = import_structure(STRUCTURES / "water.xyz")
@@ -67,7 +67,7 @@ class WorkflowTests(unittest.TestCase):
 
     def test_builds_cell_opt_workflow_data(self) -> None:
         imported = import_structure(STRUCTURES / "POSCAR")
-        template = load_json_file(ROOT / "examples" / "templates" / "energy_pbe.json")
+        template = load_json_file(ROOT / "examples" / "templates" / "energy_pbe.example.json")
         template["run_type"] = "CELL_OPT"
         template["cell_opt"] = {
             "optimizer": "BFGS",
@@ -149,9 +149,9 @@ class WorkflowTests(unittest.TestCase):
                     sys.executable,
                     str(ROOT / "scripts" / "run_workflow.py"),
                     "--config",
-                    str(ROOT / "examples" / "winqstep.config.json"),
+                    str(ROOT / "examples" / "winqstep.config.example.json"),
                     "--template",
-                    str(ROOT / "examples" / "templates" / "energy_pbe.json"),
+                    str(ROOT / "examples" / "templates" / "energy_pbe.example.json"),
                     "--structure",
                     str(STRUCTURES / "water.xyz"),
                     "--job-dir",

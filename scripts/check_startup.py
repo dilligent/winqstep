@@ -42,8 +42,8 @@ REQUIRED_FILES = (
     "scripts/inspect_cp2k_data.py",
     "scripts/validate_job_inputs.py",
     "scripts/mark_job_cancelled.py",
-    "examples/winqstep.config.json",
-    "examples/templates/energy_pbe.json",
+    "examples/winqstep.config.example.json",
+    "examples/templates/energy_pbe.example.json",
     "tests/fixtures/structures/water.xyz",
     "tests/fixtures/quickstep_energy.inp",
 )
@@ -55,6 +55,9 @@ RELEASE_EXCLUSION_PATTERNS = (
     "/build/",
     "/dist/",
     "/cp2k-*/",
+    "/examples/winqstep.config.json",
+    "/examples/templates/energy_pbe.json",
+    "/examples/templates/*.local.json",
     "*.winqstep-cache.json",
     "__pycache__/",
     "*.py[cod]",
@@ -314,7 +317,7 @@ def main() -> int:
 
     parser = argparse.ArgumentParser(description="Check WinQStep startup prerequisites.")
     parser.add_argument("--repo-root", default=str(Path(__file__).resolve().parents[1]))
-    parser.add_argument("--config", default="examples/winqstep.config.json")
+    parser.add_argument("--config", default="examples/winqstep.config.example.json")
     parser.add_argument("--timeout", type=int, default=20)
     parser.add_argument("--skip-live-probes", action="store_true")
     parser.add_argument("--compact", action="store_true", help="Emit compact JSON.")

@@ -15,7 +15,7 @@ FIXTURE_INPUT = ROOT / "tests" / "fixtures" / "quickstep_energy.inp"
 
 class ExistingInputRunnerTests(unittest.TestCase):
     def setUp(self) -> None:
-        self.config = load_json_file(ROOT / "examples" / "winqstep.config.json")
+        self.config = load_json_file(ROOT / "examples" / "winqstep.config.example.json")
 
     def test_prepare_only_uses_existing_input_without_rewriting_it(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -168,7 +168,7 @@ class ExistingInputRunnerTests(unittest.TestCase):
                     sys.executable,
                     str(ROOT / "scripts" / "run_existing_input.py"),
                     "--config",
-                    str(ROOT / "examples" / "winqstep.config.json"),
+                    str(ROOT / "examples" / "winqstep.config.example.json"),
                     "--input",
                     str(input_path),
                     "--job-dir",

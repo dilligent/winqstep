@@ -53,9 +53,14 @@ class StartupDiagnosticsTests(unittest.TestCase):
         self.assertTrue(required["scripts/gui/WinQStep.xaml"])
         self.assertTrue(required["resources/i18n/en-US.json"])
         self.assertTrue(required["resources/i18n/zh-CN.json"])
+        self.assertTrue(required["examples/winqstep.config.example.json"])
+        self.assertTrue(required["examples/templates/energy_pbe.example.json"])
         exclusions = {item["pattern"]: item["present"] for item in payload["checks"]["release_exclusions"]}
         self.assertTrue(exclusions["/outputs/"])
         self.assertTrue(exclusions["/WinQStep.exe"])
+        self.assertTrue(exclusions["/examples/winqstep.config.json"])
+        self.assertTrue(exclusions["/examples/templates/energy_pbe.json"])
+        self.assertTrue(exclusions["/examples/templates/*.local.json"])
         self.assertTrue(exclusions["*.winqstep-cache.json"])
         self.assertTrue(exclusions["/cp2k-*/"])
 

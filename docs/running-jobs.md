@@ -6,7 +6,7 @@ CP2K through WSL, and write metadata that records what happened.
 ## Command
 
 ```powershell
-python .\scripts\run_quickstep_job.py --config .\examples\winqstep.config.json --input-json .\examples\quickstep_energy.json --job-dir .\outputs\smoke-energy
+python .\scripts\run_quickstep_job.py --config .\examples\winqstep.config.example.json --input-json .\examples\quickstep_energy.json --job-dir .\outputs\smoke-energy
 ```
 
 The command writes:
@@ -30,7 +30,7 @@ mix old output into a new result.
 Use `--prepare-only` to write input and metadata without launching CP2K:
 
 ```powershell
-python .\scripts\run_quickstep_job.py --config .\examples\winqstep.config.json --input-json .\examples\quickstep_energy.json --job-dir .\outputs\prepared --prepare-only
+python .\scripts\run_quickstep_job.py --config .\examples\winqstep.config.example.json --input-json .\examples\quickstep_energy.json --job-dir .\outputs\prepared --prepare-only
 ```
 
 This is useful for UI previews and command inspection.

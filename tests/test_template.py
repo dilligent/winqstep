@@ -10,7 +10,7 @@ from winqstep.template import load_template, merge_template_fields, save_templat
 
 
 ROOT = Path(__file__).resolve().parents[1]
-ENERGY_TEMPLATE = ROOT / "examples" / "templates" / "energy_pbe.json"
+ENERGY_TEMPLATE = ROOT / "examples" / "templates" / "energy_pbe.example.json"
 CELL_OPT_TEMPLATE = ROOT / "examples" / "templates" / "cell_opt_pbe.json"
 
 

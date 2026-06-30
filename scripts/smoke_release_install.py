@@ -42,8 +42,8 @@ REQUIRED_UNPACKED_FILES = (
     "scripts/gui/WinQStep.xaml",
     "resources/i18n/en-US.json",
     "resources/i18n/zh-CN.json",
-    "examples/winqstep.config.json",
-    "examples/templates/energy_pbe.json",
+    "examples/winqstep.config.example.json",
+    "examples/templates/energy_pbe.example.json",
     "tests/fixtures/quickstep_energy.inp",
 )
 

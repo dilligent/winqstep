@@ -60,7 +60,7 @@ The Linux command should:
 The current command builder emits JSON metadata without starting CP2K:
 
 ```powershell
-python .\scripts\build_job_dry_run.py --config .\examples\winqstep.config.json --input D:\path\to\water.inp
+python .\scripts\build_job_dry_run.py --config .\examples\winqstep.config.example.json --input D:\path\to\water.inp
 ```
 
 The `--input` value must be an absolute Windows drive path because this helper

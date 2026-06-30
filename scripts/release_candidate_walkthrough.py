@@ -68,7 +68,7 @@ def run_walkthrough(
     workspace = workspace.resolve()
     workspace.mkdir(parents=True, exist_ok=True)
 
-    config = repo_root / "examples" / "winqstep.config.json"
+    config = repo_root / "examples" / "winqstep.config.example.json"
     energy_force_template = repo_root / "examples" / "templates" / "energy_force_pbe.json"
     structure = repo_root / "tests" / "fixtures" / "structures" / "water.xyz"
     existing_input = repo_root / "tests" / "fixtures" / "quickstep_energy_force.inp"

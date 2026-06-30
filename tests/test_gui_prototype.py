@@ -15,12 +15,12 @@ ROOT = Path(__file__).resolve().parents[1]
 class GuiPrototypeTests(unittest.TestCase):
     @staticmethod
     def _example_config_language() -> str:
-        payload = json.loads((ROOT / "examples" / "winqstep.config.json").read_text(encoding="utf-8"))
+        payload = json.loads((ROOT / "examples" / "winqstep.config.example.json").read_text(encoding="utf-8"))
         return str(payload.get("ui_language") or "")
 
     @staticmethod
     def _example_template() -> dict[str, object]:
-        return load_template(ROOT / "examples" / "templates" / "energy_pbe.json")
+        return load_template(ROOT / "examples" / "templates" / "energy_pbe.example.json")
 
     @staticmethod
     def _template_vector_text(value: object) -> str:

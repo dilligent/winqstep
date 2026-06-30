@@ -8,14 +8,14 @@ metadata.
 ## Command
 
 ```powershell
-python .\scripts\run_existing_input.py --config .\examples\winqstep.config.json --input D:\path\to\job.inp --job-dir .\outputs\existing-job
+python .\scripts\run_existing_input.py --config .\examples\winqstep.config.example.json --input D:\path\to\job.inp --job-dir .\outputs\existing-job
 ```
 
 Use `--prepare-only` to validate paths and write metadata without starting
 CP2K:
 
 ```powershell
-python .\scripts\run_existing_input.py --config .\examples\winqstep.config.json --input D:\path\to\job.inp --job-dir .\outputs\existing-job --prepare-only
+python .\scripts\run_existing_input.py --config .\examples\winqstep.config.example.json --input D:\path\to\job.inp --job-dir .\outputs\existing-job --prepare-only
 ```
 
 The command writes output files in the job folder using the input file stem:

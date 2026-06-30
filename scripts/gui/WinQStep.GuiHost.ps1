@@ -177,8 +177,8 @@ function Test-WinQStepGuiPrerequisites {
         "scripts\inspect_cp2k_data.py",
         "scripts\validate_job_inputs.py",
         "scripts\mark_job_cancelled.py",
-        "examples\winqstep.config.json",
-        "examples\templates\energy_pbe.json",
+        "examples\winqstep.config.example.json",
+        "examples\templates\energy_pbe.example.json",
         "tests\fixtures\structures\water.xyz",
         "tests\fixtures\quickstep_energy.inp"
     )
@@ -251,7 +251,7 @@ function Invoke-WinQStepStartupDiagnostics {
 
     $arguments = @(
         "scripts\check_startup.py",
-        "--config", "examples\winqstep.config.json",
+        "--config", "examples\winqstep.config.example.json",
         "--compact"
     )
     if ($SkipLive) {

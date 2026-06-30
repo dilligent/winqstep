@@ -6,7 +6,9 @@ environment.
 
 ## Example
 
-See `examples/winqstep.config.json`.
+See `examples/winqstep.config.example.json` for the tracked sample. The GUI
+creates an ignored local copy at `examples/winqstep.config.json` on first
+launch, and that local copy is the intended target for machine-specific edits.
 
 ```json
 {
@@ -24,13 +26,13 @@ See `examples/winqstep.config.json`.
 ## Usage
 
 ```powershell
-python .\scripts\detect_environment.py --config .\examples\winqstep.config.json
+python .\scripts\detect_environment.py --config .\examples\winqstep.config.example.json
 ```
 
 Command-line arguments override config values:
 
 ```powershell
-python .\scripts\detect_environment.py --config .\examples\winqstep.config.json --cp2k-command /usr/local/bin/cp2k.ssmp
+python .\scripts\detect_environment.py --config .\examples\winqstep.config.example.json --cp2k-command /usr/local/bin/cp2k.ssmp
 ```
 
 The CLI emits JSON for scripting and diagnostics. In the GUI, the same probe
@@ -40,12 +42,13 @@ kept in `Job Log`.
 Round 11 adds a config management command used by the GUI:
 
 ```powershell
-python .\scripts\manage_config.py --config .\examples\winqstep.config.json --require-execution
+python .\scripts\manage_config.py --config .\examples\winqstep.config.example.json --require-execution
 ```
 
 It validates the JSON shape, rejects unknown keys, checks that CP2K execution
 fields are present when `--require-execution` is used, and emits normalized JSON
-with diagnostics. To rewrite a config with stable key order and UTF-8 text:
+with diagnostics. To rewrite the ignored local config with stable key order and
+UTF-8 text:
 
 ```powershell
 python .\scripts\manage_config.py --config .\examples\winqstep.config.json --write --fields-json "{\"distro\":\"Ubuntu\",\"cp2k_command\":\"/home/teng/cp2k/exe/local/cp2k.ssmp\",\"mpirun_command\":\"\",\"cp2k_data_dir\":\"/home/teng/cp2k/data\",\"default_windows_workspace\":\"outputs\",\"wsl_shell_prelude\":\"conda deactivate >/dev/null 2>&1 || true\",\"ui_language\":\"\",\"timeout\":\"20\"}"

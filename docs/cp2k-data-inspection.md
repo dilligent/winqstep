@@ -9,7 +9,7 @@ basis set and potential labels from files such as `BASIS_MOLOPT` and
 Inspect the configured WSL CP2K data directory:
 
 ```powershell
-python .\scripts\inspect_cp2k_data.py --config .\examples\winqstep.config.json
+python .\scripts\inspect_cp2k_data.py --config .\examples\winqstep.config.example.json
 ```
 
 By default, if the config contains `default_windows_workspace`, the command
@@ -22,8 +22,8 @@ cp2k-data.winqstep-cache.json
 Use an explicit cache path or disable cache writing:
 
 ```powershell
-python .\scripts\inspect_cp2k_data.py --config .\examples\winqstep.config.json --cache .\outputs\cp2k-data-cache.json
-python .\scripts\inspect_cp2k_data.py --config .\examples\winqstep.config.json --no-cache
+python .\scripts\inspect_cp2k_data.py --config .\examples\winqstep.config.example.json --cache .\outputs\cp2k-data-cache.json
+python .\scripts\inspect_cp2k_data.py --config .\examples\winqstep.config.example.json --no-cache
 ```
 
 For tests or local snapshots, inspect a Windows folder directly:

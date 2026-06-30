@@ -7,11 +7,13 @@ now be loaded, validated, and saved through a CLI and the GUI.
 ## CLI
 
 ```powershell
-python .\scripts\manage_template.py --template .\examples\templates\energy_pbe.json
+python .\scripts\manage_template.py --template .\examples\templates\energy_pbe.example.json
 ```
 
 The command emits normalized template JSON, editable `kinds_text`, and
-validation diagnostics. To write edited fields back to the template:
+validation diagnostics. The GUI creates an ignored local working template at
+`examples/templates/energy_pbe.json` on first launch. To write edited fields
+back to that local template:
 
 ```powershell
 python .\scripts\manage_template.py --template .\examples\templates\energy_pbe.json --write --fields-json "{\"project_name\":\"workflow_energy\",\"run_type\":\"ENERGY\",\"cutoff\":\"400\",\"max_scf\":\"50\",\"kinds_text\":\"H DZVP-MOLOPT-SR-GTH GTH-PBE-q1`nO DZVP-MOLOPT-SR-GTH GTH-PBE-q6\"}"

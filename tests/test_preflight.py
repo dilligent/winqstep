@@ -11,8 +11,8 @@ from winqstep.runner import load_json_file
 
 ROOT = Path(__file__).resolve().parents[1]
 STRUCTURE = ROOT / "tests" / "fixtures" / "structures" / "water.xyz"
-TEMPLATE = ROOT / "examples" / "templates" / "energy_pbe.json"
-CONFIG = ROOT / "examples" / "winqstep.config.json"
+TEMPLATE = ROOT / "examples" / "templates" / "energy_pbe.example.json"
+CONFIG = ROOT / "examples" / "winqstep.config.example.json"
 
 
 class PreflightTests(unittest.TestCase):

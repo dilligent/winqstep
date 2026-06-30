@@ -11,3 +11,6 @@ __pycache__/
 /build/
 /dist/
 /outputs/
+/examples/winqstep.config.json
+/examples/templates/energy_pbe.json
+/examples/templates/*.local.json

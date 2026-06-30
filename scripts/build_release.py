@@ -55,6 +55,9 @@ EXCLUDED_FILE_NAMES = {
 EXCLUDED_PATTERNS = (
     "*.py[cod]",
     "*.winqstep-cache.json",
+    "examples/winqstep.config.json",
+    "examples/templates/energy_pbe.json",
+    "examples/templates/*.local.json",
 )
 FIXED_ZIP_TIMESTAMP = (2026, 1, 1, 0, 0, 0)
 

@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 class RunnerTests(unittest.TestCase):
     def setUp(self) -> None:
-        self.config = load_json_file(ROOT / "examples" / "winqstep.config.json")
+        self.config = load_json_file(ROOT / "examples" / "winqstep.config.example.json")
         self.quickstep = load_json_file(ROOT / "examples" / "quickstep_energy.json")
 
     def test_safe_job_stem_removes_path_separators(self) -> None:

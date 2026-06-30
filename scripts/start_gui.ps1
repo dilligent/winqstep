@@ -35,9 +35,34 @@ $Script:StructurePreviewSmokeApplyInteraction = $null
 $Script:StructurePreviewSmokeGetState = $null
 
 . (Join-Path $PSScriptRoot "gui\WinQStep.GuiHost.ps1")
+
+function Ensure-WinQStepLocalExampleFile {
+    param(
+        [Parameter(Mandatory = $true)][string]$LocalRelativePath,
+        [Parameter(Mandatory = $true)][string]$ExampleRelativePath
+    )
+
+    $localPath = Resolve-WinQStepPath $LocalRelativePath
+    if (Test-Path -LiteralPath $localPath) {
+        return $localPath
+    }
+
+    $examplePath = Resolve-WinQStepPath $ExampleRelativePath
+    if (-not (Test-Path -LiteralPath $examplePath)) {
+        throw "Example file was not found: $examplePath"
+    }
+    $parent = Split-Path -Parent $localPath
+    if (-not [string]::IsNullOrWhiteSpace($parent)) {
+        [System.IO.Directory]::CreateDirectory($parent) | Out-Null
+    }
+    Copy-Item -LiteralPath $examplePath -Destination $localPath -Force
+    return $localPath
+}
+
 function New-WinQStepWindow {
     Add-WinQStepWpfAssemblies
-    $defaultConfigPath = Resolve-WinQStepPath "examples\winqstep.config.json"
+    $defaultConfigPath = Ensure-WinQStepLocalExampleFile "examples\winqstep.config.json" "examples\winqstep.config.example.json"
+    $defaultTemplatePath = Ensure-WinQStepLocalExampleFile "examples\templates\energy_pbe.json" "examples\templates\energy_pbe.example.json"
     $hasLanguageOverride = -not [string]::IsNullOrWhiteSpace($Script:RequestedLanguage)
     $initialLanguage = $Script:RequestedLanguage
     if ([string]::IsNullOrWhiteSpace($initialLanguage)) {
@@ -269,7 +294,7 @@ function New-WinQStepWindow {
     & $ApplyLocalizationToControls
 
     $controls["ConfigPathBox"].Text = $defaultConfigPath
-    $controls["TemplatePathBox"].Text = Resolve-WinQStepPath "examples\templates\energy_pbe.json"
+    $controls["TemplatePathBox"].Text = $defaultTemplatePath
     $controls["StructurePathBox"].Text = Resolve-WinQStepPath "tests\fixtures\structures\water.xyz"
     $controls["ExistingInputPathBox"].Text = Resolve-WinQStepPath "tests\fixtures\quickstep_energy.inp"
     $controls["JobDirBox"].Text = Resolve-WinQStepPath "outputs\gui-preview"
@@ -3059,7 +3084,7 @@ if ($PythonInvokeSmokeTest) {
     )
     $badFieldsResult = Invoke-WinQStepPython @(
         "scripts\manage_config.py",
-        "--config", (Resolve-WinQStepPath "examples\winqstep.config.json"),
+        "--config", (Resolve-WinQStepPath "examples\winqstep.config.example.json"),
         "--write",
         "--fields-json", "{bad}",
         "--compact"
@@ -3098,7 +3123,7 @@ if ($EnvironmentDisplaySmokeTest) {
     $window = New-WinQStepWindow
     $payload = ([ordered]@{
         generated_at = "2026-06-30T00:00:00Z"
-        config = [ordered]@{ path = "examples\winqstep.config.json" }
+        config = [ordered]@{ path = "examples\winqstep.config.example.json" }
         host = [ordered]@{
             system = "Windows"
             release = "11"
@@ -3224,8 +3249,8 @@ if ($EditedPreviewSmokeTest) {
     [System.IO.Directory]::CreateDirectory($smokeDir) | Out-Null
     $smokeConfigPath = Join-Path $smokeDir "edited_preview.config.json"
     $smokeTemplatePath = Join-Path $smokeDir "edited_preview.template.json"
-    [System.IO.File]::Copy((Resolve-WinQStepPath "examples\winqstep.config.json"), $smokeConfigPath, $true)
-    [System.IO.File]::Copy((Resolve-WinQStepPath "examples\templates\energy_pbe.json"), $smokeTemplatePath, $true)
+    [System.IO.File]::Copy((Resolve-WinQStepPath "examples\winqstep.config.example.json"), $smokeConfigPath, $true)
+    [System.IO.File]::Copy((Resolve-WinQStepPath "examples\templates\energy_pbe.example.json"), $smokeTemplatePath, $true)
     $window.FindName("ConfigPathBox").Text = $smokeConfigPath
     $window.FindName("TemplatePathBox").Text = $smokeTemplatePath
     $window.FindName("JobDirBox").Text = $smokeDir
@@ -3322,8 +3347,8 @@ if ($AsyncRunSmokeTest) {
     [System.IO.Directory]::CreateDirectory($smokeDir) | Out-Null
     $smokeConfigPath = Join-Path $smokeDir "async_run.config.json"
     $smokeTemplatePath = Join-Path $smokeDir "async_run.template.json"
-    [System.IO.File]::Copy((Resolve-WinQStepPath "examples\winqstep.config.json"), $smokeConfigPath, $true)
-    [System.IO.File]::Copy((Resolve-WinQStepPath "examples\templates\energy_pbe.json"), $smokeTemplatePath, $true)
+    [System.IO.File]::Copy((Resolve-WinQStepPath "examples\winqstep.config.example.json"), $smokeConfigPath, $true)
+    [System.IO.File]::Copy((Resolve-WinQStepPath "examples\templates\energy_pbe.example.json"), $smokeTemplatePath, $true)
     $window.FindName("ConfigPathBox").Text = $smokeConfigPath
     $window.FindName("TemplatePathBox").Text = $smokeTemplatePath
     $window.FindName("StructurePathBox").Text = Resolve-WinQStepPath "tests\fixtures\structures\water.xyz"
@@ -3436,8 +3461,8 @@ if ($ButtonSmokeTest) {
     [System.IO.Directory]::CreateDirectory($historySmokeDir) | Out-Null
     $smokeConfigPath = Join-Path $historySmokeDir "button_smoke.config.json"
     $smokeTemplatePath = Join-Path $historySmokeDir "button_smoke.template.json"
-    [System.IO.File]::Copy((Resolve-WinQStepPath "examples\winqstep.config.json"), $smokeConfigPath, $true)
-    [System.IO.File]::Copy((Resolve-WinQStepPath "examples\templates\energy_pbe.json"), $smokeTemplatePath, $true)
+    [System.IO.File]::Copy((Resolve-WinQStepPath "examples\winqstep.config.example.json"), $smokeConfigPath, $true)
+    [System.IO.File]::Copy((Resolve-WinQStepPath "examples\templates\energy_pbe.example.json"), $smokeTemplatePath, $true)
 
     $historyMetadataPath = Join-Path $historySmokeDir "button_history.winqstep.json"
     $historyInputPath = Join-Path $historySmokeDir "button_history.inp"
@@ -3807,6 +3832,13 @@ if ($ButtonSmokeTest) {
 if ($SmokeTest) {
     $report = Test-WinQStepGuiPrerequisites
     $window = New-WinQStepWindow
+    $window.FindName("ConfigPathBox").Text = Resolve-WinQStepPath "examples\winqstep.config.example.json"
+    $window.FindName("TemplatePathBox").Text = Resolve-WinQStepPath "examples\templates\energy_pbe.example.json"
+    foreach ($buttonName in @("LoadConfigButton", "LoadTemplateButton")) {
+        $eventArgs = [System.Windows.RoutedEventArgs]::new([System.Windows.Controls.Button]::ClickEvent)
+        $window.FindName($buttonName).RaiseEvent($eventArgs)
+        [System.Windows.Forms.Application]::DoEvents()
+    }
     $expectedEncodingText = "$([char]0x4e2d)$([char]0x6587)$([char]0x8def)$([char]0x5f84):D:\Library\$([char]0x81ea)$([char]0x5236)$([char]0x54c1)"
     $chineseFolderName = "$([char]0x81ea)$([char]0x5236)$([char]0x54c1)"
     $encodingProbeResult = Invoke-WinQStepPython @(
@@ -3816,8 +3848,8 @@ if ($SmokeTest) {
     $encodingProbe = Get-JsonResult $encodingProbeResult
     $previewResult = Invoke-WinQStepPython @(
         "scripts\run_workflow.py",
-        "--config", (Resolve-WinQStepPath "examples\winqstep.config.json"),
-        "--template", (Resolve-WinQStepPath "examples\templates\energy_pbe.json"),
+        "--config", (Resolve-WinQStepPath "examples\winqstep.config.example.json"),
+        "--template", (Resolve-WinQStepPath "examples\templates\energy_pbe.example.json"),
         "--structure", (Resolve-WinQStepPath "tests\fixtures\structures\water.xyz"),
         "--job-dir", (Resolve-WinQStepPath "outputs\gui-smoke"),
         "--project-name", "gui_smoke",
@@ -3827,7 +3859,7 @@ if ($SmokeTest) {
     $previewMetadata = Get-JsonResult $previewResult
     $existingPreviewResult = Invoke-WinQStepPython @(
         "scripts\run_existing_input.py",
-        "--config", (Resolve-WinQStepPath "examples\winqstep.config.json"),
+        "--config", (Resolve-WinQStepPath "examples\winqstep.config.example.json"),
         "--input", (Resolve-WinQStepPath "tests\fixtures\quickstep_energy.inp"),
         "--job-dir", (Resolve-WinQStepPath "outputs\gui-existing-smoke"),
         "--prepare-only",

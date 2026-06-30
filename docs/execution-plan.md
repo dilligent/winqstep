@@ -31,8 +31,9 @@ Each round should end with a focused commit.
   `DFT/&XC` PBE parametrization plus DFT-D3 support, and hierarchical Template
   section display with escaped CP2K underscores in GUI headers, and CP2K-tree
   ordering for Template section groups, and a Template tab hyperlink to the
-  CP2K INPUT manual.
-- Next active round: Round 61, expand QuickStep coverage from the next selected
+  CP2K INPUT manual, and separated tracked example JSON files from ignored
+  local config/template working copies.
+- Next active round: Round 62, expand QuickStep coverage from the next selected
   CP2K feature area.
 - Known local facts:
   - WSL2 is available.
@@ -58,7 +59,8 @@ only from auto-detection.
 
 Tasks:
 
-- Add a repo-local sample config, such as `examples/winqstep.config.json`.
+- Add a repo-local sample config, now tracked as
+  `examples/winqstep.config.example.json`.
 - Teach `scripts/detect_environment.py` to read a config file.
 - Support config keys for `distro`, `cp2k_command`, `mpirun_command`,
   `cp2k_data_dir`, a default Windows workspace folder, and a WSL shell prelude.
@@ -2076,6 +2078,39 @@ Acceptance:
 Commit boundary:
 
 - One commit for the Template manual hyperlink, event handling, tests, and docs.
+
+## Round 61: Local Config and Template Copies
+
+Status: implemented.
+
+Goal: stop normal GUI edits from dirtying Git by separating tracked example JSON
+files from ignored local working copies.
+
+Tasks:
+
+- Add tracked canonical files `examples/winqstep.config.example.json` and
+  `examples/templates/energy_pbe.example.json`.
+- Keep `examples/winqstep.config.json` and
+  `examples/templates/energy_pbe.json` as ignored local working copies.
+- Have the GUI create the local copies from tracked examples on first launch.
+- Move tests, startup checks, diagnostics, and release smoke checks to the
+  tracked `.example.json` files.
+- Exclude local copies from source release archives even if they exist in a
+  developer working tree.
+- Update docs to distinguish tracked samples from editable local copies.
+
+Acceptance:
+
+- Editing/saving the GUI Config or Template defaults no longer changes tracked
+  files.
+- Fast and release checks use deterministic tracked examples.
+- Source releases include `.example.json` samples and exclude local working
+  copies.
+
+Commit boundary:
+
+- One commit for local-copy bootstrap, ignore/release rules, reference updates,
+  tests, and docs.
 
 ## Working Rules
 
