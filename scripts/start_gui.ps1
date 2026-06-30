@@ -3924,9 +3924,18 @@ if ($SmokeTest) {
         "TemplateMixingGroup", "TemplateSmearingGroup", "TemplateGeoOptGroup", "TemplateCellOptGroup",
         "TemplateCellGroup", "TemplateKpointsGroup", "TemplateKindGroup"
     )
+    $GetTemplateSectionHeaderText = {
+        param([Parameter(Mandatory = $true)][string]$Name)
+        $header = $window.FindName($Name).Header
+        if ($header -is [System.Windows.Controls.TextBlock]) {
+            return [string]$header.Text
+        }
+        return ([string]$header).Replace("__", "_")
+    }
     $report["template_tab_loaded"] = ($window.FindName("TemplateProjectBox") -is [System.Windows.Controls.ComboBox])
     $report["template_section_groups_loaded"] = $templateSectionGroupNames.Where({ $window.FindName($_) -is [System.Windows.Controls.GroupBox] }).Count
-    $report["template_section_group_headers"] = @($templateSectionGroupNames | ForEach-Object { [string]$window.FindName($_).Header })
+    $report["template_section_group_headers"] = @($templateSectionGroupNames | ForEach-Object { & $GetTemplateSectionHeaderText $_ })
+    $report["template_section_group_left_margins"] = @($templateSectionGroupNames | ForEach-Object { [int]$window.FindName($_).Margin.Left })
     $report["template_combo_fields_loaded"] = $templateComboNames.Where({ $window.FindName($_) -is [System.Windows.Controls.ComboBox] }).Count
     $report["template_combo_fields_editable"] = $templateComboNames.Where({ [bool]$window.FindName($_).IsEditable }).Count
     $report["template_run_type_options"] = @($window.FindName("TemplateRunTypeBox").Items | ForEach-Object { [string]$_.Content })

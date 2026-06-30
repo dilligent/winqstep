@@ -22,6 +22,15 @@
       <Setter Property="BorderBrush" Value="#C7D2DE"/>
       <Setter Property="Background" Value="#FAFBFC"/>
     </Style>
+    <Style x:Key="TemplateSectionLevel1GroupBoxStyle" TargetType="GroupBox" BasedOn="{StaticResource TemplateSectionGroupBoxStyle}">
+      <Setter Property="Margin" Value="18,6,0,2"/>
+    </Style>
+    <Style x:Key="TemplateSectionLevel2GroupBoxStyle" TargetType="GroupBox" BasedOn="{StaticResource TemplateSectionGroupBoxStyle}">
+      <Setter Property="Margin" Value="36,6,0,2"/>
+    </Style>
+    <Style x:Key="TemplateSectionLevel3GroupBoxStyle" TargetType="GroupBox" BasedOn="{StaticResource TemplateSectionGroupBoxStyle}">
+      <Setter Property="Margin" Value="54,6,0,2"/>
+    </Style>
   </Window.Resources>
   <ScrollViewer x:Name="MainScrollViewer"
                 VerticalScrollBarVisibility="Auto"
@@ -249,7 +258,7 @@
             </Grid>
           </GroupBox>
 
-          <GroupBox x:Name="TemplateDftGroup" Header="&amp;FORCE_EVAL / &amp;DFT" Style="{StaticResource TemplateSectionGroupBoxStyle}">
+          <GroupBox x:Name="TemplateDftGroup" Header="&amp;FORCE__EVAL / &amp;DFT" Style="{StaticResource TemplateSectionLevel1GroupBoxStyle}">
             <Grid>
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="150"/>
@@ -315,7 +324,7 @@
             </Grid>
           </GroupBox>
 
-          <GroupBox x:Name="TemplateXcGroup" Header="&amp;FORCE_EVAL / &amp;DFT / &amp;XC" Style="{StaticResource TemplateSectionGroupBoxStyle}">
+          <GroupBox x:Name="TemplateXcGroup" Header="&amp;FORCE__EVAL / &amp;DFT / &amp;XC" Style="{StaticResource TemplateSectionLevel2GroupBoxStyle}">
             <Grid>
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="150"/>
@@ -368,7 +377,7 @@
             </Grid>
           </GroupBox>
 
-          <GroupBox x:Name="TemplateScfGroup" Header="&amp;FORCE_EVAL / &amp;DFT / &amp;SCF" Style="{StaticResource TemplateSectionGroupBoxStyle}">
+          <GroupBox x:Name="TemplateScfGroup" Header="&amp;FORCE__EVAL / &amp;DFT / &amp;SCF" Style="{StaticResource TemplateSectionLevel2GroupBoxStyle}">
             <Grid>
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="150"/>
@@ -440,7 +449,7 @@
             </Grid>
           </GroupBox>
 
-          <GroupBox x:Name="TemplateOuterScfGroup" Header="&amp;FORCE_EVAL / &amp;DFT / &amp;SCF / &amp;OUTER_SCF" Style="{StaticResource TemplateSectionGroupBoxStyle}">
+          <GroupBox x:Name="TemplateOuterScfGroup" Header="&amp;FORCE__EVAL / &amp;DFT / &amp;SCF / &amp;OUTER__SCF" Style="{StaticResource TemplateSectionLevel3GroupBoxStyle}">
             <Grid>
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="150"/>
@@ -471,7 +480,7 @@
             </Grid>
           </GroupBox>
 
-          <GroupBox x:Name="TemplateMixingGroup" Header="&amp;FORCE_EVAL / &amp;DFT / &amp;SCF / &amp;MIXING" Style="{StaticResource TemplateSectionGroupBoxStyle}">
+          <GroupBox x:Name="TemplateMixingGroup" Header="&amp;FORCE__EVAL / &amp;DFT / &amp;SCF / &amp;MIXING" Style="{StaticResource TemplateSectionLevel3GroupBoxStyle}">
             <Grid>
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="150"/>
@@ -512,7 +521,7 @@
             </Grid>
           </GroupBox>
 
-          <GroupBox x:Name="TemplateSmearingGroup" Header="&amp;FORCE_EVAL / &amp;DFT / &amp;SCF / &amp;SMEAR" Style="{StaticResource TemplateSectionGroupBoxStyle}">
+          <GroupBox x:Name="TemplateSmearingGroup" Header="&amp;FORCE__EVAL / &amp;DFT / &amp;SCF / &amp;SMEAR" Style="{StaticResource TemplateSectionLevel3GroupBoxStyle}">
             <Grid>
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="150"/>
@@ -545,7 +554,7 @@
             </Grid>
           </GroupBox>
 
-          <GroupBox x:Name="TemplateGeoOptGroup" Header="&amp;MOTION / &amp;GEO_OPT" Style="{StaticResource TemplateSectionGroupBoxStyle}">
+          <GroupBox x:Name="TemplateGeoOptGroup" Header="&amp;MOTION / &amp;GEO__OPT" Style="{StaticResource TemplateSectionLevel1GroupBoxStyle}">
             <Grid>
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="150"/>
@@ -573,7 +582,7 @@
             </Grid>
           </GroupBox>
 
-          <GroupBox x:Name="TemplateCellOptGroup" Header="&amp;MOTION / &amp;CELL_OPT" Style="{StaticResource TemplateSectionGroupBoxStyle}">
+          <GroupBox x:Name="TemplateCellOptGroup" Header="&amp;MOTION / &amp;CELL__OPT" Style="{StaticResource TemplateSectionLevel1GroupBoxStyle}">
             <Grid>
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="150"/>
@@ -620,7 +629,7 @@
             </Grid>
           </GroupBox>
 
-          <GroupBox x:Name="TemplateCellGroup" Header="&amp;FORCE_EVAL / &amp;SUBSYS / &amp;CELL" Style="{StaticResource TemplateSectionGroupBoxStyle}">
+          <GroupBox x:Name="TemplateCellGroup" Header="&amp;FORCE__EVAL / &amp;SUBSYS / &amp;CELL" Style="{StaticResource TemplateSectionLevel2GroupBoxStyle}">
             <Grid>
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="150"/>
@@ -672,7 +681,7 @@
             </Grid>
           </GroupBox>
 
-          <GroupBox x:Name="TemplateKpointsGroup" Header="&amp;FORCE_EVAL / &amp;DFT / &amp;KPOINTS" Style="{StaticResource TemplateSectionGroupBoxStyle}">
+          <GroupBox x:Name="TemplateKpointsGroup" Header="&amp;FORCE__EVAL / &amp;DFT / &amp;KPOINTS" Style="{StaticResource TemplateSectionLevel2GroupBoxStyle}">
             <Grid>
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="150"/>
@@ -714,7 +723,7 @@
 
           <CheckBox x:Name="CenterAtomsBox" Content="Center Atoms" Margin="6,8,6,6" VerticalAlignment="Center"/>
 
-          <GroupBox x:Name="TemplateKindGroup" Header="&amp;FORCE_EVAL / &amp;SUBSYS / &amp;KIND" Style="{StaticResource TemplateSectionGroupBoxStyle}">
+          <GroupBox x:Name="TemplateKindGroup" Header="&amp;FORCE__EVAL / &amp;SUBSYS / &amp;KIND" Style="{StaticResource TemplateSectionLevel2GroupBoxStyle}">
             <StackPanel>
               <DataGrid x:Name="KindEntriesGrid" Height="170"
                         AutoGenerateColumns="False" CanUserAddRows="True" CanUserDeleteRows="True"

@@ -28,8 +28,9 @@ Each round should end with a focused commit.
   the GUI Structure tab, and readable environment probe display in the GUI
   Environment tab, QuickStep `SCF/&OUTER_SCF` support, QuickStep `DFT/UKS`
   support, a thin double-click `WinQStep.exe` launcher, and QuickStep
-  `DFT/&XC` PBE parametrization plus DFT-D3 support.
-- Next active round: Round 58, expand QuickStep coverage from the next selected
+  `DFT/&XC` PBE parametrization plus DFT-D3 support, and hierarchical Template
+  section display with escaped CP2K underscores in GUI headers.
+- Next active round: Round 59, expand QuickStep coverage from the next selected
   CP2K feature area.
 - Known local facts:
   - WSL2 is available.
@@ -1986,6 +1987,37 @@ Commit boundary:
 
 - One commit for XC/DFT-D3 model, renderer, template/GUI controls, data-cache
   support, tests, and docs.
+
+## Round 58: Template Section Hierarchy Display
+
+Status: implemented.
+
+Goal: make the Template tab's CP2K section boxes visually match input-file
+nesting and fix WPF access-key handling that hid underscores in section names.
+
+Tasks:
+
+- Add Template section group styles for nested indentation levels.
+- Keep the complete CP2K section paths in each box header while indenting
+  nested sections such as `&DFT / &SCF / &SMEAR` under their parents.
+- Escape underscores in GroupBox headers with WPF double-underscore syntax so
+  `&FORCE_EVAL`, `&OUTER_SCF`, `&GEO_OPT`, and `&CELL_OPT` display correctly.
+- Normalize smoke-test header reporting so tests assert the user-visible
+  single-underscore section text.
+- Document that Template sections are now shown with left indentation for
+  nested CP2K sections.
+
+Acceptance:
+
+- Template headers display `&FORCE_EVAL` instead of `&FORCEEVAL`.
+- Smoke tests report the expected user-visible section headers and left-margin
+  hierarchy.
+- Existing Template fields and load/save behavior are unchanged.
+
+Commit boundary:
+
+- One commit for Template hierarchy display, underscore escaping, tests, and
+  docs.
 
 ## Working Rules
 

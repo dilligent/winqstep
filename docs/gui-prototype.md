@@ -173,8 +173,9 @@ and never overwrites a user-provided existing input file silently.
 
 The single-line fields on the `Template` tab are editable drop-down controls:
 users can select common values from the list or type a custom value directly.
-The tab visually groups related controls by the CP2K input section they render,
-including `&GLOBAL`, `&FORCE_EVAL / &DFT`,
+The tab visually groups related controls by the CP2K input section they render
+and indents nested sections to echo CP2K input-file structure. The displayed
+sections include `&GLOBAL`, `&FORCE_EVAL / &DFT`,
 `&FORCE_EVAL / &DFT / &XC`,
 `&FORCE_EVAL / &DFT / &SCF`,
 `&FORCE_EVAL / &DFT / &SCF / &OUTER_SCF`,
