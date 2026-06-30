@@ -23,8 +23,9 @@ Each round should end with a focused commit.
   control expansion, QuickStep KPOINTS support, QuickStep CELL_OPT support, and
   CP2K-section grouping in the Template tab, optional QuickStep
   `GLOBAL/PRINT_LEVEL`, immediate GUI language apply, GUI workflow tab
-  ordering, and full CP2K input-section labels in the Template tab.
-- Next active round: Round 42, expand QuickStep coverage from the next selected
+  ordering, full CP2K input-section labels in the Template tab, and UTF-8
+  hardening for live GUI job logs.
+- Next active round: Round 43, expand QuickStep coverage from the next selected
   CP2K feature area.
 - Known local facts:
   - WSL2 is available.
@@ -1462,6 +1463,32 @@ Acceptance:
 Commit boundary:
 
 - One commit for GUI tab order, Template section labels, tests, and docs.
+
+## Round 42: Live Job Log UTF-8 Hardening
+
+Status: implemented.
+
+Goal: keep CP2K text with non-ASCII characters readable in the GUI Job Log
+during live runs, matching the already-correct artifact viewing path.
+
+Tasks:
+
+- Set UTF-8 stdout/stderr decoding on the asynchronous Python worker process
+  used by GUI Run.
+- Read live log tails with explicit UTF-8 encoding instead of relying on the
+  Windows PowerShell default code page.
+- Extend lifecycle smoke coverage with non-ASCII stdout/stderr and tail checks.
+
+Acceptance:
+
+- Detect/import/preview paths remain UTF-8.
+- Live Job Log tails preserve UTF-8 text from CP2K stdout/stderr files.
+- Lifecycle smoke verifies saved worker stdout/stderr and live-tail reads keep
+  Chinese text intact.
+
+Commit boundary:
+
+- One commit for GUI host encoding, smoke tests, and docs.
 
 ## Working Rules
 

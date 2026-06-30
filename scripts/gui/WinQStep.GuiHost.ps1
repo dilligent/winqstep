@@ -327,6 +327,8 @@ function Start-WinQStepPythonProcess {
     $startInfo.CreateNoWindow = $true
     $startInfo.RedirectStandardOutput = $true
     $startInfo.RedirectStandardError = $true
+    $startInfo.StandardOutputEncoding = $Script:Utf8NoBomEncoding
+    $startInfo.StandardErrorEncoding = $Script:Utf8NoBomEncoding
 
     $process = [System.Diagnostics.Process]::new()
     $process.StartInfo = $startInfo
@@ -420,7 +422,7 @@ function Get-WinQStepFileTail {
         return ""
     }
     try {
-        return ((Get-Content -LiteralPath $Path -Tail $LineCount -ErrorAction Stop) | Out-String).TrimEnd()
+        return ((Get-Content -LiteralPath $Path -Encoding UTF8 -Tail $LineCount -ErrorAction Stop) | Out-String).TrimEnd()
     }
     catch {
         return ""

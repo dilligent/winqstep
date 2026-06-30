@@ -2240,12 +2240,16 @@ if ($PythonInvokeSmokeTest) {
 }
 
 if ($LifecycleSmokeTest) {
+    $utf8LogText = "$([char]0x4e2d)$([char]0x6587)$([char]0x65e5)$([char]0x5fd7)"
     $report = [ordered]@{
         process_started = $false
         process_stopped = $false
         exit_code = $null
         stdout_exists = $false
         stderr_exists = $false
+        stdout_utf8_ok = $false
+        stderr_utf8_ok = $false
+        tail_utf8_ok = $false
     }
     $process = $null
     $smokeDir = Resolve-WinQStepPath "outputs\lifecycle-smoke"
@@ -2256,7 +2260,7 @@ if ($LifecycleSmokeTest) {
     try {
         $process = Start-WinQStepPythonProcess -Arguments @(
             "-c",
-            "import time; time.sleep(30)"
+            "import sys, time; text=''.join(chr(x) for x in [0x4e2d, 0x6587, 0x65e5, 0x5fd7]); print(text, flush=True); print(text, file=sys.stderr, flush=True); time.sleep(30)"
         ) -StdoutPath $stdoutPath -StderrPath $stderrPath
         Start-Sleep -Milliseconds 500
         $report["process_started"] = (-not $process.HasExited)
@@ -2270,6 +2274,12 @@ if ($LifecycleSmokeTest) {
         }
         $report["stdout_exists"] = [System.IO.File]::Exists($stdoutPath)
         $report["stderr_exists"] = [System.IO.File]::Exists($stderrPath)
+        $stdoutText = Read-WinQStepFileText $stdoutPath
+        $stderrText = Read-WinQStepFileText $stderrPath
+        $stdoutTail = Get-WinQStepFileTail $stdoutPath 5
+        $report["stdout_utf8_ok"] = $stdoutText.Contains($utf8LogText)
+        $report["stderr_utf8_ok"] = $stderrText.Contains($utf8LogText)
+        $report["tail_utf8_ok"] = $stdoutTail.Contains($utf8LogText)
     }
     finally {
         if ($null -ne $process -and -not $process.HasExited) {
@@ -2277,7 +2287,13 @@ if ($LifecycleSmokeTest) {
         }
     }
     $report | ConvertTo-Json -Depth 5
-    if ($report["process_started"] -and $report["process_stopped"]) {
+    if (
+        $report["process_started"] -and
+        $report["process_stopped"] -and
+        $report["stdout_utf8_ok"] -and
+        $report["stderr_utf8_ok"] -and
+        $report["tail_utf8_ok"]
+    ) {
         exit 0
     }
     exit 1

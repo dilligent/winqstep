@@ -121,8 +121,10 @@ keys, metadata, paths, and raw CP2K output remain untranslated.
 Double-clicking a row in the history grid loads the selected metadata into the
 job log pane and the selected CP2K output file into the input preview pane.
 
-The PowerShell host forces UTF-8 for Python subprocess output so Windows paths
-with Chinese characters render correctly in the text panes.
+The PowerShell host forces UTF-8 for Python subprocess output and live Job Log
+tails, so Windows paths and CP2K stdout/stderr text with non-ASCII characters
+render correctly in the text panes instead of using the Windows default code
+page.
 
 `Detect` saves the current config fields before probing. `Preview` and `Run`
 save and validate the current config first, requiring `cp2k_command` and

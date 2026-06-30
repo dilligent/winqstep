@@ -198,6 +198,9 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn("Start-WinQStepPythonProcess", helper_text)
         self.assertIn("Save-WinQStepProcessOutput", helper_text)
         self.assertIn("Stop-WinQStepProcessTree", helper_text)
+        self.assertIn("$startInfo.StandardOutputEncoding = $Script:Utf8NoBomEncoding", helper_text)
+        self.assertIn("$startInfo.StandardErrorEncoding = $Script:Utf8NoBomEncoding", helper_text)
+        self.assertIn("Get-Content -LiteralPath $Path -Encoding UTF8 -Tail", helper_text)
         self.assertIn("energy_hartree", helper_text)
         self.assertIn("total_atomic_force", helper_text)
         self.assertIn("JobStatusText", xaml_text)
@@ -462,6 +465,9 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertTrue(report["process_stopped"])
         self.assertTrue(report["stdout_exists"])
         self.assertTrue(report["stderr_exists"])
+        self.assertTrue(report["stdout_utf8_ok"])
+        self.assertTrue(report["stderr_utf8_ok"])
+        self.assertTrue(report["tail_utf8_ok"])
 
     @unittest.skipUnless(platform.system() == "Windows", "WPF prototype is Windows-only")
     def test_button_smoke_can_raise_common_click_handlers(self) -> None:
