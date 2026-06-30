@@ -33,8 +33,8 @@ Each round should end with a focused commit.
   ordering for Template section groups, and a Template tab hyperlink to the
   CP2K INPUT manual, and separated tracked example JSON files from ignored
   local config/template working copies.
-- Next active round: Round 62, expand QuickStep coverage from the next selected
-  CP2K feature area.
+- Next active round: Round 62, refine QuickStep electrostatic boundary controls
+  by extending the existing `DFT/&POISSON/PERIODIC` support.
 - Known local facts:
   - WSL2 is available.
   - Default distro is `Ubuntu`.
@@ -2111,6 +2111,84 @@ Commit boundary:
 
 - One commit for local-copy bootstrap, ignore/release rules, reference updates,
   tests, and docs.
+
+## Round 62: QuickStep POISSON Boundary Controls
+
+Status: planned.
+
+Goal: make QuickStep electrostatic boundary handling more explicit without
+disturbing the existing synchronized `SUBSYS/&CELL/PERIODIC` and
+`DFT/&POISSON/PERIODIC` behavior.
+
+Rationale:
+
+- Round 35 already writes `DFT/&POISSON/PERIODIC` from the resolved cell
+  periodicity. The next useful POISSON step is not another periodicity field,
+  but a conservative solver/boundary-control layer.
+- This is a small, high-value QuickStep expansion because molecules, slabs,
+  wires, surfaces, and fully periodic crystals can require different Poisson
+  settings even when the structure import path is otherwise identical.
+- The implementation should stay version-aware: candidate values can be offered
+  in the GUI, but generated input must remain explicit, typed, and covered by
+  tests against the local CP2K baseline.
+
+Tasks:
+
+- Add typed QuickStep model fields for optional POISSON solver controls, starting
+  with `DFT/&POISSON/POISSON_SOLVER`.
+- Preserve the current rule that CELL and POISSON periodicity stay synchronized.
+- Add Template GUI controls under `&FORCE_EVAL / &DFT / &POISSON`, with editable
+  drop-downs and clear section hierarchy.
+- Add validation that rejects solver choices or combinations that WinQStep does
+  not deliberately support yet.
+- Add renderer tests, workflow/template tests, and GUI smoke coverage for the
+  new POISSON controls.
+- Update `docs/cp2k-input-model.md`, `docs/template-editor.md`, and workflow
+  docs after implementation.
+
+Acceptance:
+
+- Existing templates without explicit POISSON solver settings render exactly as
+  before.
+- Templates with a supported POISSON solver render the expected
+  `DFT/&POISSON/POISSON_SOLVER` keyword.
+- Periodicity remains rendered consistently in both `SUBSYS/&CELL` and
+  `DFT/&POISSON`.
+- Fast checks pass after the model, renderer, template, and GUI smoke tests are
+  updated.
+
+Commit boundary:
+
+- One commit for POISSON model fields, Template controls, validation, tests, and
+  documentation.
+
+## QuickStep Feature Backlog
+
+Status: planned queue after Round 62.
+
+Priority order:
+
+1. `DFT/&PRINT` output controls. Start with text-oriented outputs such as
+   Mulliken/Lowdin-style population analysis and force/stress-related print
+   options, then extend Artifacts recognition for generated files.
+2. Restart workflows. Support explicit restart files and wavefunction restart
+   intent so long CP2K jobs can resume without users hand-editing generated
+   input.
+3. `MOTION/&CONSTRAINT`. Add fixed-atom constraints first, because surface,
+   slab, and adsorbate optimizations commonly need them and they can later be
+   connected to the 3D structure preview.
+4. `RUN_TYPE MD` with `MOTION/&MD`. Treat this as a larger milestone because it
+   changes run duration, log expectations, trajectory artifacts, and Template
+   defaults.
+5. Extended XC/dispersion coverage. Add only conservative, well-tested
+   functionals or dispersion paths at first; hybrid-functional support should
+   wait until ADMM/HF/screening choices can be modeled coherently.
+
+Selection rule:
+
+- Prefer features that map cleanly to typed JSON fields, deterministic renderer
+  output, preflight checks, and GUI controls. Avoid adding raw CP2K text blocks
+  unless they are clearly marked as user overrides and do not weaken validation.
 
 ## Working Rules
 
