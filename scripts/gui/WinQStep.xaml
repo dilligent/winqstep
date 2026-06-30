@@ -909,6 +909,11 @@
             <Button x:Name="ViewMetadataButton" Content="Metadata"/>
             <Button x:Name="ViewStdoutButton" Content="Stdout"/>
             <Button x:Name="ViewStderrButton" Content="Stderr"/>
+            <Separator Width="8" Opacity="0"/>
+            <Button x:Name="ResumeBatchButton" Content="Resume Batch"/>
+            <Button x:Name="SkipBatchItemButton" Content="Skip Item"/>
+            <Button x:Name="RerunBatchItemButton" Content="Rerun Item"/>
+            <Button x:Name="CancelBatchItemButton" Content="Cancel Item"/>
           </WrapPanel>
           <TextBox x:Name="ArtifactSummaryText" Grid.Row="1"
                    FontFamily="Cascadia Mono, Consolas, Microsoft YaHei UI, Microsoft YaHei, SimSun"
@@ -922,6 +927,7 @@
             <DataGrid.Columns>
               <DataGridTextColumn Header="#" Binding="{Binding index}" Width="45"/>
               <DataGridTextColumn Header="Status" Binding="{Binding status}" Width="90"/>
+              <DataGridTextColumn Header="Attempt" Binding="{Binding attempt}" Width="65"/>
               <DataGridTextColumn Header="Code" Binding="{Binding returncode}" Width="55"/>
               <DataGridTextColumn Header="Input" Binding="{Binding input_path}" Width="220"/>
               <DataGridTextColumn Header="Output" Binding="{Binding output_path}" Width="220"/>

@@ -115,8 +115,19 @@ function New-WinQStepWindow {
         $controls["ViewResultsButton"],
         $controls["SaveResultsButton"]
     )
+    $batchQueueButtons = @(
+        $controls["ResumeBatchButton"],
+        $controls["SkipBatchItemButton"],
+        $controls["RerunBatchItemButton"],
+        $controls["CancelBatchItemButton"]
+    )
+    foreach ($button in $batchQueueButtons) {
+        $button.IsEnabled = $false
+    }
+    $batchQueueSelectionOverride = @{ Index = 0 }
     $artifactState = @{ Current = $null }
     $previewState = @{ Current = $null }
+    $jobState = @{ Current = $null }
     $structurePreviewState = @{
         Current = $null
         Radius = 5.0
@@ -249,6 +260,93 @@ function New-WinQStepWindow {
         foreach ($button in $resultButtons) {
             $button.IsEnabled = $hasResultText
         }
+        if ($null -ne $UpdateBatchQueueControls) {
+            & $UpdateBatchQueueControls
+        }
+    }.GetNewClosure()
+
+    $GetCurrentBatchSummaryPath = {
+        $current = $artifactState["Current"]
+        if ($null -ne $current -and [string]$current["mode"] -eq "existing_input_batch" -and $null -ne $current["paths"]) {
+            $path = [string]$current["paths"]["metadata"]
+            if (-not [string]::IsNullOrWhiteSpace($path)) {
+                return $path
+            }
+        }
+        $jobDir = & $ResolveWindowsWorkspacePath $controls["JobDirBox"].Text
+        if ([string]::IsNullOrWhiteSpace($jobDir)) {
+            return ""
+        }
+        return (Join-Path $jobDir "batch.winqstep-batch.json")
+    }.GetNewClosure()
+
+    $GetSelectedBatchRow = {
+        $overrideIndex = [int]$batchQueueSelectionOverride["Index"]
+        if ($overrideIndex -gt 0) {
+            $current = $artifactState["Current"]
+            if ($null -ne $current -and $null -ne $current["batch_summary"]) {
+                foreach ($row in @($current["batch_summary"].items)) {
+                    try {
+                        if ([int]$row.index -eq $overrideIndex) {
+                            return $row
+                        }
+                    }
+                    catch {
+                    }
+                }
+            }
+        }
+        $row = $controls["BatchResultsGrid"].SelectedItem
+        if ($null -eq $row) {
+            return $null
+        }
+        return $row
+    }.GetNewClosure()
+
+    $GetSelectedBatchItemIndex = {
+        $row = & $GetSelectedBatchRow
+        if ($null -eq $row) {
+            return 0
+        }
+        try {
+            return [int]$row.index
+        }
+        catch {
+            return 0
+        }
+    }.GetNewClosure()
+
+    $UpdateBatchQueueControls = {
+        $summaryPath = & $GetCurrentBatchSummaryPath
+        $hasSummary = (-not [string]::IsNullOrWhiteSpace($summaryPath)) -and [System.IO.File]::Exists($summaryPath)
+        $currentJob = $jobState["Current"]
+        $isBatchRunning = ($null -ne $currentJob -and [string]$currentJob["Mode"] -eq "existing_input_batch")
+        $selectedRow = & $GetSelectedBatchRow
+        $selectedStatus = if ($null -ne $selectedRow) { [string]$selectedRow.status } else { "" }
+        $hasSelected = ($null -ne $selectedRow -and (& $GetSelectedBatchItemIndex) -gt 0)
+
+        $controls["ResumeBatchButton"].IsEnabled = ($hasSummary -and $null -eq $currentJob)
+        $controls["SkipBatchItemButton"].IsEnabled = (
+            $hasSummary -and $hasSelected -and
+            $selectedStatus -notin @("running", "cancel_requested", "succeeded")
+        )
+        $controls["RerunBatchItemButton"].IsEnabled = (
+            $hasSummary -and $hasSelected -and
+            $selectedStatus -notin @("running", "cancel_requested")
+        )
+        $controls["CancelBatchItemButton"].IsEnabled = (
+            $hasSummary -and $hasSelected -and
+            $selectedStatus -notin @("succeeded", "skipped", "cancelled")
+        )
+        if (-not $isBatchRunning -and $selectedStatus -eq "running") {
+            $controls["CancelBatchItemButton"].IsEnabled = $hasSummary -and $hasSelected
+        }
+    }.GetNewClosure()
+
+    $Script:BatchQueueSmokeSelectIndex = {
+        param([int]$Index)
+        $batchQueueSelectionOverride["Index"] = $Index
+        & $UpdateBatchQueueControls
     }.GetNewClosure()
 
     $SetBusy = {
@@ -445,7 +543,6 @@ function New-WinQStepWindow {
         return "$summaryText`r`n`r`n$Output"
     }.GetNewClosure()
 
-    $jobState = @{ Current = $null }
     $jobTimer = [System.Windows.Threading.DispatcherTimer]::new()
     $jobTimer.Interval = [TimeSpan]::FromSeconds(1)
 
@@ -497,6 +594,9 @@ function New-WinQStepWindow {
                 $button.IsEnabled = $false
             }
         }
+        if ($null -ne $UpdateBatchQueueControls) {
+            & $UpdateBatchQueueControls
+        }
         [System.Windows.Forms.Application]::DoEvents()
     }.GetNewClosure()
 
@@ -539,10 +639,11 @@ function New-WinQStepWindow {
             if ($null -ne $summary) {
                 $items = if ($null -ne $summary.items) { @($summary.items) } else { @() }
                 $total = [int]$summary.input_count
-                $recorded = [int]$summary.item_count
-                $current = $recorded
-                if ([string]$summary.status -eq "running" -and $total -gt 0 -and $recorded -lt $total) {
-                    $current = $recorded + 1
+                $completed = if ($null -ne $summary.completed_count) { [int]$summary.completed_count } else { 0 }
+                $running = if ($null -ne $summary.running_count) { [int]$summary.running_count } else { 0 }
+                $current = $completed + $running
+                if ([string]$summary.status -eq "running" -and $running -eq 0 -and $total -gt 0 -and $completed -lt $total) {
+                    $current = $completed + 1
                 }
                 elseif ($total -gt 0 -and $current -gt $total) {
                     $current = $total
@@ -550,8 +651,8 @@ function New-WinQStepWindow {
                 $sections += (
                     @(
                         "Existing input batch: status=$($summary.status)",
-                        "progress: current=$current/$total, recorded=$recorded/$total, succeeded=$($summary.succeeded_count), failed=$($summary.failed_count), errors=$($summary.error_count)",
-                        "inputs=$($summary.input_count), items=$($summary.item_count), prepared=$($summary.prepared_count), succeeded=$($summary.succeeded_count), failed=$($summary.failed_count), errors=$($summary.error_count)",
+                        "progress: current=$current/$total, completed=$completed/$total, queued=$($summary.queued_count), running=$running, succeeded=$($summary.succeeded_count), failed=$($summary.failed_count), errors=$($summary.error_count), skipped=$($summary.skipped_count), cancelled=$($summary.cancelled_count)",
+                        "inputs=$($summary.input_count), items=$($summary.item_count), prepared=$($summary.prepared_count), queued=$($summary.queued_count), running=$($summary.running_count), succeeded=$($summary.succeeded_count), failed=$($summary.failed_count), errors=$($summary.error_count)",
                         "job_dir=$($summary.job_dir)",
                         "summary=$($summary.summary_path)",
                         "visible_items=$($items.Count)"
@@ -711,15 +812,16 @@ function New-WinQStepWindow {
         param([Parameter(Mandatory = $true)]$Summary)
         $status = & $GetJsonProperty $Summary "status"
         $total = & $GetJsonIntProperty $Summary "input_count"
-        $recorded = & $GetJsonIntProperty $Summary "item_count"
-        $current = $recorded
-        if ($status -eq "running" -and $total -gt 0 -and $recorded -lt $total) {
-            $current = $recorded + 1
+        $completed = & $GetJsonIntProperty $Summary "completed_count"
+        $running = & $GetJsonIntProperty $Summary "running_count"
+        $current = $completed + $running
+        if ($status -eq "running" -and $running -eq 0 -and $total -gt 0 -and $completed -lt $total) {
+            $current = $completed + 1
         }
         elseif ($total -gt 0 -and $current -gt $total) {
             $current = $total
         }
-        return "current=$current/$total, recorded=$recorded/$total, succeeded=$(& $GetJsonProperty $Summary "succeeded_count"), failed=$(& $GetJsonProperty $Summary "failed_count"), errors=$(& $GetJsonProperty $Summary "error_count")"
+        return "current=$current/$total, completed=$completed/$total, queued=$(& $GetJsonProperty $Summary "queued_count"), running=$running, succeeded=$(& $GetJsonProperty $Summary "succeeded_count"), failed=$(& $GetJsonProperty $Summary "failed_count"), errors=$(& $GetJsonProperty $Summary "error_count"), skipped=$(& $GetJsonProperty $Summary "skipped_count"), cancelled=$(& $GetJsonProperty $Summary "cancelled_count")"
     }.GetNewClosure()
 
     $NewBatchResultRows = {
@@ -729,6 +831,7 @@ function New-WinQStepWindow {
             $rows += [pscustomobject][ordered]@{
                 index = (& $GetJsonProperty $item "index")
                 status = (& $GetJsonProperty $item "status")
+                attempt = (& $GetJsonProperty $item "attempt")
                 returncode = (& $GetJsonProperty $item "returncode")
                 input_path = (& $GetJsonProperty $item "input_path")
                 job_dir = (& $GetJsonProperty $item "job_dir")
@@ -777,7 +880,7 @@ function New-WinQStepWindow {
 
     $FormatBatchResultTsv = {
         param([Parameter(Mandatory = $true)]$Summary)
-        $columns = @("index", "status", "returncode", "input_path", "job_dir", "metadata_path", "output_path", "stdout_path", "stderr_path", "generated_artifact_count", "error")
+        $columns = @("index", "status", "returncode", "input_path", "job_dir", "metadata_path", "output_path", "stdout_path", "stderr_path", "generated_artifact_count", "error", "attempt")
         $lines = @($columns -join "`t")
         foreach ($row in @(& $NewBatchResultRows $Summary)) {
             $values = foreach ($column in $columns) {
@@ -796,7 +899,7 @@ function New-WinQStepWindow {
         $lines = @(
             "Existing input batch: status=$(& $GetJsonProperty $Summary "status")",
             "progress: $(& $GetBatchProgressText $Summary)",
-            "inputs=$(& $GetJsonProperty $Summary "input_count"), items=$(& $GetJsonProperty $Summary "item_count"), prepared=$(& $GetJsonProperty $Summary "prepared_count"), succeeded=$(& $GetJsonProperty $Summary "succeeded_count"), failed=$(& $GetJsonProperty $Summary "failed_count"), errors=$(& $GetJsonProperty $Summary "error_count")",
+            "inputs=$(& $GetJsonProperty $Summary "input_count"), items=$(& $GetJsonProperty $Summary "item_count"), prepared=$(& $GetJsonProperty $Summary "prepared_count"), queued=$(& $GetJsonProperty $Summary "queued_count"), running=$(& $GetJsonProperty $Summary "running_count"), succeeded=$(& $GetJsonProperty $Summary "succeeded_count"), failed=$(& $GetJsonProperty $Summary "failed_count"), errors=$(& $GetJsonProperty $Summary "error_count"), skipped=$(& $GetJsonProperty $Summary "skipped_count"), cancelled=$(& $GetJsonProperty $Summary "cancelled_count")",
             "prepare_only=$(& $GetJsonProperty $Summary "prepare_only"), stop_on_failure=$(& $GetJsonProperty $Summary "stop_on_failure"), stopped_on_failure=$(& $GetJsonProperty $Summary "stopped_on_failure")",
             "job_dir=$(& $GetJsonProperty $Summary "job_dir")",
             "summary=$(& $GetJsonProperty $Summary "summary_path")"
@@ -835,7 +938,7 @@ function New-WinQStepWindow {
             "mode=existing_input_batch",
             "status=$(& $GetJsonProperty $Summary "status")",
             "progress=$(& $GetBatchProgressText $Summary)",
-            "inputs=$(& $GetJsonProperty $Summary "input_count"), items=$(& $GetJsonProperty $Summary "item_count"), prepared=$(& $GetJsonProperty $Summary "prepared_count"), succeeded=$(& $GetJsonProperty $Summary "succeeded_count"), failed=$(& $GetJsonProperty $Summary "failed_count"), errors=$(& $GetJsonProperty $Summary "error_count")",
+            "inputs=$(& $GetJsonProperty $Summary "input_count"), items=$(& $GetJsonProperty $Summary "item_count"), prepared=$(& $GetJsonProperty $Summary "prepared_count"), queued=$(& $GetJsonProperty $Summary "queued_count"), running=$(& $GetJsonProperty $Summary "running_count"), succeeded=$(& $GetJsonProperty $Summary "succeeded_count"), failed=$(& $GetJsonProperty $Summary "failed_count"), errors=$(& $GetJsonProperty $Summary "error_count"), skipped=$(& $GetJsonProperty $Summary "skipped_count"), cancelled=$(& $GetJsonProperty $Summary "cancelled_count")",
             "job_dir=$(& $GetJsonProperty $Summary "job_dir")",
             "summary=[$exists] $summaryPath"
         ) -join "`r`n")
@@ -1906,6 +2009,118 @@ function New-WinQStepWindow {
         & $SetJobStatusText "Batch: status=$($artifacts["status"]) | $(& $GetBatchProgressText $Summary) | summary=$summaryPath"
     }.GetNewClosure()
 
+    $InvokeBatchQueueAction = {
+        param([Parameter(Mandatory = $true)][string]$Action)
+        $summaryPath = & $GetCurrentBatchSummaryPath
+        if ([string]::IsNullOrWhiteSpace($summaryPath) -or -not [System.IO.File]::Exists($summaryPath)) {
+            throw "No batch summary is available."
+        }
+        $index = & $GetSelectedBatchItemIndex
+        if ($index -le 0) {
+            throw "No batch item is selected."
+        }
+        $result = Invoke-WinQStepPython @(
+            "scripts\manage_existing_input_batch.py",
+            "--summary", $summaryPath,
+            "--index", [string]$index,
+            "--action", $Action,
+            "--compact"
+        )
+        $summary = & $GetBatchSummaryResult $result
+        $summaryText = & $FormatBatchSummary $summary
+        & $SetArtifactsFromBatchSummary $summary
+        & $ClearInputPreviewState
+        $controls["PreviewText"].Text = $summaryText
+        $controls["LogText"].Text = "Batch item $index action=$Action`r`n`r`n$summaryText"
+        & $UpdateBatchQueueControls
+        return $summary
+    }.GetNewClosure()
+
+    $StartExistingInputBatchResumeJob = {
+        if ($null -ne $jobState["Current"]) {
+            & $AppendLog "A CP2K job is already running."
+            return
+        }
+
+        $summaryPath = & $GetCurrentBatchSummaryPath
+        if ([string]::IsNullOrWhiteSpace($summaryPath) -or -not [System.IO.File]::Exists($summaryPath)) {
+            throw "No batch summary is available."
+        }
+        $summary = & $ReadMetadataFile $summaryPath
+        if ($null -eq $summary) {
+            throw "Batch summary could not be read: $summaryPath"
+        }
+        $batchDir = & $GetJsonProperty $summary "job_dir"
+        if ([string]::IsNullOrWhiteSpace($batchDir)) {
+            $batchDir = Split-Path -Parent $summaryPath
+        }
+        if ([string]::IsNullOrWhiteSpace($batchDir)) {
+            throw "Batch job folder could not be resolved."
+        }
+
+        & $SetBusy $true (Get-WinQStepText "status.resuming_batch")
+        try {
+            $null = & $SaveConfigFields $true $false
+            $stamp = [DateTime]::UtcNow.ToString("yyyyMMddTHHmmssfffZ")
+            $wrapperStdoutPath = Join-Path $batchDir "winqstep-gui-batch-resume-$stamp.stdout.json"
+            $wrapperStderrPath = Join-Path $batchDir "winqstep-gui-batch-resume-$stamp.stderr.log"
+            $runArguments = @(
+                "scripts\run_existing_input_batch.py",
+                "--config", $controls["ConfigPathBox"].Text,
+                "--job-dir", $batchDir,
+                "--resume",
+                "--compact"
+            )
+            $summaryStopOnFailure = & $GetJsonProperty $summary "stop_on_failure"
+            if ([bool]$controls["BatchStopOnFailureBox"].IsChecked -or $summaryStopOnFailure -eq "True") {
+                $runArguments += "--stop-on-failure"
+            }
+            $process = Start-WinQStepPythonProcess -Arguments $runArguments -StdoutPath $wrapperStdoutPath -StderrPath $wrapperStderrPath
+            $jobState["Current"] = @{
+                Mode = "existing_input_batch"
+                Process = $process
+                JobDir = $batchDir
+                BatchSummaryPath = $summaryPath
+                MetadataPath = $summaryPath
+                OutputPath = ""
+                WrapperStdoutPath = $wrapperStdoutPath
+                WrapperStderrPath = $wrapperStderrPath
+                Cancelled = $false
+            }
+            $controls["LogText"].Text = (& $BuildAsyncJobLog $jobState["Current"])
+            & $SetJobStatusText (& $FormatRunningJobStatus $jobState["Current"])
+            & $SetAsyncJobRunning $true (Format-WinQStepText "status.running_cp2k_pid" @($process.Id))
+            $jobTimer.Start()
+        }
+        catch {
+            $message = $_.Exception.Message
+            $startedState = $jobState["Current"]
+            if ($null -ne $startedState -and [string]$startedState["Mode"] -eq "existing_input_batch") {
+                try {
+                    Stop-WinQStepProcessTree ([System.Diagnostics.Process]$startedState["Process"])
+                    $null = Save-WinQStepProcessOutput ([System.Diagnostics.Process]$startedState["Process"]) ([string]$startedState["WrapperStdoutPath"]) ([string]$startedState["WrapperStderrPath"])
+                }
+                catch {
+                }
+                $jobTimer.Stop()
+                $jobState["Current"] = $null
+            }
+            & $AppendLog "ERROR: $message"
+            if ($SuppressGuiMessageBoxes) {
+                & $SetBusy $false (Get-WinQStepText "status.ready")
+                throw
+            }
+            [System.Windows.MessageBox]::Show(
+                $window,
+                $message,
+                (Get-WinQStepText "message.error_caption"),
+                [System.Windows.MessageBoxButton]::OK,
+                [System.Windows.MessageBoxImage]::Error
+            ) | Out-Null
+            & $SetBusy $false (Get-WinQStepText "status.ready")
+        }
+    }.GetNewClosure()
+
     $CompleteAsyncJob = {
         param([Parameter(Mandatory = $true)][hashtable]$State)
         $jobTimer.Stop()
@@ -2032,6 +2247,25 @@ function New-WinQStepWindow {
 
         & $SetJobStatusText (& $FormatRunningJobStatus $current)
         $controls["LogText"].Text = & $BuildAsyncJobLog $current
+        if ([string]$current["Mode"] -eq "existing_input_batch") {
+            $selectedIndex = & $GetSelectedBatchItemIndex
+            $summary = & $ReadMetadataFile ([string]$current["BatchSummaryPath"])
+            if ($null -ne $summary) {
+                & $SetArtifactsFromBatchSummary $summary
+                if ($selectedIndex -gt 0 -and $null -ne $controls["BatchResultsGrid"].ItemsSource) {
+                    foreach ($row in @($controls["BatchResultsGrid"].ItemsSource)) {
+                        try {
+                            if ([int]$row.index -eq $selectedIndex) {
+                                $controls["BatchResultsGrid"].SelectedItem = $row
+                                break
+                            }
+                        }
+                        catch {
+                        }
+                    }
+                }
+            }
+        }
         $controls["LogText"].ScrollToEnd()
     }.GetNewClosure()
 
@@ -3489,6 +3723,48 @@ function New-WinQStepWindow {
         & $CancelAsyncJob
     }.GetNewClosure())
 
+    $controls["BatchResultsGrid"].Add_SelectionChanged({
+        & $UpdateBatchQueueControls
+    }.GetNewClosure())
+
+    $controls["ResumeBatchButton"].Add_Click({
+        try {
+            & $StartExistingInputBatchResumeJob
+        }
+        catch {
+            $message = $_.Exception.Message
+            & $AppendLog "ERROR: $message"
+            if (-not $SuppressGuiMessageBoxes) {
+                [System.Windows.MessageBox]::Show(
+                    $window,
+                    $message,
+                    (Get-WinQStepText "message.error_caption"),
+                    [System.Windows.MessageBoxButton]::OK,
+                    [System.Windows.MessageBoxImage]::Error
+                ) | Out-Null
+            }
+            & $SetBusy $false (Get-WinQStepText "status.ready")
+        }
+    }.GetNewClosure())
+
+    $controls["SkipBatchItemButton"].Add_Click({
+        & $InvokeGuiAction -Status (Get-WinQStepText "status.updating_batch_queue") -Action {
+            $null = & $InvokeBatchQueueAction "skip"
+        }
+    }.GetNewClosure())
+
+    $controls["RerunBatchItemButton"].Add_Click({
+        & $InvokeGuiAction -Status (Get-WinQStepText "status.updating_batch_queue") -Action {
+            $null = & $InvokeBatchQueueAction "rerun"
+        }
+    }.GetNewClosure())
+
+    $controls["CancelBatchItemButton"].Add_Click({
+        & $InvokeGuiAction -Status (Get-WinQStepText "status.updating_batch_queue") -Action {
+            $null = & $InvokeBatchQueueAction "cancel"
+        }
+    }.GetNewClosure())
+
     $controls["ViewResultsButton"].Add_Click({
         & $InvokeGuiAction -Status (Get-WinQStepText "status.viewing_results_artifact") -Action {
             & $ViewResultSummary
@@ -3870,6 +4146,82 @@ if ($BatchSmokeTest) {
         ""
     }
 
+    $queueActionOk = $true
+    $queueActionError = ""
+    $queueSummary = $summary
+    $SelectBatchGridIndex = {
+        param([int]$Index)
+        if ($null -ne $Script:BatchQueueSmokeSelectIndex) {
+            & $Script:BatchQueueSmokeSelectIndex $Index
+            return $true
+        }
+        $grid = $window.FindName("BatchResultsGrid")
+        $sourceRows = if ($null -ne $grid.ItemsSource) { @($grid.ItemsSource) } else { @() }
+        if ($sourceRows.Count -ge $Index) {
+            try {
+                $grid.SelectedItem = $sourceRows[$Index - 1]
+                [System.Windows.Forms.Application]::DoEvents()
+            }
+            catch {
+            }
+            return $true
+        }
+        $rows = New-Object System.Collections.ArrayList
+        if ($null -ne $grid.ItemsSource -and $grid.ItemsSource -is [System.Collections.IEnumerable]) {
+            foreach ($row in ([System.Collections.IEnumerable]$grid.ItemsSource)) {
+                [void]$rows.Add($row)
+            }
+        }
+        if ($rows.Count -eq 0 -and $null -ne $grid.Items) {
+            foreach ($row in @($grid.Items)) {
+                [void]$rows.Add($row)
+            }
+        }
+        foreach ($row in @($rows)) {
+            try {
+                $property = $row.PSObject.Properties["index"]
+                $rowIndex = if ($null -ne $property) { [int]$property.Value } else { [int]$row.index }
+                if ($rowIndex -eq $Index) {
+                    $grid.SelectedItem = $row
+                    [System.Windows.Forms.Application]::DoEvents()
+                    return $true
+                }
+            }
+            catch {
+            }
+        }
+        return $false
+    }
+    try {
+        if (-not (& $SelectBatchGridIndex 2)) {
+            throw "Could not select batch item 2."
+        }
+        $eventArgs = [System.Windows.RoutedEventArgs]::new([System.Windows.Controls.Button]::ClickEvent)
+        $window.FindName("SkipBatchItemButton").RaiseEvent($eventArgs)
+        [System.Windows.Forms.Application]::DoEvents()
+        $queueSummary = [System.IO.File]::ReadAllText($summaryPath, [System.Text.Encoding]::UTF8) | ConvertFrom-Json
+
+        if (-not (& $SelectBatchGridIndex 2)) {
+            throw "Could not reselect batch item 2."
+        }
+        $eventArgs = [System.Windows.RoutedEventArgs]::new([System.Windows.Controls.Button]::ClickEvent)
+        $window.FindName("RerunBatchItemButton").RaiseEvent($eventArgs)
+        [System.Windows.Forms.Application]::DoEvents()
+        $queueSummary = [System.IO.File]::ReadAllText($summaryPath, [System.Text.Encoding]::UTF8) | ConvertFrom-Json
+
+        if (-not (& $SelectBatchGridIndex 1)) {
+            throw "Could not select batch item 1."
+        }
+        $eventArgs = [System.Windows.RoutedEventArgs]::new([System.Windows.Controls.Button]::ClickEvent)
+        $window.FindName("CancelBatchItemButton").RaiseEvent($eventArgs)
+        [System.Windows.Forms.Application]::DoEvents()
+        $queueSummary = [System.IO.File]::ReadAllText($summaryPath, [System.Text.Encoding]::UTF8) | ConvertFrom-Json
+    }
+    catch {
+        $queueActionOk = $false
+        $queueActionError = $_.Exception.Message
+    }
+
     $report["mode"] = "batch_smoke"
     $report["preview_ok"] = $previewOk
     $report["preview_error"] = $previewError
@@ -3895,6 +4247,12 @@ if ($BatchSmokeTest) {
     $report["batch_results_tsv_has_rows"] = ($savedBatchResultsText.Contains("batch_one.inp") -and $savedBatchResultsText.Contains("batch_two.inp"))
     $report["metadata_button_enabled"] = [bool]$window.FindName("ViewMetadataButton").IsEnabled
     $report["results_button_enabled"] = [bool]$window.FindName("ViewResultsButton").IsEnabled
+    $report["batch_resume_button_enabled"] = [bool]$window.FindName("ResumeBatchButton").IsEnabled
+    $report["batch_queue_action_ok"] = $queueActionOk
+    $report["batch_queue_action_error"] = $queueActionError
+    $report["batch_queue_cancelled_first"] = if ($null -ne $queueSummary) { [string]$queueSummary.items[0].status -eq "cancelled" } else { $false }
+    $report["batch_queue_rerun_second"] = if ($null -ne $queueSummary) { [string]$queueSummary.items[1].status -eq "queued" } else { $false }
+    $report["batch_queue_summary_pending"] = if ($null -ne $queueSummary) { [string]$queueSummary.status -eq "pending" } else { $false }
     $report | ConvertTo-Json -Depth 6
 
     if (
@@ -3917,7 +4275,12 @@ if ($BatchSmokeTest) {
         $report["batch_results_tsv_has_header"] -and
         $report["batch_results_tsv_has_rows"] -and
         $report["metadata_button_enabled"] -and
-        $report["results_button_enabled"]
+        $report["results_button_enabled"] -and
+        $report["batch_resume_button_enabled"] -and
+        $report["batch_queue_action_ok"] -and
+        $report["batch_queue_cancelled_first"] -and
+        $report["batch_queue_rerun_second"] -and
+        $report["batch_queue_summary_pending"]
     ) {
         exit 0
     }
@@ -3980,7 +4343,7 @@ if ($BatchRunSmokeTest) {
     $report["preview_text_has_summary"] = if ($null -ne $smokeReport) { ([string]$smokeReport["preview_text"]).Contains("Existing input batch: status=prepared") } else { $false }
     $report["artifact_summary_has_batch"] = if ($null -ne $smokeReport) { ([string]$smokeReport["artifact_summary_text"]).Contains("mode=existing_input_batch") } else { $false }
     $report["async_log_has_batch_status"] = if ($null -ne $smokeReport) { ([string]$smokeReport["async_log_text"]).Contains("Existing input batch: status=prepared") } else { $false }
-    $report["async_log_has_batch_progress"] = if ($null -ne $smokeReport) { ([string]$smokeReport["async_log_text"]).Contains("progress: current=2/2") } else { $false }
+    $report["async_log_has_batch_progress"] = if ($null -ne $smokeReport) { ([string]$smokeReport["async_log_text"]).Contains("completed=0/2") } else { $false }
     $report["async_log_has_wrapper_paths"] = if ($null -ne $smokeReport) { ([string]$smokeReport["async_log_text"]).Contains("wrapper_stdout=") -and ([string]$smokeReport["async_log_text"]).Contains("wrapper_stderr=") } else { $false }
     $report["workflow_run_enabled_after_batch"] = $workflowRunEnabled
     $report["existing_run_enabled_after_batch"] = $existingRunEnabled
@@ -4872,6 +5235,12 @@ if ($SmokeTest) {
     $report["artifact_text_loaded"] = ($window.FindName("ArtifactText") -is [System.Windows.Controls.TextBox])
     $report["batch_results_grid_loaded"] = ($window.FindName("BatchResultsGrid") -is [System.Windows.Controls.DataGrid])
     $report["batch_results_grid_initially_collapsed"] = ($window.FindName("BatchResultsGrid").Visibility -eq [System.Windows.Visibility]::Collapsed)
+    $report["batch_queue_buttons_loaded"] = @(
+        "ResumeBatchButton", "SkipBatchItemButton", "RerunBatchItemButton", "CancelBatchItemButton"
+    ).Where({ $window.FindName($_) -is [System.Windows.Controls.Button] }).Count
+    $report["batch_queue_buttons_initially_disabled"] = @(
+        "ResumeBatchButton", "SkipBatchItemButton", "RerunBatchItemButton", "CancelBatchItemButton"
+    ).Where({ [bool]$window.FindName($_).IsEnabled }).Count -eq 0
     $report["artifact_result_buttons_loaded"] = @(
         "ViewResultsButton", "SaveResultsButton"
     ).Where({ $window.FindName($_) -is [System.Windows.Controls.Button] }).Count

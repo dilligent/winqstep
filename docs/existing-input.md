@@ -60,6 +60,28 @@ Use `--prepare-only` to create per-item metadata without launching CP2K. During
 real execution the batch is serial by default. A failed item is recorded and the
 next item continues unless `--stop-on-failure` is set.
 
+If a batch was interrupted after `batch.winqstep-batch.json` was written, resume
+the pending queue items with:
+
+```powershell
+python .\scripts\run_existing_input_batch.py --config .\examples\winqstep.config.example.json --job-dir .\outputs\batch-existing --resume
+```
+
+Completed, skipped, and cancelled items are not rerun by resume. Stale
+`running` items left by an interrupted wrapper are put back in the queue.
+Use the management command to adjust a single item:
+
+```powershell
+python .\scripts\manage_existing_input_batch.py --summary .\outputs\batch-existing\batch.winqstep-batch.json --index 2 --action skip
+python .\scripts\manage_existing_input_batch.py --summary .\outputs\batch-existing\batch.winqstep-batch.json --index 2 --action rerun
+python .\scripts\manage_existing_input_batch.py --summary .\outputs\batch-existing\batch.winqstep-batch.json --index 2 --action cancel
+```
+
+`rerun` queues the item for the next resume. `cancel` marks an idle item as
+cancelled; if the item is currently running, the batch runner records a
+cancel-request flag, terminates that CP2K process, marks the item cancelled, and
+continues the remaining serial queue.
+
 If an existing CP2K input relies on relative include/data paths from its own
 folder, use:
 
@@ -81,14 +103,21 @@ button selects a folder, and `Preview` runs
 `Run` first performs the same prepare-only batch check. If that summary is
 valid, the GUI starts the real serial batch in the background and updates `Job
 Log` from the batch index while it runs. The log includes explicit
-`current/total`, recorded item count, and succeeded/failed/error counts.
+`current/total`, completed item count, queued/running item count, and
+succeeded/failed/error/skipped/cancelled counts.
 `Artifacts` exposes the batch summary as metadata, shows a read-only per-item
 result table, and lets `Save Results` export that table as `batch-results.tsv`.
 Per-input job metadata remains visible through `History` after users load the
 batch job folder.
 
+The `Artifacts` tab also exposes batch queue controls. Select a row in the
+batch result table, then use `Skip Item`, `Rerun Item`, or `Cancel Item` to
+update that item in `batch.winqstep-batch.json`. Use `Resume Batch` to continue
+queued or stale running items after an interruption, or after queueing a rerun.
+
 For input-list files, type the list file path directly into `Batch Inputs`;
 folder browsing is the default shortcut for the common case.
 
-Batch execution is intentionally serial. Resume, per-item skip/rerun, and
-per-item cancellation are not implemented yet.
+Batch execution is intentionally serial. WinQStep does not try to schedule true
+parallel CP2K work; users who need parallel numerical execution should configure
+CP2K/MPI for each individual input.

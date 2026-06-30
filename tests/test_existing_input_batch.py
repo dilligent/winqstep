@@ -6,7 +6,13 @@ import unittest
 from pathlib import Path
 from types import SimpleNamespace
 
-from winqstep.batch import resolve_existing_input_batch_inputs, run_existing_input_batch
+from winqstep.batch import (
+    BATCH_SUMMARY_NAME,
+    load_existing_input_batch_summary,
+    resolve_existing_input_batch_inputs,
+    run_existing_input_batch,
+    update_existing_input_batch_item,
+)
 from winqstep.history import list_job_history
 from winqstep.runner import load_json_file
 
@@ -43,6 +49,7 @@ class ExistingInputBatchTests(unittest.TestCase):
             self.assertEqual(summary["input_count"], 2)
             self.assertEqual(summary["item_count"], 2)
             self.assertEqual(summary["prepared_count"], 2)
+            self.assertEqual(summary["completed_count"], 0)
             self.assertTrue(Path(summary["summary_path"]).is_file())
             self.assertTrue(Path(summary["items"][0]["metadata_path"]).is_file())
             self.assertTrue(Path(summary["items"][1]["metadata_path"]).is_file())
@@ -93,6 +100,7 @@ class ExistingInputBatchTests(unittest.TestCase):
             self.assertEqual(summary["status"], "completed_with_errors")
             self.assertEqual([item["status"] for item in summary["items"]], ["succeeded", "failed"])
             self.assertEqual(summary["items"][1]["returncode"], 7)
+            self.assertEqual(summary["completed_count"], 2)
 
     def test_stop_on_failure_skips_remaining_items(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -114,8 +122,99 @@ class ExistingInputBatchTests(unittest.TestCase):
             self.assertEqual(summary["status"], "stopped_on_failure")
             self.assertTrue(summary["stopped_on_failure"])
             self.assertEqual(summary["input_count"], 2)
-            self.assertEqual(summary["item_count"], 1)
+            self.assertEqual(summary["item_count"], 2)
             self.assertEqual(summary["items"][0]["status"], "failed")
+            self.assertEqual(summary["items"][1]["status"], "queued")
+
+    def test_resume_continues_pending_items_after_interruption(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            root = Path(tmp_dir)
+            inputs = [
+                self._write_input(root / "inputs" / "a.inp"),
+                self._write_input(root / "inputs" / "b.inp"),
+                self._write_input(root / "inputs" / "c.inp"),
+            ]
+            calls = []
+
+            def interrupting_executor(argv: list[str]) -> SimpleNamespace:
+                calls.append(argv)
+                if len(calls) == 2:
+                    raise KeyboardInterrupt()
+                return SimpleNamespace(returncode=0, stdout=b"", stderr=b"")
+
+            with self.assertRaises(KeyboardInterrupt):
+                run_existing_input_batch(
+                    config=self.config,
+                    input_paths=inputs,
+                    windows_job_dir=root / "batch",
+                    executor=interrupting_executor,
+                )
+
+            interrupted = load_existing_input_batch_summary(root / "batch" / BATCH_SUMMARY_NAME)
+            self.assertEqual([item["status"] for item in interrupted["items"]], ["succeeded", "running", "queued"])
+
+            resumed_calls = []
+
+            def success_executor(argv: list[str]) -> SimpleNamespace:
+                resumed_calls.append(argv)
+                return SimpleNamespace(returncode=0, stdout=b"", stderr=b"")
+
+            summary = run_existing_input_batch(
+                config=self.config,
+                input_paths=[],
+                windows_job_dir=root / "batch",
+                resume=True,
+                executor=success_executor,
+            )
+
+            self.assertEqual(len(resumed_calls), 2)
+            self.assertEqual(summary["status"], "succeeded")
+            self.assertEqual([item["status"] for item in summary["items"]], ["succeeded", "succeeded", "succeeded"])
+            self.assertEqual(summary["resume_count"], 1)
+
+    def test_queue_item_actions_update_batch_summary(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            root = Path(tmp_dir)
+            input_a = self._write_input(root / "inputs" / "a.inp")
+            input_b = self._write_input(root / "inputs" / "b.inp")
+            summary = run_existing_input_batch(
+                config=self.config,
+                input_paths=[input_a, input_b],
+                windows_job_dir=root / "batch",
+                execute=False,
+            )
+            summary_path = Path(summary["summary_path"])
+
+            skipped = update_existing_input_batch_item(summary_path, index=2, action="skip")
+            self.assertEqual(skipped["items"][1]["status"], "skipped")
+            self.assertEqual(skipped["skipped_count"], 1)
+
+            queued = update_existing_input_batch_item(summary_path, index=2, action="rerun")
+            self.assertEqual(queued["items"][1]["status"], "queued")
+            self.assertEqual(queued["status"], "pending")
+
+            cancelled = update_existing_input_batch_item(summary_path, index=1, action="cancel")
+            self.assertEqual(cancelled["items"][0]["status"], "cancelled")
+            self.assertEqual(cancelled["cancelled_count"], 1)
+
+    def test_cancel_running_item_requests_cancellation(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            root = Path(tmp_dir)
+            input_a = self._write_input(root / "inputs" / "a.inp")
+            summary = run_existing_input_batch(
+                config=self.config,
+                input_paths=[input_a],
+                windows_job_dir=root / "batch",
+                execute=False,
+            )
+            summary_path = Path(summary["summary_path"])
+            summary["items"][0]["status"] = "running"
+            summary_path.write_text(json.dumps(summary), encoding="utf-8")
+
+            updated = update_existing_input_batch_item(summary_path, index=1, action="cancel")
+
+            self.assertEqual(updated["items"][0]["status"], "cancel_requested")
+            self.assertEqual(updated["status"], "running")
 
     def test_resolves_input_dir_and_input_list_paths(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -164,6 +263,39 @@ class ExistingInputBatchTests(unittest.TestCase):
             self.assertEqual(summary["status"], "prepared")
             self.assertEqual(summary["input_count"], 2)
             self.assertEqual(summary["prepared_count"], 2)
+
+    def test_cli_manage_batch_item_can_skip_item(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            root = Path(tmp_dir)
+            input_a = self._write_input(root / "inputs" / "a.inp")
+            input_b = self._write_input(root / "inputs" / "b.inp")
+            summary = run_existing_input_batch(
+                config=self.config,
+                input_paths=[input_a, input_b],
+                windows_job_dir=root / "batch",
+                execute=False,
+            )
+
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    str(ROOT / "scripts" / "manage_existing_input_batch.py"),
+                    "--summary",
+                    summary["summary_path"],
+                    "--index",
+                    "2",
+                    "--action",
+                    "skip",
+                    "--compact",
+                ],
+                capture_output=True,
+                check=False,
+            )
+
+            self.assertEqual(completed.returncode, 0, completed.stderr.decode("utf-8", errors="replace"))
+            updated = json.loads(completed.stdout.decode("utf-8"))
+            self.assertEqual(updated["items"][1]["status"], "skipped")
+            self.assertEqual(updated["skipped_count"], 1)
 
 
 if __name__ == "__main__":

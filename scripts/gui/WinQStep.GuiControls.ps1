@@ -66,6 +66,7 @@ function Get-WinQStepGuiControlNames {
         "PreviewButton", "RunButton", "CancelJobButton", "HistoryButton", "ClearButton",
         "ViewResultsButton", "SaveResultsButton",
         "ViewInputButton", "ViewOutputButton", "ViewMetadataButton", "ViewStdoutButton", "ViewStderrButton",
+        "ResumeBatchButton", "SkipBatchItemButton", "RerunBatchItemButton", "CancelBatchItemButton",
         "BrowseConfigButton", "BrowseTemplateButton", "BrowseStructureButton",
         "BrowseExistingInputButton", "BrowseJobDirButton"
     )
@@ -107,6 +108,10 @@ function Set-WinQStepLocalizedControls {
     ViewMetadataButton = "button.metadata"
     ViewStdoutButton = "button.stdout"
     ViewStderrButton = "button.stderr"
+    ResumeBatchButton = "button.resume_batch"
+    SkipBatchItemButton = "button.skip_item"
+    RerunBatchItemButton = "button.rerun_item"
+    CancelBatchItemButton = "button.cancel_item"
     WorkflowModeRadio = "mode.workflow"
     ExistingInputModeRadio = "mode.existing_input"
     ExistingInputBatchModeRadio = "mode.existing_input_batch"
@@ -237,5 +242,15 @@ function Set-WinQStepLocalizedControls {
         $Controls["HistoryGrid"].Columns[4].Header = Get-WinQStepText "column.warnings"
         $Controls["HistoryGrid"].Columns[5].Header = Get-WinQStepText "column.project_input"
         $Controls["HistoryGrid"].Columns[6].Header = Get-WinQStepText "column.output"
+    }
+    if ($Controls["BatchResultsGrid"].Columns.Count -ge 8) {
+        $Controls["BatchResultsGrid"].Columns[0].Header = Get-WinQStepText "column.index"
+        $Controls["BatchResultsGrid"].Columns[1].Header = Get-WinQStepText "column.status"
+        $Controls["BatchResultsGrid"].Columns[2].Header = Get-WinQStepText "column.attempt"
+        $Controls["BatchResultsGrid"].Columns[3].Header = Get-WinQStepText "column.code"
+        $Controls["BatchResultsGrid"].Columns[4].Header = Get-WinQStepText "column.input"
+        $Controls["BatchResultsGrid"].Columns[5].Header = Get-WinQStepText "column.output"
+        $Controls["BatchResultsGrid"].Columns[6].Header = Get-WinQStepText "column.metadata"
+        $Controls["BatchResultsGrid"].Columns[7].Header = Get-WinQStepText "column.error"
     }
 }

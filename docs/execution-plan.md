@@ -2661,9 +2661,40 @@ Commit boundary:
 
 - One commit for batch progress/table polish, tests, and docs.
 
+## Round 76 - Existing Input Batch Resume and Queue Controls
+
+Status: completed.
+
+Scope:
+
+- Persist the full existing-input batch queue in `batch.winqstep-batch.json`
+  instead of only the items already processed.
+- Add queue states and counts for `queued`, `running`, `skipped`, `cancelled`,
+  and completed items while keeping per-input job metadata unchanged.
+- Add `--resume` to `scripts/run_existing_input_batch.py` so interrupted
+  batches can continue queued, prepared, or stale running items without rerun
+  of completed/skipped/cancelled items.
+- Add `scripts/manage_existing_input_batch.py` for per-item `skip`, `rerun`,
+  and `cancel` operations.
+- Add GUI `Resume Batch`, `Skip Item`, `Rerun Item`, and `Cancel Item`
+  controls in `Artifacts`, wired through the Python batch core.
+- Keep execution serial; no parallel queue scheduler is introduced.
+
+Acceptance:
+
+- Unit tests cover interrupted resume, per-item queue actions, and the
+  management CLI.
+- GUI batch smoke clicks the per-item queue buttons and verifies the updated
+  summary state.
+- Startup diagnostics and release planning include the new management script.
+
+Commit boundary:
+
+- One commit for batch resume, queue controls, tests, and docs.
+
 ## QuickStep Feature Backlog
 
-Status: planned queue after Round 75.
+Status: planned queue after Round 76.
 
 Priority order:
 

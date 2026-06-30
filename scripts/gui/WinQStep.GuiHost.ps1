@@ -173,6 +173,7 @@ function Test-WinQStepGuiPrerequisites {
         "scripts\run_workflow.py",
         "scripts\run_existing_input.py",
         "scripts\run_existing_input_batch.py",
+        "scripts\manage_existing_input_batch.py",
         "scripts\list_job_history.py",
         "scripts\manage_config.py",
         "scripts\manage_template.py",

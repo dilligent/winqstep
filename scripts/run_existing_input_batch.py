@@ -33,17 +33,20 @@ def main() -> int:
     )
     parser.add_argument("--mpi-ranks", type=int, help="MPI ranks for MPI-launched jobs.")
     parser.add_argument("--prepare-only", action="store_true", help="Write metadata without running CP2K.")
+    parser.add_argument("--resume", action="store_true", help="Resume pending items from an existing batch summary.")
     parser.add_argument("--stop-on-failure", action="store_true", help="Stop after the first failed item.")
     parser.add_argument("--compact", action="store_true", help="Emit compact JSON.")
     args = parser.parse_args()
 
     try:
-        inputs = resolve_existing_input_batch_inputs(
-            input_paths=args.input,
-            input_dirs=args.input_dir,
-            input_list_paths=args.input_list,
-            glob_pattern=args.glob,
-        )
+        inputs = []
+        if not args.resume:
+            inputs = resolve_existing_input_batch_inputs(
+                input_paths=args.input,
+                input_dirs=args.input_dir,
+                input_list_paths=args.input_list,
+                glob_pattern=args.glob,
+            )
         summary = run_existing_input_batch(
             config=load_json_file(args.config),
             input_paths=inputs,
@@ -52,6 +55,7 @@ def main() -> int:
             execute=not args.prepare_only,
             stop_on_failure=args.stop_on_failure,
             job_layout=args.job_layout,
+            resume=args.resume,
         )
     except (OSError, RunnerError, ValueError) as exc:
         print(f"error: {exc}", file=sys.stderr)
@@ -59,7 +63,7 @@ def main() -> int:
 
     indent = None if args.compact else 2
     print(json.dumps(summary, ensure_ascii=False, indent=indent))
-    return 0 if summary["status"] in {"prepared", "succeeded"} else 1
+    return 0 if summary["status"] in {"prepared", "succeeded", "completed_with_skips"} else 1
 
 
 if __name__ == "__main__":

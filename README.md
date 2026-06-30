@@ -33,7 +33,8 @@ The current usable path is:
   `CELL_OPT`
   inputs from structures and templates, including common XC/PBE and opt-in
   DFT-D3 settings;
-- run either generated inputs or existing `.inp` files through `wsl.exe`;
+- run either generated inputs, single existing `.inp` files, or serial
+  existing-input batches through `wsl.exe`;
 - keep inputs, outputs, stdout/stderr logs, metadata, and history in a Windows
   workspace folder;
 - package and smoke-test a source release that can be unpacked on Windows.
