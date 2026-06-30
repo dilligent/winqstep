@@ -149,6 +149,9 @@ Implementation so far:
   distance so the full atom/cell bounding sphere is visible in the preview pane.
 - `Reset View` restores yaw, pitch, pan, and distance to the imported preview's
   default camera state.
+- The Structure tab now uses a side-by-side layout with the readable structure
+  summary on the left and the 3D preview/control area on the right, avoiding the
+  previous wide, short viewport.
 - GUI smoke coverage verifies that rotate, pan, zoom, and reset change and
   restore the expected camera or transform state.
 
@@ -195,8 +198,8 @@ Deferred:
 
 ## Open Decisions
 
-- Whether the Structure tab should split into `Preview` and `Summary` subpanes
-  or use a vertical layout with the 3D preview above the text summary.
+- Whether the side-by-side Structure layout needs a draggable splitter after
+  broader user testing.
 - Whether element colors should use a small built-in palette only, or a fuller
   CPK-like color table.
 - Whether bond inference belongs in Round C or should be deferred until users

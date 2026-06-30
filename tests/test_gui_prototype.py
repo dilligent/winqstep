@@ -191,6 +191,14 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn('x:Name="StructureSelectionText"', xaml_text)
         self.assertIn('x:Name="StructureApplyFixedAtomsButton"', xaml_text)
         self.assertIn('x:Name="StructureClearSelectionButton"', xaml_text)
+        self.assertIn('x:Name="StructureLayoutGrid"', xaml_text)
+        self.assertIn('x:Name="StructureText" Grid.Column="0" MinHeight="360"', xaml_text)
+        self.assertIn('x:Name="StructurePreviewPanel" Grid.Column="2" MinHeight="360"', xaml_text)
+        self.assertIn('x:Name="StructurePreviewFrame" Grid.Row="1"', xaml_text)
+        self.assertLess(
+            xaml_text.index('x:Name="StructureText" Grid.Column="0"'),
+            xaml_text.index('x:Name="StructurePreviewPanel" Grid.Column="2"'),
+        )
         self.assertEqual(
             re.findall(r'<TabItem x:Name="([^"]+)"', xaml_text),
             [

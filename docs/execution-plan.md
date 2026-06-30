@@ -38,8 +38,9 @@ Each round should end with a focused commit.
   QuickStep wavefunction restart controls, and QuickStep
   `MOTION/&CONSTRAINT/&FIXED_ATOMS` controls, and QuickStep
   `DFT/&PRINT/&PDOS` with generated PDOS artifact discovery, and 3D-assisted
-  fixed-atom selection in the GUI Structure tab.
-- Next active round: Round 68, choose the next conservative QuickStep expansion
+  fixed-atom selection in the GUI Structure tab, and side-by-side Structure
+  text/3D preview layout.
+- Next active round: Round 69, choose the next conservative QuickStep expansion
   slice.
 - Known local facts:
   - WSL2 is available.
@@ -2368,9 +2369,46 @@ Commit boundary:
 
 - One commit for GUI selection plumbing, tests, and docs.
 
+## Round 68: Structure Side-by-Side Layout
+
+Status: implemented.
+
+Goal: make the Structure tab use screen space better by placing the readable
+structure summary beside the 3D preview instead of below it.
+
+Rationale:
+
+- The old vertical layout made the 3D viewport a wide, short strip and wasted
+  horizontal space in normal desktop windows.
+- Structure summary text and 3D inspection are naturally used together, so
+  side-by-side reading and previewing is a better fit.
+- The layout change should not alter import, fixed-atom selection, preview,
+  run, or validation behavior.
+
+Tasks:
+
+- Replace the Structure tab row layout with a left/right column layout.
+- Keep `StructureText` on the left and the 3D status/buttons/viewport on the
+  right.
+- Give both sides stable minimum height and adjust the preview camera fallback
+  sizing so initial framing remains correct for a more square viewport.
+- Add GUI static/smoke coverage for the side-by-side layout.
+- Update documentation and this execution plan.
+
+Acceptance:
+
+- Structure import still populates the readable summary and 3D preview.
+- 3D rotate, pan, zoom, reset, and fixed-atom selection assist still pass smoke
+  tests.
+- Fast checks pass.
+
+Commit boundary:
+
+- One commit for Structure layout, tests, and docs.
+
 ## QuickStep Feature Backlog
 
-Status: planned queue after Round 67.
+Status: planned queue after Round 68.
 
 Priority order:
 

@@ -1071,17 +1071,18 @@ function New-WinQStepWindow {
 
     $GetStructurePreviewViewportSize = {
         $windowWidth = & $GetStructurePreviewDimension $window.Width 900.0
-        $widthFallback = [Math]::Max($windowWidth - 56.0, 320.0)
+        $widthFallback = [Math]::Max(($windowWidth * 0.52) - 44.0, 320.0)
+        $heightFallback = [Math]::Max(($windowWidth * 0.42), 360.0)
         $viewport = $controls["StructurePreviewViewport"]
         if ($null -eq $viewport) {
             return [ordered]@{
                 Width = $widthFallback
-                Height = 260.0
+                Height = $heightFallback
             }
         }
 
         $width = & $GetStructurePreviewDimension $viewport.ActualWidth (& $GetStructurePreviewDimension $viewport.RenderSize.Width $widthFallback)
-        $height = & $GetStructurePreviewDimension $viewport.ActualHeight (& $GetStructurePreviewDimension $viewport.RenderSize.Height 260.0)
+        $height = & $GetStructurePreviewDimension $viewport.ActualHeight (& $GetStructurePreviewDimension $viewport.RenderSize.Height $heightFallback)
         return [ordered]@{
             Width = $width
             Height = $height
@@ -3918,8 +3919,9 @@ if ($ButtonSmokeTest) {
         $structurePreviewInitialFitsViewport = (
             [Math]::Abs($structurePreviewInitialDistance - $structurePreviewFitDistance) -lt 0.001 -and
             [Math]::Abs([double]($structurePreviewStateSnapshot["default_distance"]) - $structurePreviewFitDistance) -lt 0.001 -and
-            [double]($structurePreviewStateSnapshot["viewport_width"]) -gt [double]($structurePreviewStateSnapshot["viewport_height"]) -and
-            $structurePreviewFitDistance -gt ($structurePreviewSnapshotRadius * 2.8)
+            [double]($structurePreviewStateSnapshot["viewport_width"]) -ge 320.0 -and
+            [double]($structurePreviewStateSnapshot["viewport_height"]) -ge 320.0 -and
+            $structurePreviewFitDistance -gt ($structurePreviewSnapshotRadius * 2.4)
         )
     }
     $structurePreviewRotatedTransform = $structurePreviewInitialTransform

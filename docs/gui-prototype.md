@@ -152,9 +152,12 @@ coverage and basis/potential label warnings are shown in the `Template` and
 After `Import`, the `Structure` tab displays a readable imported-structure
 summary with source details, cell vectors, element counts, and a cartesian
 coordinate table instead of the raw normalized JSON emitted by the CLI importer.
-It also shows a native WPF 3D preview for successful imports. The preview
-renders atoms as colored spheres, periodic cell edges as a frame when available,
-supports mouse drag rotation, wheel zoom, right/middle-button pan, and
+It also shows a native WPF 3D preview for successful imports. The Structure tab
+uses a side-by-side layout: the readable structure summary stays on the left,
+and preview status, fixed-atom selection controls, and the 3D viewport sit on
+the right. The preview renders atoms as colored spheres, periodic cell edges as
+a frame when available, supports mouse drag rotation, wheel zoom,
+right/middle-button pan, and
 `Reset View`. The initial and reset camera positions fit the full preview model
 using the imported bounding radius, camera field of view, and viewport aspect
 ratio. Clicking an atom in the preview toggles a fixed-atom selection highlight;
