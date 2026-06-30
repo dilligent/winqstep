@@ -2610,9 +2610,34 @@ Commit boundary:
 
 - One commit for GUI batch controls, PowerShell wiring, tests, and docs.
 
+## Round 74 - GUI Batch Run State Fix
+
+Status: completed.
+
+Scope:
+
+- Fix batch Run failing immediately after the background process starts because
+  the async batch log builder referenced a later-created PowerShell closure.
+- Clear and stop a partially started batch job if startup fails before the GUI
+  reaches its normal running state, so switching modes does not leave Run
+  looking unresponsive.
+- Add `-BatchRunSmokeTest` to exercise the batch Run path up to async log
+  construction without launching CP2K, and include it in the GUI check profile.
+
+Acceptance:
+
+- Batch Run smoke prepares two inputs, builds the async log, and leaves Run
+  enabled after switching among Workflow, Existing input, and Existing input
+  batch modes.
+- GUI and fast check profiles pass.
+
+Commit boundary:
+
+- One commit for the batch Run bugfix and regression coverage.
+
 ## QuickStep Feature Backlog
 
-Status: planned queue after Round 73.
+Status: planned queue after Round 74.
 
 Priority order:
 

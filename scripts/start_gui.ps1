@@ -9,6 +9,7 @@ param(
     [switch]$PythonInvokeSmokeTest,
     [switch]$EnvironmentDisplaySmokeTest,
     [switch]$BatchSmokeTest,
+    [switch]$BatchRunSmokeTest,
     [switch]$Diagnostics,
     [switch]$SkipLiveProbes,
     [string]$Language = ""
@@ -21,13 +22,17 @@ $Script:RepoRoot = Split-Path -Parent $PSScriptRoot
 $Script:PythonCommand = "python"
 $Script:Utf8NoBomEncoding = New-Object System.Text.UTF8Encoding($false)
 $Script:RequestedLanguage = $Language
-$SuppressGuiMessageBoxes = [bool]($ButtonSmokeTest -or $EditedPreviewSmokeTest -or $AsyncRunSmokeTest -or $BatchSmokeTest)
+$SuppressGuiMessageBoxes = [bool]($ButtonSmokeTest -or $EditedPreviewSmokeTest -or $AsyncRunSmokeTest -or $BatchSmokeTest -or $BatchRunSmokeTest)
 $EditedPreviewSmokeTestEnabled = [bool]$EditedPreviewSmokeTest
+$BatchRunSmokeTestEnabled = [bool]$BatchRunSmokeTest
 $EditedPreviewSmokeState = @{
     Report = $null
     ConfirmationRequested = $false
     ConfirmationSuppressed = $false
     ConfirmationResult = ""
+}
+$BatchRunSmokeState = @{
+    Report = $null
 }
 $Script:SuppressGuiMessageBoxes = $SuppressGuiMessageBoxes
 $Script:EditedPreviewSmokeStartAsyncJob = $null
@@ -532,7 +537,16 @@ function New-WinQStepWindow {
             )
             $summary = & $ReadMetadataFile ([string]$State["BatchSummaryPath"])
             if ($null -ne $summary) {
-                $sections += (& $FormatBatchSummary $summary)
+                $items = if ($null -ne $summary.items) { @($summary.items) } else { @() }
+                $sections += (
+                    @(
+                        "Existing input batch: status=$($summary.status)",
+                        "inputs=$($summary.input_count), items=$($summary.item_count), prepared=$($summary.prepared_count), succeeded=$($summary.succeeded_count), failed=$($summary.failed_count), errors=$($summary.error_count)",
+                        "job_dir=$($summary.job_dir)",
+                        "summary=$($summary.summary_path)",
+                        "visible_items=$($items.Count)"
+                    ) -join "`r`n"
+                )
             }
             $sections = & $AddTailSection $sections "wrapper stdout tail" ([string]$State["WrapperStdoutPath"]) 40
             $sections = & $AddTailSection $sections "wrapper stderr tail" ([string]$State["WrapperStderrPath"]) 40
@@ -2896,7 +2910,11 @@ function New-WinQStepWindow {
             $wrapperStderrPath = Join-Path $batchDir "winqstep-gui-batch-$stamp.stderr.log"
             $runArguments = @(& $GetExistingInputBatchArguments $false)
             $runArguments += "--compact"
-            $process = Start-WinQStepPythonProcess -Arguments $runArguments -StdoutPath $wrapperStdoutPath -StderrPath $wrapperStderrPath
+            $processArguments = $runArguments
+            if ($BatchRunSmokeTestEnabled) {
+                $processArguments = @("-c", "import time; time.sleep(5)")
+            }
+            $process = Start-WinQStepPythonProcess -Arguments $processArguments -StdoutPath $wrapperStdoutPath -StderrPath $wrapperStderrPath
 
             $jobState["Current"] = @{
                 Mode = "existing_input_batch"
@@ -2910,12 +2928,46 @@ function New-WinQStepWindow {
                 Cancelled = $false
             }
             $controls["LogText"].Text = ($summaryText, (& $BuildAsyncJobLog $jobState["Current"])) -join "`r`n`r`n"
+            if ($BatchRunSmokeTestEnabled) {
+                $BatchRunSmokeState["Report"] = [ordered]@{
+                    prepared_status = (& $GetJsonProperty $preparedSummary "status")
+                    prepared_item_count = (& $GetJsonProperty $preparedSummary "item_count")
+                    summary_path = $summaryPath
+                    wrapper_stdout_path = $wrapperStdoutPath
+                    wrapper_stderr_path = $wrapperStderrPath
+                    run_arguments = $runArguments
+                    preview_text = [string]$controls["PreviewText"].Text
+                    artifact_summary_text = [string]$controls["ArtifactSummaryText"].Text
+                    async_log_text = [string]$controls["LogText"].Text
+                }
+                try {
+                    Stop-WinQStepProcessTree $process
+                    $null = Save-WinQStepProcessOutput $process $wrapperStdoutPath $wrapperStderrPath
+                }
+                catch {
+                }
+                $jobState["Current"] = $null
+                $controls["LogText"].Text = "$summaryText`r`n`r`nExisting input batch run smoke stopped before starting CP2K."
+                & $SetBusy $false (Get-WinQStepText "status.ready")
+                return
+            }
             & $SetJobStatusText (& $FormatRunningJobStatus $jobState["Current"])
             & $SetAsyncJobRunning $true (Format-WinQStepText "status.running_cp2k_pid" @($process.Id))
             $jobTimer.Start()
         }
         catch {
             $message = $_.Exception.Message
+            $startedState = $jobState["Current"]
+            if ($null -ne $startedState -and [string]$startedState["Mode"] -eq "existing_input_batch") {
+                try {
+                    Stop-WinQStepProcessTree ([System.Diagnostics.Process]$startedState["Process"])
+                    $null = Save-WinQStepProcessOutput ([System.Diagnostics.Process]$startedState["Process"]) ([string]$startedState["WrapperStdoutPath"]) ([string]$startedState["WrapperStderrPath"])
+                }
+                catch {
+                }
+                $jobTimer.Stop()
+                $jobState["Current"] = $null
+            }
             & $AppendLog "ERROR: $message"
             if ($SuppressGuiMessageBoxes) {
                 & $SetBusy $false (Get-WinQStepText "status.ready")
@@ -3678,6 +3730,89 @@ if ($BatchSmokeTest) {
         $report["summary_item_count"] -eq 2 -and
         $report["metadata_button_enabled"] -and
         $report["results_button_enabled"]
+    ) {
+        exit 0
+    }
+    exit 1
+}
+
+if ($BatchRunSmokeTest) {
+    $report = Test-WinQStepGuiPrerequisites
+    $window = New-WinQStepWindow
+    $smokeDir = Resolve-WinQStepPath ("outputs\gui-batch-run-smoke-{0}" -f ([System.Guid]::NewGuid().ToString("N")))
+    $batchInputDir = Join-Path $smokeDir "inputs"
+    $batchJobDir = Join-Path $smokeDir "jobs"
+    [System.IO.Directory]::CreateDirectory($batchInputDir) | Out-Null
+    [System.IO.Directory]::CreateDirectory($batchJobDir) | Out-Null
+    $smokeConfigPath = Join-Path $smokeDir "batch_run_smoke.config.json"
+    [System.IO.File]::Copy((Resolve-WinQStepPath "examples\winqstep.config.example.json"), $smokeConfigPath, $true)
+    [System.IO.File]::Copy((Resolve-WinQStepPath "tests\fixtures\quickstep_energy.inp"), (Join-Path $batchInputDir "batch_run_one.inp"), $true)
+    [System.IO.File]::Copy((Resolve-WinQStepPath "tests\fixtures\quickstep_energy.inp"), (Join-Path $batchInputDir "batch_run_two.inp"), $true)
+
+    $window.FindName("ConfigPathBox").Text = $smokeConfigPath
+    $window.FindName("ExistingInputBatchModeRadio").IsChecked = $true
+    $window.FindName("ExistingInputPathBox").Text = $batchInputDir
+    $window.FindName("JobDirBox").Text = $batchJobDir
+    [System.Windows.Forms.Application]::DoEvents()
+
+    $runOk = $true
+    $runError = ""
+    try {
+        $button = $window.FindName("RunButton")
+        $eventArgs = [System.Windows.RoutedEventArgs]::new([System.Windows.Controls.Button]::ClickEvent)
+        $button.RaiseEvent($eventArgs)
+        [System.Windows.Forms.Application]::DoEvents()
+    }
+    catch {
+        $runOk = $false
+        $runError = $_.Exception.Message
+    }
+
+    $smokeReport = $BatchRunSmokeState["Report"]
+    $window.FindName("WorkflowModeRadio").IsChecked = $true
+    [System.Windows.Forms.Application]::DoEvents()
+    $workflowRunEnabled = [bool]$window.FindName("RunButton").IsEnabled
+    $window.FindName("ExistingInputModeRadio").IsChecked = $true
+    [System.Windows.Forms.Application]::DoEvents()
+    $existingRunEnabled = [bool]$window.FindName("RunButton").IsEnabled
+    $window.FindName("ExistingInputBatchModeRadio").IsChecked = $true
+    [System.Windows.Forms.Application]::DoEvents()
+    $batchRunEnabled = [bool]$window.FindName("RunButton").IsEnabled
+
+    $report["mode"] = "batch_run_smoke"
+    $report["run_ok"] = $runOk
+    $report["run_error"] = $runError
+    $report["run_reported"] = ($null -ne $smokeReport)
+    $report["prepared_status"] = if ($null -ne $smokeReport) { [string]$smokeReport["prepared_status"] } else { "" }
+    $report["prepared_item_count"] = if ($null -ne $smokeReport) { [int]$smokeReport["prepared_item_count"] } else { 0 }
+    $report["summary_exists"] = if ($null -ne $smokeReport) { [System.IO.File]::Exists([string]$smokeReport["summary_path"]) } else { $false }
+    $report["run_arguments"] = if ($null -ne $smokeReport) { @($smokeReport["run_arguments"]) } else { @() }
+    $report["run_arguments_has_batch_script"] = @($report["run_arguments"]).Contains("scripts\run_existing_input_batch.py")
+    $report["run_arguments_has_compact"] = @($report["run_arguments"]).Contains("--compact")
+    $report["preview_text_has_summary"] = if ($null -ne $smokeReport) { ([string]$smokeReport["preview_text"]).Contains("Existing input batch: status=prepared") } else { $false }
+    $report["artifact_summary_has_batch"] = if ($null -ne $smokeReport) { ([string]$smokeReport["artifact_summary_text"]).Contains("mode=existing_input_batch") } else { $false }
+    $report["async_log_has_batch_status"] = if ($null -ne $smokeReport) { ([string]$smokeReport["async_log_text"]).Contains("Existing input batch: status=prepared") } else { $false }
+    $report["async_log_has_wrapper_paths"] = if ($null -ne $smokeReport) { ([string]$smokeReport["async_log_text"]).Contains("wrapper_stdout=") -and ([string]$smokeReport["async_log_text"]).Contains("wrapper_stderr=") } else { $false }
+    $report["workflow_run_enabled_after_batch"] = $workflowRunEnabled
+    $report["existing_run_enabled_after_batch"] = $existingRunEnabled
+    $report["batch_run_enabled_after_batch"] = $batchRunEnabled
+    $report | ConvertTo-Json -Depth 6
+
+    if (
+        $report["run_ok"] -and
+        $report["run_reported"] -and
+        $report["prepared_status"] -eq "prepared" -and
+        $report["prepared_item_count"] -eq 2 -and
+        $report["summary_exists"] -and
+        $report["run_arguments_has_batch_script"] -and
+        $report["run_arguments_has_compact"] -and
+        $report["preview_text_has_summary"] -and
+        $report["artifact_summary_has_batch"] -and
+        $report["async_log_has_batch_status"] -and
+        $report["async_log_has_wrapper_paths"] -and
+        $report["workflow_run_enabled_after_batch"] -and
+        $report["existing_run_enabled_after_batch"] -and
+        $report["batch_run_enabled_after_batch"]
     ) {
         exit 0
     }

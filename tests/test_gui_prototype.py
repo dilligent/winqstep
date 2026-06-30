@@ -405,6 +405,7 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn("$AsyncRunSmokeTest", script_text)
         self.assertIn("$PythonInvokeSmokeTest", script_text)
         self.assertIn("$BatchSmokeTest", script_text)
+        self.assertIn("$BatchRunSmokeTest", script_text)
         self.assertIn("Add_DispatcherUnhandledException", script_text)
         self.assertIn("$Script:SuppressGuiMessageBoxes", script_text)
         self.assertIn("SaveEditedInputPreview", script_text)
@@ -423,6 +424,7 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn("PreviewWorkflowButton", script_text)
         self.assertIn("PreviewExistingInputButton", script_text)
         self.assertIn("PreviewExistingInputBatchButton", script_text)
+        self.assertIn("batch_run_smoke", script_text)
         self.assertIn("ExistingInputBatchModeRadio", xaml_text)
         self.assertIn("BatchStopOnFailureBox", xaml_text)
         self.assertIn("GetExistingInputBatchArguments", script_text)
@@ -837,6 +839,48 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertEqual(report["summary_item_count"], 2)
         self.assertTrue(report["metadata_button_enabled"])
         self.assertTrue(report["results_button_enabled"])
+
+    @unittest.skipUnless(platform.system() == "Windows", "WPF prototype is Windows-only")
+    def test_batch_run_smoke_builds_async_log_without_starting_cp2k(self) -> None:
+        powershell = shutil.which("powershell") or shutil.which("pwsh")
+        if not powershell:
+            self.skipTest("PowerShell is not available")
+
+        completed = subprocess.run(
+            [
+                powershell,
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                str(ROOT / "scripts" / "start_gui.ps1"),
+                "-BatchRunSmokeTest",
+                "-Language",
+                "en-US",
+            ],
+            capture_output=True,
+            check=False,
+        )
+
+        stderr = completed.stderr.decode("utf-8", errors="replace")
+        stdout = completed.stdout.decode("utf-8-sig", errors="replace")
+        self.assertEqual(completed.returncode, 0, stderr)
+        report = json.loads(stdout)
+        self.assertEqual(report["mode"], "batch_run_smoke")
+        self.assertTrue(report["run_ok"], report["run_error"])
+        self.assertTrue(report["run_reported"])
+        self.assertEqual(report["prepared_status"], "prepared")
+        self.assertEqual(report["prepared_item_count"], 2)
+        self.assertTrue(report["summary_exists"])
+        self.assertTrue(report["run_arguments_has_batch_script"])
+        self.assertTrue(report["run_arguments_has_compact"])
+        self.assertTrue(report["preview_text_has_summary"])
+        self.assertTrue(report["artifact_summary_has_batch"])
+        self.assertTrue(report["async_log_has_batch_status"])
+        self.assertTrue(report["async_log_has_wrapper_paths"])
+        self.assertTrue(report["workflow_run_enabled_after_batch"])
+        self.assertTrue(report["existing_run_enabled_after_batch"])
+        self.assertTrue(report["batch_run_enabled_after_batch"])
 
     @unittest.skipUnless(platform.system() == "Windows", "WPF prototype is Windows-only")
     def test_edited_preview_smoke_runs_saved_input_copy(self) -> None:
