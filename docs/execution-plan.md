@@ -1611,6 +1611,37 @@ Commit boundary:
 - One commit for the local 3D preview planning document and execution-plan
   reference.
 
+## Round 47: Structure Preview Data Model
+
+Status: implemented.
+
+Goal: build the first display-only model for imported-structure 3D previews
+without touching WPF rendering yet.
+
+Tasks:
+
+- Add `winqstep.structure_preview.build_structure_preview`.
+- Convert normalized importer output into atoms with element colors, display
+  radii, cartesian coordinates, source metadata, center, and bounding radius.
+- Add periodic cell-frame geometry as 12 edges when usable periodic cell vectors
+  are present.
+- Warn and omit the cell frame for nonperiodic or incomplete-cell structures.
+- Cap displayed atoms for large structures while keeping total atom count.
+- Cover water XYZ, POSCAR, NaCl CIF, atom-count capping, and invalid limits in
+  tests.
+
+Acceptance:
+
+- Nonperiodic XYZ structures render atoms and warn that no periodic cell frame
+  is available.
+- Periodic POSCAR/CIF structures include 12 cell-frame edges.
+- Large structures report both total and displayed atom counts.
+- The helper has no dependency on WPF and does not affect Preview or Run.
+
+Commit boundary:
+
+- One commit for the preview model helper, tests, and local plan update.
+
 ## Working Rules
 
 - Keep each round small enough to review.

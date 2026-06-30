@@ -43,6 +43,8 @@ The first preview should not try to implement:
 
 ### Round A: Preview Data Model
 
+Status: implemented.
+
 Goal: build a small view model from normalized structure JSON that is stable,
 testable, and independent of WPF.
 
@@ -65,7 +67,19 @@ Acceptance:
   available.
 - Large structures can be represented without forcing expensive GUI geometry.
 
+Implementation:
+
+- `winqstep.structure_preview.build_structure_preview` returns a JSON-friendly
+  preview model.
+- The model includes displayed atoms, element colors, display radii, periodic
+  cell edges, center, bounding radius, source metadata, and warnings.
+- The helper intentionally does not infer bonds or mutate structure data.
+- Tests cover nonperiodic `water.xyz`, periodic `POSCAR`, periodic `nacl.cif`,
+  atom-count capping, and invalid display limits.
+
 ### Round B: Static WPF 3D Preview
+
+Status: next.
 
 Goal: render imported structures in the `Structure` tab while preserving the
 existing readable text summary.
