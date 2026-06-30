@@ -128,6 +128,35 @@ class QuickStepTests(unittest.TestCase):
         self.assertIn("    &POISSON\n      PERIODIC XYZ\n    &END POISSON\n", rendered)
         self.assertNotIn("POISSON_SOLVER", rendered)
 
+    def test_renders_wavefunction_restart_controls(self) -> None:
+        data = json.loads((ROOT / "examples" / "quickstep_energy.json").read_text(encoding="utf-8"))
+        data["dft"].update(
+            {
+                "wfn_restart_file_name": "previous-RESTART.wfn",
+                "scf_guess": "restart",
+            }
+        )
+
+        rendered = render_quickstep_input(quickstep_input_from_dict(data))
+
+        self.assertIn("    WFN_RESTART_FILE_NAME previous-RESTART.wfn\n", rendered)
+        self.assertIn(
+            "    &SCF\n"
+            "      SCF_GUESS RESTART\n"
+            "      EPS_SCF 1.0E-6\n",
+            rendered,
+        )
+
+    def test_blank_restart_controls_preserve_existing_scf_output(self) -> None:
+        data = json.loads((ROOT / "examples" / "quickstep_energy.json").read_text(encoding="utf-8"))
+        data["dft"].update({"wfn_restart_file_name": "", "scf_guess": ""})
+
+        rendered = render_quickstep_input(quickstep_input_from_dict(data))
+
+        self.assertIn("    &SCF\n      EPS_SCF 1.0E-6\n      MAX_SCF 50\n    &END SCF\n", rendered)
+        self.assertNotIn("WFN_RESTART_FILE_NAME", rendered)
+        self.assertNotIn("SCF_GUESS", rendered)
+
     def test_renders_dft_print_population_sections_when_enabled(self) -> None:
         data = json.loads((ROOT / "examples" / "quickstep_energy.json").read_text(encoding="utf-8"))
         data["dft"].update({"print_mulliken": True, "print_lowdin": True})
@@ -286,6 +315,20 @@ class QuickStepTests(unittest.TestCase):
         data["dft"]["poisson_solver"] = "PERIODIC"
 
         with self.assertRaisesRegex(QuickStepInputError, "poisson_solver PERIODIC"):
+            quickstep_input_from_dict(data)
+
+    def test_rejects_unknown_scf_guess(self) -> None:
+        data = json.loads((ROOT / "examples" / "quickstep_energy.json").read_text(encoding="utf-8"))
+        data["dft"]["scf_guess"] = "from_memory"
+
+        with self.assertRaisesRegex(QuickStepInputError, "scf_guess"):
+            quickstep_input_from_dict(data)
+
+    def test_rejects_wfn_restart_file_without_restart_guess(self) -> None:
+        data = json.loads((ROOT / "examples" / "quickstep_energy.json").read_text(encoding="utf-8"))
+        data["dft"].update({"wfn_restart_file_name": "previous-RESTART.wfn", "scf_guess": "atomic"})
+
+        with self.assertRaisesRegex(QuickStepInputError, "wfn_restart_file_name"):
             quickstep_input_from_dict(data)
 
     def test_rejects_mixing_without_diagonalization(self) -> None:

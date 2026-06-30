@@ -21,8 +21,10 @@ class TemplateTests(unittest.TestCase):
         self.assertEqual(template["run_type"], "ENERGY")
         self.assertEqual(template["dft"]["charge"], 0)
         self.assertEqual(template["dft"]["poisson_solver"], "")
+        self.assertEqual(template["dft"]["wfn_restart_file_name"], "")
         self.assertFalse(template["dft"]["print_mulliken"])
         self.assertFalse(template["dft"]["print_lowdin"])
+        self.assertEqual(template["dft"]["scf_guess"], "")
         self.assertEqual(template["dft"]["eps_scf"], "1.0E-6")
         self.assertEqual(template["kinds"][0]["element"], "H")
 
@@ -186,6 +188,28 @@ class TemplateTests(unittest.TestCase):
         self.assertTrue(cleared_validation["valid"], cleared_validation["errors"])
         self.assertEqual(cleared_validation["template"]["dft"]["poisson_solver"], "")
 
+    def test_merge_fields_updates_restart_controls(self) -> None:
+        template = load_template(ENERGY_TEMPLATE)
+        merged = merge_template_fields(
+            template,
+            {
+                "wfn_restart_file_name": "previous-RESTART.wfn",
+                "scf_guess": "history_restart",
+            },
+        )
+        validation = validate_template(merged)
+
+        self.assertTrue(validation["valid"], validation["errors"])
+        dft = validation["template"]["dft"]
+        self.assertEqual(dft["wfn_restart_file_name"], "previous-RESTART.wfn")
+        self.assertEqual(dft["scf_guess"], "HISTORY_RESTART")
+
+        cleared = merge_template_fields(validation["template"], {"wfn_restart_file_name": "", "scf_guess": ""})
+        cleared_validation = validate_template(cleared)
+        self.assertTrue(cleared_validation["valid"], cleared_validation["errors"])
+        self.assertEqual(cleared_validation["template"]["dft"]["wfn_restart_file_name"], "")
+        self.assertEqual(cleared_validation["template"]["dft"]["scf_guess"], "")
+
     def test_merge_fields_updates_dft_print_controls(self) -> None:
         template = load_template(ENERGY_TEMPLATE)
         merged = merge_template_fields(template, {"print_mulliken": "yes", "print_lowdin": True})
@@ -289,6 +313,22 @@ class TemplateTests(unittest.TestCase):
         self.assertFalse(validation["valid"])
         self.assertIn("dft.poisson_solver has an unsupported value", validation["errors"])
 
+    def test_validate_rejects_wfn_restart_file_without_restart_guess(self) -> None:
+        template = load_template(ENERGY_TEMPLATE)
+        merged = merge_template_fields(template, {"wfn_restart_file_name": "previous-RESTART.wfn"})
+        validation = validate_template(merged)
+
+        self.assertFalse(validation["valid"])
+        self.assertIn("dft.wfn_restart_file_name requires dft.scf_guess", "\n".join(validation["errors"]))
+
+    def test_validate_rejects_unknown_scf_guess(self) -> None:
+        template = load_template(ENERGY_TEMPLATE)
+        merged = merge_template_fields(template, {"scf_guess": "from_memory"})
+        validation = validate_template(merged)
+
+        self.assertFalse(validation["valid"])
+        self.assertIn("dft.scf_guess has an unsupported value", validation["errors"])
+
     def test_validate_rejects_noninteger_kpoints_grid(self) -> None:
         template = load_template(ENERGY_TEMPLATE)
         merged = merge_template_fields(
@@ -379,8 +419,10 @@ class TemplateTests(unittest.TestCase):
                 "cutoff",
                 "rel_cutoff",
                 "poisson_solver",
+                "wfn_restart_file_name",
                 "print_mulliken",
                 "print_lowdin",
+                "scf_guess",
                 "eps_scf",
                 "max_scf",
                 "outer_scf_enabled",

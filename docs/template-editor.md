@@ -27,10 +27,11 @@ Editable fields include:
   `SILENT`, `LOW`, `MEDIUM`, `HIGH`, and `DEBUG`
 - DFT fields: basis file, potential file, XC functional, optional PBE
   parametrization, optional DFT-D3 dispersion, charge, multiplicity, UKS spin
-  polarization, cutoff, relative cutoff, optional POISSON solver, EPS_SCF,
-  MAX_SCF, SCF method, optional OUTER_SCF settings, ADDED_MOS, OT settings,
-  diagonalization settings, mixing settings, and electronic-temperature
-  smearing settings, plus KPOINTS scheme/grid,
+  polarization, cutoff, relative cutoff, optional POISSON solver, optional
+  wavefunction restart file, optional SCF guess, EPS_SCF, MAX_SCF, SCF method,
+  optional OUTER_SCF settings, ADDED_MOS, OT settings, diagonalization
+  settings, mixing settings, and electronic-temperature smearing settings,
+  plus KPOINTS scheme/grid,
   full-grid, symmetry, wavefunction controls, and optional Mulliken/Lowdin DFT
   print controls
 - GEO_OPT fields: optimizer and max iterations
@@ -76,6 +77,11 @@ XC controls expose common `XC_FUNCTIONAL` shortcuts, PBE parametrizations
 (`ORIG`, `PBESOL`, `REVPBE`, `RPBE`), and opt-in DFT-D3 pair-potential settings.
 UKS is exposed as a checkbox in the `&FORCE_EVAL / &DFT` group because it maps
 to the top-level `DFT/UKS` keyword.
+Wavefunction restart controls expose `WFN_RESTART_FILE_NAME` in the
+`&FORCE_EVAL / &DFT` group and `SCF_GUESS` in the
+`&FORCE_EVAL / &DFT / &SCF` group. Leaving both blank preserves the historical
+generated input; naming a restart file requires `RESTART` or
+`HISTORY_RESTART` as the SCF guess.
 OUTER_SCF fields expose common outer-loop thresholds and iteration counts while
 remaining editable.
 POISSON fields expose an optional `POISSON_SOLVER` selector. Leaving it blank
@@ -92,7 +98,8 @@ manual pages for `GLOBAL/RUN_TYPE`, `GLOBAL/PRINT_LEVEL`,
 `FORCE_EVAL/DFT/BASIS_SET_FILE_NAME`,
 `FORCE_EVAL/DFT/POTENTIAL_FILE_NAME`, `FORCE_EVAL/DFT/XC/XC_FUNCTIONAL`,
 `FORCE_EVAL/DFT/XC/VDW_POTENTIAL/PAIR_POTENTIAL`, `FORCE_EVAL/DFT/UKS`,
-`FORCE_EVAL/DFT/MGRID`, `FORCE_EVAL/DFT/SCF`, and
+`FORCE_EVAL/DFT/WFN_RESTART_FILE_NAME`, `FORCE_EVAL/DFT/MGRID`,
+`FORCE_EVAL/DFT/SCF`, and
 `MOTION/GEO_OPT`, plus
 `FORCE_EVAL/SUBSYS/CELL`, `FORCE_EVAL/DFT/POISSON`,
 `FORCE_EVAL/DFT/SCF/OT`,
@@ -123,6 +130,8 @@ the inner SCF threshold. The template validator rejects unsupported
 solver/periodicity combinations that WinQStep does not support. KPOINTS options
 are rejected unless a KPOINTS scheme is selected, and rendered workflow inputs
 reject KPOINTS for nonperiodic cells.
+Wavefunction restart file names are rejected unless `SCF_GUESS` is `RESTART`
+or `HISTORY_RESTART`.
 CELL_OPT inputs reject nonperiodic cells and currently support the
 `DIRECT_CELL_OPT` path. When a CP2K data inspection cache is available, the GUI
 preflight step also compares template data-file names and KIND basis/potential

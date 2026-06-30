@@ -74,6 +74,17 @@ class WorkflowTests(unittest.TestCase):
 
         self.assertEqual(quickstep_data["dft"]["poisson_solver"], "WAVELET")
 
+    def test_builds_workflow_data_with_restart_controls(self) -> None:
+        imported = import_structure(STRUCTURES / "water.xyz")
+        template = json.loads(json.dumps(self.template))
+        template["dft"]["wfn_restart_file_name"] = "previous-RESTART.wfn"
+        template["dft"]["scf_guess"] = "RESTART"
+
+        quickstep_data = build_quickstep_data(template, imported, project_name="water_restart")
+
+        self.assertEqual(quickstep_data["dft"]["wfn_restart_file_name"], "previous-RESTART.wfn")
+        self.assertEqual(quickstep_data["dft"]["scf_guess"], "RESTART")
+
     def test_builds_workflow_data_with_dft_print_controls(self) -> None:
         imported = import_structure(STRUCTURES / "water.xyz")
         template = json.loads(json.dumps(self.template))

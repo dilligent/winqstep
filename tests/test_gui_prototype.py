@@ -67,8 +67,10 @@ class GuiPrototypeTests(unittest.TestCase):
             "template_dispersion_reference_functional": str(dft.get("dispersion_reference_functional", "")),
             "template_cutoff": str(dft.get("cutoff", "")),
             "template_poisson_solver": str(dft.get("poisson_solver", "")),
+            "template_wfn_restart_file_name": str(dft.get("wfn_restart_file_name", "")),
             "template_uks_enabled": bool(dft.get("uks_enabled", False)),
             "template_scf_method": str(dft.get("scf_method", "")),
+            "template_scf_guess": str(dft.get("scf_guess", "")),
             "template_added_mos": str(dft.get("added_mos", "")),
             "template_outer_scf_enabled": bool(dft.get("outer_scf_enabled", False)),
             "template_outer_scf_eps_scf": str(dft.get("outer_scf_eps_scf", "")),
@@ -200,6 +202,8 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn('<ComboBoxItem Content="GEO_OPT"/>', xaml_text)
         self.assertIn('<ComboBoxItem Content="CELL_OPT"/>', xaml_text)
         self.assertIn('x:Name="UksEnabledBox" Grid.Row="3" Grid.Column="0"', xaml_text)
+        self.assertIn('x:Name="WfnRestartFileNameBox" Grid.Row="3" Grid.Column="3" IsEditable="True"', xaml_text)
+        self.assertIn('<ComboBoxItem Content="PROJECT-RESTART.wfn"/>', xaml_text)
         self.assertIn('x:Name="PoissonSolverBox" Grid.Row="0" Grid.Column="1" IsEditable="True"', xaml_text)
         self.assertIn('<ComboBoxItem Content="PERIODIC"/>', xaml_text)
         self.assertIn('<ComboBoxItem Content="WAVELET"/>', xaml_text)
@@ -224,6 +228,9 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn('x:Name="ScfMethodBox" Grid.Row="1" Grid.Column="1" IsEditable="True"', xaml_text)
         self.assertIn('<ComboBoxItem Content="DIAGONALIZATION"/>', xaml_text)
         self.assertIn('<ComboBoxItem Content="OT"/>', xaml_text)
+        self.assertIn('x:Name="ScfGuessBox" Grid.Row="3" Grid.Column="3" IsEditable="True"', xaml_text)
+        self.assertIn('<ComboBoxItem Content="RESTART"/>', xaml_text)
+        self.assertIn('<ComboBoxItem Content="HISTORY_RESTART"/>', xaml_text)
         self.assertIn('x:Name="AddedMosBox" Grid.Row="1" Grid.Column="3" IsEditable="True"', xaml_text)
         self.assertIn('x:Name="DiagonalizationAlgorithmBox" Grid.Row="2" Grid.Column="1" IsEditable="True"', xaml_text)
         self.assertIn('x:Name="OtMinimizerBox" Grid.Row="2" Grid.Column="3" IsEditable="True"', xaml_text)
@@ -258,6 +265,8 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn('"button.apply": "Apply"', english_text)
         self.assertIn('"label.print_level": "Print Level"', english_text)
         self.assertIn('"label.poisson_solver": "Poisson Solver"', english_text)
+        self.assertIn('"label.wfn_restart_file_name": "WFN Restart File"', english_text)
+        self.assertIn('"label.scf_guess": "SCF Guess"', english_text)
         self.assertIn('"label.uks_enabled": "UKS"', english_text)
         self.assertIn('"label.dispersion_enabled": "DFT-D3"', english_text)
         self.assertIn('"label.outer_scf_enabled": "Outer SCF"', english_text)
@@ -469,13 +478,17 @@ class GuiPrototypeTests(unittest.TestCase):
             ],
         )
         self.assertEqual(report["template_section_group_left_margins"], [0, 18, 36, 36, 36, 54, 54, 54, 36, 36, 36, 36, 18, 18])
-        self.assertEqual(report["template_combo_fields_loaded"], 42)
-        self.assertEqual(report["template_combo_fields_editable"], 42)
+        self.assertEqual(report["template_combo_fields_loaded"], 44)
+        self.assertEqual(report["template_combo_fields_editable"], 44)
         self.assertEqual(report["template_run_type_options"], ["ENERGY", "ENERGY_FORCE", "GEO_OPT", "CELL_OPT"])
         self.assertEqual(report["template_print_level_options"], ["", "SILENT", "LOW", "MEDIUM", "HIGH", "DEBUG"])
         self.assertEqual(
             report["template_poisson_solver_options"],
             ["", "PERIODIC", "ANALYTIC", "MT", "MULTIPOLE", "WAVELET", "IMPLICIT"],
+        )
+        self.assertEqual(
+            report["template_scf_guess_options"],
+            ["", "ATOMIC", "RESTART", "HISTORY_RESTART", "CORE", "RANDOM", "SPARSE", "NONE", "MOPAC"],
         )
         self.assertEqual(report["template_optimizer_options"], ["BFGS", "LBFGS", "CG"])
         self.assertEqual(report["template_cell_opt_type_options"], ["DIRECT_CELL_OPT"])

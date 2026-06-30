@@ -28,6 +28,7 @@ The first generator should target:
 - `&FORCE_EVAL`
 - `&DFT`
 - `DFT/UKS`
+- `DFT/WFN_RESTART_FILE_NAME`
 - `DFT/&POISSON`
 - `DFT/&POISSON/POISSON_SOLVER`
 - `DFT/&KPOINTS`
@@ -40,6 +41,7 @@ The first generator should target:
 - `&SUBSYS`
 - `SUBSYS/&CELL`
 - `&SCF`
+- `SCF/SCF_GUESS`
 - `SCF/&OT`
 - `SCF/&DIAGONALIZATION`
 - `SCF/&OUTER_SCF`
@@ -77,8 +79,9 @@ Top-level fields:
   default print level implicit
 - `dft`: basis/potential file names, XC functional settings, optional DFT-D3
   dispersion, charge, multiplicity, optional UKS spin polarization, MGRID
-  cutoff, optional POISSON solver controls, SCF controls, optional KPOINTS
-  controls, and optional text-oriented DFT print controls
+  cutoff, optional POISSON solver controls, optional wavefunction restart
+  controls, SCF controls, optional KPOINTS controls, and optional text-oriented
+  DFT print controls
 - `geo_opt`: optimizer and max iteration settings for `GEO_OPT`
 - `cell_opt`: optimizer, max iteration, type, pressure tolerance, and simple
   cell-shape constraints for `CELL_OPT`
@@ -100,6 +103,14 @@ Text-oriented DFT print controls are opt-in. `dft.print_mulliken` renders
 `DFT/&PRINT/&MULLIKEN ON`, and `dft.print_lowdin` renders
 `DFT/&PRINT/&LOWDIN ON`. Both default to false so existing generated inputs do
 not add population analysis output unless users request it.
+
+Wavefunction restart is explicit and opt-in. `dft.wfn_restart_file_name` renders
+`DFT/WFN_RESTART_FILE_NAME`, while `dft.scf_guess` renders `SCF/SCF_GUESS`.
+Leaving both blank preserves the previous generated input. If a restart file is
+named, WinQStep requires `SCF_GUESS RESTART` or `SCF_GUESS HISTORY_RESTART` so
+the selected file is not silently ignored. `EXT_RESTART` remains out of scope
+for now because it can restore broader simulation state than the current
+structure-import workflow models.
 
 Spin polarization is opt-in through `dft.uks_enabled`. When it is true, the
 renderer writes `UKS T` in `&DFT`; when false, the keyword is omitted. Templates
@@ -162,6 +173,7 @@ QuickStep subset with tests.
   set.
 - CELL and POISSON periodicity must stay synchronized.
 - `POISSON_SOLVER` renders only when explicitly selected.
+- `WFN_RESTART_FILE_NAME` and `SCF_GUESS` render only when explicitly selected.
 - PBE parametrization renders only when explicitly non-default.
 - DFT-D3 renders only when explicitly enabled.
 - UKS is generated only when explicitly enabled.
@@ -181,6 +193,8 @@ The generator should validate before writing:
 - required structure data exists;
 - periodic cell data exists when periodic mode is selected;
 - explicit POISSON solver choices are compatible with the resolved periodicity;
+- explicit wavefunction restart files use restart-compatible `SCF_GUESS`
+  values;
 - basis and potential file names are available in `CP2K_DATA_DIR`;
 - calculation type is supported by the current generator;
 - required CP2K commands were detected.

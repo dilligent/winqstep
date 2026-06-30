@@ -98,6 +98,7 @@ function New-WinQStepWindow {
         "DispersionParameterFileLabel", "DispersionReferenceFunctionalLabel",
         "EpsScfLabel", "ChargeLabel", "MultiplicityLabel",
         "CutoffLabel", "RelCutoffLabel", "PoissonSolverLabel", "PrintLevelLabel", "MaxScfLabel", "OptimizerLabel", "GeoMaxIterLabel",
+        "WfnRestartFileNameLabel", "ScfGuessLabel",
         "CellOptTypeLabel", "CellOptOptimizerLabel", "CellOptMaxIterLabel",
         "CellOptPressureToleranceLabel",
         "ScfMethodLabel", "AddedMosLabel", "DiagonalizationAlgorithmLabel",
@@ -110,6 +111,7 @@ function New-WinQStepWindow {
         "FallbackPeriodicLabel", "FallbackCellALabel", "FallbackCellBLabel", "FallbackCellCLabel",
         "TemplateProjectBox", "TemplateRunTypeBox", "PrintLevelBox", "BasisSetFileBox", "PotentialFileBox",
         "PoissonSolverBox",
+        "WfnRestartFileNameBox",
         "XcFunctionalBox", "XcPbeParametrizationBox", "DispersionTypeBox",
         "DispersionParameterFileBox", "DispersionReferenceFunctionalBox",
         "ChargeBox", "MultiplicityBox", "CutoffBox", "RelCutoffBox",
@@ -117,6 +119,7 @@ function New-WinQStepWindow {
         "CellOptTypeBox", "CellOptOptimizerBox", "CellOptMaxIterBox",
         "CellOptPressureToleranceBox",
         "ScfMethodBox", "AddedMosBox", "DiagonalizationAlgorithmBox",
+        "ScfGuessBox",
         "OtMinimizerBox", "OtPreconditionerBox",
         "OuterScfEpsScfBox", "OuterScfMaxScfBox",
         "MixingMethodBox",
@@ -240,8 +243,10 @@ function New-WinQStepWindow {
         CutoffLabel = "label.cutoff"
         RelCutoffLabel = "label.rel_cutoff"
         PoissonSolverLabel = "label.poisson_solver"
+        WfnRestartFileNameLabel = "label.wfn_restart_file_name"
         MaxScfLabel = "label.max_scf"
         ScfMethodLabel = "label.scf_method"
+        ScfGuessLabel = "label.scf_guess"
         AddedMosLabel = "label.added_mos"
         DiagonalizationAlgorithmLabel = "label.diagonalization_algorithm"
         OtMinimizerLabel = "label.ot_minimizer"
@@ -2044,6 +2049,8 @@ function New-WinQStepWindow {
         $controls["CutoffBox"].Text = & $GetJsonProperty $dft "cutoff"
         $controls["RelCutoffBox"].Text = & $GetJsonProperty $dft "rel_cutoff"
         $controls["PoissonSolverBox"].Text = & $GetJsonProperty $dft "poisson_solver"
+        $controls["WfnRestartFileNameBox"].Text = & $GetJsonProperty $dft "wfn_restart_file_name"
+        $controls["ScfGuessBox"].Text = & $GetJsonProperty $dft "scf_guess"
         $controls["EpsScfBox"].Text = & $GetJsonProperty $dft "eps_scf"
         $controls["MaxScfBox"].Text = & $GetJsonProperty $dft "max_scf"
         $controls["OuterScfEnabledBox"].IsChecked = @("1", "true", "yes", "on").Contains((& $GetJsonProperty $dft "outer_scf_enabled" "False").ToLowerInvariant())
@@ -2131,6 +2138,8 @@ function New-WinQStepWindow {
             cutoff = $controls["CutoffBox"].Text
             rel_cutoff = $controls["RelCutoffBox"].Text
             poisson_solver = $controls["PoissonSolverBox"].Text
+            wfn_restart_file_name = $controls["WfnRestartFileNameBox"].Text
+            scf_guess = $controls["ScfGuessBox"].Text
             eps_scf = $controls["EpsScfBox"].Text
             max_scf = $controls["MaxScfBox"].Text
             outer_scf_enabled = [bool]$controls["OuterScfEnabledBox"].IsChecked
@@ -3991,14 +4000,14 @@ if ($SmokeTest) {
     $templateManualLink = $window.FindName("Cp2kInputManualLink")
     $templateComboNames = @(
         "TemplateProjectBox", "TemplateRunTypeBox", "PrintLevelBox", "BasisSetFileBox", "PotentialFileBox",
-        "PoissonSolverBox",
+        "PoissonSolverBox", "WfnRestartFileNameBox",
         "XcFunctionalBox", "XcPbeParametrizationBox", "DispersionTypeBox",
         "DispersionParameterFileBox", "DispersionReferenceFunctionalBox",
         "EpsScfBox", "ChargeBox", "MultiplicityBox",
         "CutoffBox", "RelCutoffBox", "MaxScfBox", "GeoOptimizerBox", "GeoMaxIterBox",
         "CellOptTypeBox", "CellOptOptimizerBox", "CellOptMaxIterBox",
         "CellOptPressureToleranceBox",
-        "ScfMethodBox", "AddedMosBox", "DiagonalizationAlgorithmBox",
+        "ScfMethodBox", "ScfGuessBox", "AddedMosBox", "DiagonalizationAlgorithmBox",
         "OtMinimizerBox", "OtPreconditionerBox",
         "OuterScfEpsScfBox", "OuterScfMaxScfBox", "MixingMethodBox",
         "MixingAlphaBox", "MixingBetaBox", "SmearingMethodBox",
@@ -4035,6 +4044,7 @@ if ($SmokeTest) {
     $report["template_run_type_options"] = @($window.FindName("TemplateRunTypeBox").Items | ForEach-Object { [string]$_.Content })
     $report["template_print_level_options"] = @($window.FindName("PrintLevelBox").Items | ForEach-Object { [string]$_.Content })
     $report["template_poisson_solver_options"] = @($window.FindName("PoissonSolverBox").Items | ForEach-Object { [string]$_.Content })
+    $report["template_scf_guess_options"] = @($window.FindName("ScfGuessBox").Items | ForEach-Object { [string]$_.Content })
     $report["template_optimizer_options"] = @($window.FindName("GeoOptimizerBox").Items | ForEach-Object { [string]$_.Content })
     $report["template_cell_opt_type_options"] = @($window.FindName("CellOptTypeBox").Items | ForEach-Object { [string]$_.Content })
     $report["template_project_name"] = [string]$window.FindName("TemplateProjectBox").Text
@@ -4048,8 +4058,10 @@ if ($SmokeTest) {
     $report["template_dispersion_reference_functional"] = [string]$window.FindName("DispersionReferenceFunctionalBox").Text
     $report["template_cutoff"] = [string]$window.FindName("CutoffBox").Text
     $report["template_poisson_solver"] = [string]$window.FindName("PoissonSolverBox").Text
+    $report["template_wfn_restart_file_name"] = [string]$window.FindName("WfnRestartFileNameBox").Text
     $report["template_uks_enabled"] = [bool]$window.FindName("UksEnabledBox").IsChecked
     $report["template_scf_method"] = [string]$window.FindName("ScfMethodBox").Text
+    $report["template_scf_guess"] = [string]$window.FindName("ScfGuessBox").Text
     $report["template_added_mos"] = [string]$window.FindName("AddedMosBox").Text
     $report["template_outer_scf_enabled"] = [bool]$window.FindName("OuterScfEnabledBox").IsChecked
     $report["template_outer_scf_eps_scf"] = [string]$window.FindName("OuterScfEpsScfBox").Text

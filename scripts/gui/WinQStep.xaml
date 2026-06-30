@@ -330,6 +330,11 @@
               </ComboBox>
               <CheckBox x:Name="UksEnabledBox" Grid.Row="3" Grid.Column="0"
                         Content="UKS" Margin="6,4" VerticalAlignment="Center"/>
+              <TextBlock x:Name="WfnRestartFileNameLabel" Grid.Row="3" Grid.Column="2" Text="WFN Restart File"/>
+              <ComboBox x:Name="WfnRestartFileNameBox" Grid.Row="3" Grid.Column="3" IsEditable="True">
+                <ComboBoxItem Content=""/>
+                <ComboBoxItem Content="PROJECT-RESTART.wfn"/>
+              </ComboBox>
             </Grid>
           </GroupBox>
 
@@ -479,6 +484,18 @@
                 <ComboBoxItem Content="FULL_SINGLE_INVERSE"/>
                 <ComboBoxItem Content="FULL_S_INVERSE"/>
                 <ComboBoxItem Content="NONE"/>
+              </ComboBox>
+              <TextBlock x:Name="ScfGuessLabel" Grid.Row="3" Grid.Column="2" Text="SCF Guess"/>
+              <ComboBox x:Name="ScfGuessBox" Grid.Row="3" Grid.Column="3" IsEditable="True">
+                <ComboBoxItem Content=""/>
+                <ComboBoxItem Content="ATOMIC"/>
+                <ComboBoxItem Content="RESTART"/>
+                <ComboBoxItem Content="HISTORY_RESTART"/>
+                <ComboBoxItem Content="CORE"/>
+                <ComboBoxItem Content="RANDOM"/>
+                <ComboBoxItem Content="SPARSE"/>
+                <ComboBoxItem Content="NONE"/>
+                <ComboBoxItem Content="MOPAC"/>
               </ComboBox>
             </Grid>
           </GroupBox>

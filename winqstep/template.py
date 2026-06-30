@@ -21,6 +21,7 @@ from .quickstep import (
     POISSON_SOLVERS,
     PRINT_LEVELS,
     RUN_TYPES,
+    SCF_GUESSES,
     SCF_METHODS,
     SMEARING_METHODS,
     DISPERSION_TYPES,
@@ -55,8 +56,10 @@ DFT_KEY_ORDER = (
     "cutoff",
     "rel_cutoff",
     "poisson_solver",
+    "wfn_restart_file_name",
     "print_mulliken",
     "print_lowdin",
+    "scf_guess",
     "eps_scf",
     "max_scf",
     "outer_scf_enabled",
@@ -337,8 +340,19 @@ def _normalize_dft(data: dict[str, Any], errors: list[str]) -> dict[str, Any]:
             POISSON_SOLVERS,
             errors,
         ),
+        "wfn_restart_file_name": _string_value(
+            data.get("wfn_restart_file_name", ""),
+            "dft.wfn_restart_file_name",
+            errors,
+        ),
         "print_mulliken": _bool_value(data.get("print_mulliken", defaults.print_mulliken)),
         "print_lowdin": _bool_value(data.get("print_lowdin", defaults.print_lowdin)),
+        "scf_guess": _optional_choice_value(
+            data.get("scf_guess"),
+            "dft.scf_guess",
+            SCF_GUESSES,
+            errors,
+        ),
         "eps_scf": _eps_value(data.get("eps_scf", defaults.eps_scf), errors),
         "max_scf": _positive_int_value(data.get("max_scf", defaults.max_scf), "dft.max_scf", errors),
         "outer_scf_enabled": _bool_value(data.get("outer_scf_enabled", defaults.outer_scf_enabled)),
@@ -428,6 +442,8 @@ def _normalize_dft(data: dict[str, Any], errors: list[str]) -> dict[str, Any]:
         errors.append("dft.multiplicity greater than 1 requires dft.uks_enabled")
     if dft["xc_pbe_parametrization"] != "ORIG" and dft["xc_functional"] != "PBE":
         errors.append("dft.xc_pbe_parametrization requires dft.xc_functional PBE")
+    if dft["wfn_restart_file_name"] and dft["scf_guess"] not in {"RESTART", "HISTORY_RESTART"}:
+        errors.append("dft.wfn_restart_file_name requires dft.scf_guess RESTART or HISTORY_RESTART")
     eps_scf = _float_string_or_none(dft["eps_scf"])
     outer_scf_eps_scf = _float_string_or_none(dft["outer_scf_eps_scf"])
     if (

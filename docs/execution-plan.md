@@ -34,8 +34,9 @@ Each round should end with a focused commit.
   CP2K INPUT manual, and separated tracked example JSON files from ignored
   local config/template working copies, and optional QuickStep
   `DFT/&POISSON/POISSON_SOLVER` controls, and conservative QuickStep
-  `DFT/&PRINT` Mulliken/Lowdin population-analysis controls.
-- Next active round: Round 64, add explicit restart workflow support.
+  `DFT/&PRINT` Mulliken/Lowdin population-analysis controls, and explicit
+  QuickStep wavefunction restart controls.
+- Next active round: Round 65, choose the next QuickStep expansion slice.
 - Known local facts:
   - WSL2 is available.
   - Default distro is `Ubuntu`.
@@ -2200,24 +2201,61 @@ Commit boundary:
 
 - One commit for DFT PRINT model fields, Template controls, tests, and docs.
 
+## Round 64: QuickStep Wavefunction Restart Controls
+
+Status: implemented.
+
+Goal: add explicit wavefunction restart controls without broadening into
+`EXT_RESTART` simulation-state restoration.
+
+Rationale:
+
+- Restarting from a previous wavefunction file is a common way to continue or
+  accelerate QuickStep single-point and optimization workflows.
+- `WFN_RESTART_FILE_NAME` and `SCF_GUESS` map cleanly to typed fields and stable
+  renderer output.
+- `EXT_RESTART` can restore broader structure, velocity, and counter state, so
+  it should wait until WinQStep deliberately models that workflow.
+
+Tasks:
+
+- Add optional `dft.wfn_restart_file_name` and `dft.scf_guess` model fields.
+- Render `DFT/WFN_RESTART_FILE_NAME` and `SCF/SCF_GUESS` only when explicitly
+  set.
+- Validate supported `SCF_GUESS` values and require `RESTART` or
+  `HISTORY_RESTART` when a restart file name is supplied.
+- Expose both fields in `scripts/manage_template.py` and the Template GUI using
+  editable drop-down controls.
+- Add renderer, template, workflow, GUI smoke/static tests, and documentation.
+
+Acceptance:
+
+- Existing templates with blank restart fields render exactly as before.
+- Templates with `WFN_RESTART_FILE_NAME` and restart-compatible `SCF_GUESS`
+  write stable CP2K input.
+- Invalid restart file/guess combinations are rejected before CP2K is run.
+- Fast checks pass.
+
+Commit boundary:
+
+- One commit for wavefunction restart model fields, Template controls,
+  validation, tests, and docs.
+
 ## QuickStep Feature Backlog
 
-Status: planned queue after Round 63.
+Status: planned queue after Round 64.
 
 Priority order:
 
-1. Restart workflows. Support explicit restart files and wavefunction restart
-   intent so long CP2K jobs can resume without users hand-editing generated
-   input.
-2. Extend `DFT/&PRINT` output controls. Add file-generating print keys only
-   together with artifact discovery and clear GUI presentation.
-3. `MOTION/&CONSTRAINT`. Add fixed-atom constraints first, because surface,
+1. `MOTION/&CONSTRAINT`. Add fixed-atom constraints first, because surface,
    slab, and adsorbate optimizations commonly need them and they can later be
    connected to the 3D structure preview.
-4. `RUN_TYPE MD` with `MOTION/&MD`. Treat this as a larger milestone because it
+2. Extend `DFT/&PRINT` output controls. Add file-generating print keys only
+   together with artifact discovery and clear GUI presentation.
+3. `RUN_TYPE MD` with `MOTION/&MD`. Treat this as a larger milestone because it
    changes run duration, log expectations, trajectory artifacts, and Template
    defaults.
-5. Extended XC/dispersion coverage. Add only conservative, well-tested
+4. Extended XC/dispersion coverage. Add only conservative, well-tested
    functionals or dispersion paths at first; hybrid-functional support should
    wait until ADMM/HF/screening choices can be modeled coherently.
 

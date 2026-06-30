@@ -38,8 +38,10 @@ FIELD_ARGS = {
     "cutoff": "cutoff",
     "rel_cutoff": "rel_cutoff",
     "poisson_solver": "poisson_solver",
+    "wfn_restart_file_name": "wfn_restart_file_name",
     "print_mulliken": "print_mulliken",
     "print_lowdin": "print_lowdin",
+    "scf_guess": "scf_guess",
     "eps_scf": "eps_scf",
     "max_scf": "max_scf",
     "outer_scf_enabled": "outer_scf_enabled",
@@ -103,8 +105,10 @@ def main() -> int:
     parser.add_argument("--cutoff")
     parser.add_argument("--rel-cutoff")
     parser.add_argument("--poisson-solver")
+    parser.add_argument("--wfn-restart-file-name")
     parser.add_argument("--print-mulliken")
     parser.add_argument("--print-lowdin")
+    parser.add_argument("--scf-guess")
     parser.add_argument("--eps-scf")
     parser.add_argument("--max-scf")
     parser.add_argument("--outer-scf-enabled")

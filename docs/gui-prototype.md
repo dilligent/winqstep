@@ -194,15 +194,17 @@ then MOTION sections. The displayed sections include `&GLOBAL`,
 The `&GLOBAL` group includes the optional CP2K `PRINT_LEVEL`; leaving it blank
 keeps CP2K's default implicit, while selecting a level renders it explicitly.
 The `&FORCE_EVAL / &DFT` group includes charge, multiplicity, and the optional
-UKS spin-polarization checkbox. The `&FORCE_EVAL / &DFT / &POISSON` group
-includes an optional explicit `POISSON_SOLVER`; leaving it blank keeps existing
-generated inputs unchanged. The `&FORCE_EVAL / &DFT / &XC` group includes the
-XC functional shortcut, PBE parametrization, and optional DFT-D3 pair-potential
-dispersion controls. SCF controls include method selection, ADDED_MOS, OT
+UKS spin-polarization checkbox plus an optional `WFN_RESTART_FILE_NAME` field.
+The `&FORCE_EVAL / &DFT / &POISSON` group includes an optional explicit
+`POISSON_SOLVER`; leaving it blank keeps existing generated inputs unchanged.
+The `&FORCE_EVAL / &DFT / &XC` group includes the XC functional shortcut, PBE
+parametrization, and optional DFT-D3 pair-potential dispersion controls. SCF
+controls include method selection, optional `SCF_GUESS`, ADDED_MOS, OT
 minimizer/preconditioner, diagonalization algorithm, optional OUTER_SCF,
 optional mixing, and optional smearing. DFT-D3, UKS, OUTER_SCF, optional
-POISSON solver, DFT PRINT controls, mixing, and smearing remain disabled by
-default and validate through the same template writer before preview or run.
+POISSON solver, wavefunction restart controls, DFT PRINT controls, mixing, and
+smearing remain disabled by default and validate through the same template
+writer before preview or run.
 KPOINTS controls include scheme, grid, full-grid, symmetry, and wavefunction
 selection. They default to `NONE` and validate through the same template writer
 and QuickStep renderer before preview or run.

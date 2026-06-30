@@ -12,6 +12,16 @@ PRINT_LEVELS = {"SILENT", "LOW", "MEDIUM", "HIGH", "DEBUG"}
 PERIODIC_VALUES = {"NONE", "X", "Y", "Z", "XY", "XZ", "YZ", "XYZ"}
 POISSON_SOLVERS = {"ANALYTIC", "IMPLICIT", "MT", "MULTIPOLE", "PERIODIC", "WAVELET"}
 SCF_METHODS = {"DEFAULT", "OT", "DIAGONALIZATION"}
+SCF_GUESSES = {
+    "ATOMIC",
+    "CORE",
+    "HISTORY_RESTART",
+    "MOPAC",
+    "NONE",
+    "RANDOM",
+    "RESTART",
+    "SPARSE",
+}
 KPOINTS_SCHEMES = {"NONE", "GAMMA", "MONKHORST-PACK"}
 KPOINTS_WAVEFUNCTIONS = {"COMPLEX", "REAL"}
 MOTION_OPTIMIZERS = {"BFGS", "LBFGS", "CG"}
@@ -80,8 +90,10 @@ class DftSettings:
     cutoff: int = 400
     rel_cutoff: int = 40
     poisson_solver: str | None = None
+    wfn_restart_file_name: str | None = None
     print_mulliken: bool = False
     print_lowdin: bool = False
+    scf_guess: str | None = None
     eps_scf: str = "1.0E-6"
     max_scf: int = 50
     outer_scf_enabled: bool = False
@@ -161,6 +173,18 @@ def _optional_choice(data: dict[str, Any], key: str) -> str | None:
     return stripped.upper()
 
 
+def _optional_free_string(data: dict[str, Any], key: str) -> str | None:
+    value = data.get(key)
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise QuickStepInputError(f"{key} must be a string")
+    stripped = value.strip()
+    if not stripped:
+        return None
+    return stripped
+
+
 def _int_value(data: dict[str, Any], key: str, default: int) -> int:
     value = data.get(key, default)
     if not isinstance(value, int):
@@ -238,8 +262,10 @@ def _parse_dft(data: dict[str, Any]) -> DftSettings:
         cutoff=_int_value(data, "cutoff", 400),
         rel_cutoff=_int_value(data, "rel_cutoff", 40),
         poisson_solver=_optional_choice(data, "poisson_solver"),
+        wfn_restart_file_name=_optional_free_string(data, "wfn_restart_file_name"),
         print_mulliken=_bool_value(data, "print_mulliken", False),
         print_lowdin=_bool_value(data, "print_lowdin", False),
+        scf_guess=_optional_choice(data, "scf_guess"),
         eps_scf=_optional_string(data, "eps_scf", "1.0E-6"),
         max_scf=_int_value(data, "max_scf", 50),
         outer_scf_enabled=_bool_value(data, "outer_scf_enabled", False),
@@ -337,6 +363,10 @@ def validate_quickstep_input(model: QuickStepInput) -> None:
     if model.dft.poisson_solver is not None and model.dft.poisson_solver not in POISSON_SOLVERS:
         raise QuickStepInputError("dft.poisson_solver has an unsupported value")
     _validate_poisson_solver_periodicity(model.dft.poisson_solver, model.cell.periodic)
+    if model.dft.scf_guess is not None and model.dft.scf_guess not in SCF_GUESSES:
+        raise QuickStepInputError("dft.scf_guess has an unsupported value")
+    if model.dft.wfn_restart_file_name is not None and model.dft.scf_guess not in {"RESTART", "HISTORY_RESTART"}:
+        raise QuickStepInputError("dft.wfn_restart_file_name requires dft.scf_guess RESTART or HISTORY_RESTART")
     if model.cell.periodic != "NONE" and any(
         _vector_norm(vector) == 0.0 for vector in (model.cell.a, model.cell.b, model.cell.c)
     ):
@@ -435,6 +465,7 @@ def render_quickstep_input(model: QuickStepInput) -> str:
         f"    CHARGE {model.dft.charge}",
         f"    MULTIPLICITY {model.dft.multiplicity}",
         *_render_spin_keywords(model.dft),
+        *_render_wfn_restart_file_name(model.dft),
         "    &MGRID",
         f"      CUTOFF {model.dft.cutoff}",
         f"      REL_CUTOFF {model.dft.rel_cutoff}",
@@ -445,6 +476,7 @@ def render_quickstep_input(model: QuickStepInput) -> str:
         "    &END POISSON",
         *_render_kpoints(model),
         "    &SCF",
+        *_render_scf_guess(model.dft),
         f"      EPS_SCF {model.dft.eps_scf}",
         f"      MAX_SCF {model.dft.max_scf}",
         *_render_scf_extras(model.dft),
@@ -507,6 +539,18 @@ def _render_poisson_solver(dft: DftSettings) -> list[str]:
     if dft.poisson_solver is None:
         return []
     return [f"      POISSON_SOLVER {dft.poisson_solver}"]
+
+
+def _render_wfn_restart_file_name(dft: DftSettings) -> list[str]:
+    if dft.wfn_restart_file_name is None:
+        return []
+    return [f"    WFN_RESTART_FILE_NAME {dft.wfn_restart_file_name}"]
+
+
+def _render_scf_guess(dft: DftSettings) -> list[str]:
+    if dft.scf_guess is None:
+        return []
+    return [f"      SCF_GUESS {dft.scf_guess}"]
 
 
 def _render_dft_print(dft: DftSettings) -> list[str]:
