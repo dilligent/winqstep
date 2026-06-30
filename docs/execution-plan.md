@@ -1706,6 +1706,35 @@ Commit boundary:
 
 - One commit for 3D preview interaction plumbing, smoke tests, and docs.
 
+## Round 50: Structure 3D Preview Initial Framing
+
+Status: implemented.
+
+Goal: make the first imported 3D preview and `Reset View` show the full
+displayed atom/cell model without requiring manual zoom-out.
+
+Tasks:
+
+- Replace the fixed `bounding_radius * 2.8` camera distance with a field-of-view
+  aware bounding-sphere fit.
+- Account for the Structure preview viewport aspect ratio, because wide panes
+  have a narrower derived vertical viewing angle.
+- Keep the viewer display-only; this changes only the camera state.
+- Extend GUI smoke coverage so the imported preview's initial distance matches
+  the fit calculation and is more conservative than the old fixed multiplier.
+
+Acceptance:
+
+- Importing the default structure initializes the camera far enough to include
+  the full preview model.
+- `Reset View` restores the same fitted camera distance, pan, and transform.
+- Existing rotate, pan, zoom, clear, preview, and run workflows remain
+  unchanged.
+
+Commit boundary:
+
+- One commit for initial 3D preview framing, smoke tests, and docs.
+
 ## Working Rules
 
 - Keep each round small enough to review.

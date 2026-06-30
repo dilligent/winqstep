@@ -143,6 +143,8 @@ Implementation so far:
 - Mouse wheel zooms by changing the preview camera distance.
 - Mouse right-drag or middle-drag pans by changing the preview camera X/Y
   offset.
+- Initial import and `Reset View` use a field-of-view and viewport-aspect fit
+  distance so the full atom/cell bounding sphere is visible in the preview pane.
 - `Reset View` restores yaw, pitch, pan, and distance to the imported preview's
   default camera state.
 - GUI smoke coverage verifies that rotate, pan, zoom, and reset change and

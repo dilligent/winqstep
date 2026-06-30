@@ -144,7 +144,9 @@ coordinate table instead of the raw normalized JSON emitted by the CLI importer.
 It also shows a native WPF 3D preview for successful imports. The preview
 renders atoms as colored spheres, periodic cell edges as a frame when available,
 supports mouse drag rotation, wheel zoom, right/middle-button pan, and
-`Reset View`; it is display-only and does not feed back into template fields,
+`Reset View`. The initial and reset camera positions fit the full preview model
+using the imported bounding radius, camera field of view, and viewport aspect
+ratio. The preview is display-only and does not feed back into template fields,
 generated input, or CP2K runs.
 Existing-input mode skips template handling but still validates that the input
 file exists and warns in the preview/log panes when referenced basis or

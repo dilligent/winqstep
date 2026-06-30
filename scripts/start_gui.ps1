@@ -32,6 +32,7 @@ $Script:SuppressGuiMessageBoxes = $SuppressGuiMessageBoxes
 $Script:EditedPreviewSmokeStartAsyncJob = $null
 $Script:EnvironmentDisplaySmokeFormatter = $null
 $Script:StructurePreviewSmokeApplyInteraction = $null
+$Script:StructurePreviewSmokeGetState = $null
 
 . (Join-Path $PSScriptRoot "gui\WinQStep.GuiHost.ps1")
 function New-WinQStepWindow {
@@ -982,6 +983,54 @@ function New-WinQStepWindow {
         return $mesh
     }.GetNewClosure()
 
+    $GetStructurePreviewDimension = {
+        param($Value, [double]$Fallback)
+        try {
+            $number = [double]$Value
+            if (-not [double]::IsNaN($number) -and -not [double]::IsInfinity($number) -and $number -gt 1.0) {
+                return $number
+            }
+        }
+        catch {
+        }
+        return $Fallback
+    }.GetNewClosure()
+
+    $GetStructurePreviewViewportSize = {
+        $windowWidth = & $GetStructurePreviewDimension $window.Width 900.0
+        $widthFallback = [Math]::Max($windowWidth - 56.0, 320.0)
+        $viewport = $controls["StructurePreviewViewport"]
+        if ($null -eq $viewport) {
+            return [ordered]@{
+                Width = $widthFallback
+                Height = 260.0
+            }
+        }
+
+        $width = & $GetStructurePreviewDimension $viewport.ActualWidth (& $GetStructurePreviewDimension $viewport.RenderSize.Width $widthFallback)
+        $height = & $GetStructurePreviewDimension $viewport.ActualHeight (& $GetStructurePreviewDimension $viewport.RenderSize.Height 260.0)
+        return [ordered]@{
+            Width = $width
+            Height = $height
+        }
+    }.GetNewClosure()
+
+    $GetStructurePreviewFitDistance = {
+        param([double]$Radius)
+        $safeRadius = [Math]::Max($Radius, 1.0)
+        $camera = $controls["StructurePreviewCamera"]
+        $fieldOfView = if ($null -ne $camera) { [double]$camera.FieldOfView } else { 45.0 }
+        $fieldOfView = [Math]::Min([Math]::Max($fieldOfView, 1.0), 120.0)
+        $halfHorizontalFovRadians = ([Math]::PI / 180.0) * ($fieldOfView / 2.0)
+        $viewportSize = & $GetStructurePreviewViewportSize
+        $aspect = [Math]::Max([double]($viewportSize["Width"]) / [double]($viewportSize["Height"]), 0.1)
+        # WPF FieldOfView is horizontal, so wide panes need the derived vertical angle.
+        $halfVerticalFovRadians = [Math]::Atan([Math]::Tan($halfHorizontalFovRadians) / $aspect)
+        $limitingHalfFovRadians = [Math]::Max([Math]::Min($halfHorizontalFovRadians, $halfVerticalFovRadians), 0.01)
+        $distance = $safeRadius / [Math]::Sin($limitingHalfFovRadians)
+        return [Math]::Max($distance * 1.18, 5.0)
+    }.GetNewClosure()
+
     $UpdateStructurePreviewView = {
         $camera = $controls["StructurePreviewCamera"]
         $distance = [Math]::Max([double]$structurePreviewState["Distance"], 0.1)
@@ -1015,7 +1064,7 @@ function New-WinQStepWindow {
     $ResetStructurePreviewCamera = {
         param($Preview)
         $radius = & $GetPreviewNumber (& $GetNestedValue $Preview @("bounding_radius")) 5.0
-        $distance = [Math]::Max($radius * 2.8, 5.0)
+        $distance = & $GetStructurePreviewFitDistance $radius
         $structurePreviewState["Radius"] = $radius
         $structurePreviewState["DefaultDistance"] = $distance
         $structurePreviewState["Distance"] = $distance
@@ -1059,6 +1108,19 @@ function New-WinQStepWindow {
         & $UpdateStructurePreviewView
     }.GetNewClosure()
     $Script:StructurePreviewSmokeApplyInteraction = $ApplyStructurePreviewInteraction
+    $Script:StructurePreviewSmokeGetState = {
+        $viewportSize = & $GetStructurePreviewViewportSize
+        $radius = [double]$structurePreviewState["Radius"]
+        return [ordered]@{
+            radius = $radius
+            default_distance = [double]$structurePreviewState["DefaultDistance"]
+            distance = [double]$structurePreviewState["Distance"]
+            fit_distance = (& $GetStructurePreviewFitDistance $radius)
+            viewport_width = [double]($viewportSize["Width"])
+            viewport_height = [double]($viewportSize["Height"])
+            field_of_view = [double]$controls["StructurePreviewCamera"].FieldOfView
+        }
+    }.GetNewClosure()
 
     $ClearStructurePreview = {
         $structurePreviewState["Current"] = $null
@@ -3434,6 +3496,23 @@ if ($ButtonSmokeTest) {
     $structurePreviewInitialPanX = [double]$structurePreviewCamera.Position.X
     $structurePreviewInitialPanY = [double]$structurePreviewCamera.Position.Y
     $structurePreviewInitialTransform = [string]$window.FindName("StructurePreviewVisual").Content.Transform.Value
+    $structurePreviewStateSnapshot = if ($null -ne $Script:StructurePreviewSmokeGetState) {
+        & $Script:StructurePreviewSmokeGetState
+    }
+    else {
+        $null
+    }
+    $structurePreviewInitialFitsViewport = $false
+    if ($null -ne $structurePreviewStateSnapshot) {
+        $structurePreviewFitDistance = [double]($structurePreviewStateSnapshot["fit_distance"])
+        $structurePreviewSnapshotRadius = [double]($structurePreviewStateSnapshot["radius"])
+        $structurePreviewInitialFitsViewport = (
+            [Math]::Abs($structurePreviewInitialDistance - $structurePreviewFitDistance) -lt 0.001 -and
+            [Math]::Abs([double]($structurePreviewStateSnapshot["default_distance"]) - $structurePreviewFitDistance) -lt 0.001 -and
+            [double]($structurePreviewStateSnapshot["viewport_width"]) -gt [double]($structurePreviewStateSnapshot["viewport_height"]) -and
+            $structurePreviewFitDistance -gt ($structurePreviewSnapshotRadius * 2.8)
+        )
+    }
     $structurePreviewRotatedTransform = $structurePreviewInitialTransform
     $structurePreviewPannedPosition = $structurePreviewCamera.Position
     $structurePreviewDistanceBeforeZoom = [double]$structurePreviewCamera.Position.Z
@@ -3562,6 +3641,7 @@ if ($ButtonSmokeTest) {
     $report["structure_preview_geometry_count"] = $structurePreviewGeometryCount
     $report["structure_preview_status_has_atoms"] = $structurePreviewStatus.Contains("3/3")
     $report["structure_preview_reset_enabled_after_import"] = $structureResetEnabledAfterImport
+    $report["structure_preview_initial_distance_fits_viewport"] = $structurePreviewInitialFitsViewport
     $report["structure_preview_interaction_hook_loaded"] = ($null -ne $structurePreviewInteractionHook)
     $report["structure_preview_rotate_changed_transform"] = ($structurePreviewRotatedTransform -ne $structurePreviewInitialTransform)
     $report["structure_preview_pan_changed_camera"] = (
@@ -3610,6 +3690,7 @@ if ($ButtonSmokeTest) {
         $report["structure_preview_geometry_count"] -ge 3 -and
         $report["structure_preview_status_has_atoms"] -and
         $report["structure_preview_reset_enabled_after_import"] -and
+        $report["structure_preview_initial_distance_fits_viewport"] -and
         $report["structure_preview_interaction_hook_loaded"] -and
         $report["structure_preview_rotate_changed_transform"] -and
         $report["structure_preview_pan_changed_camera"] -and
