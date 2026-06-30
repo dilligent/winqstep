@@ -174,16 +174,19 @@ and never overwrites a user-provided existing input file silently.
 The single-line fields on the `Template` tab are editable drop-down controls:
 users can select common values from the list or type a custom value directly.
 The tab visually groups related controls by the CP2K input section they render
-and indents nested sections to echo CP2K input-file structure. The displayed
-sections include `&GLOBAL`, `&FORCE_EVAL / &DFT`,
+and indents nested sections to echo CP2K input-file structure. The section
+order follows the main input tree: `&GLOBAL`, DFT sections, SUBSYS sections,
+then MOTION sections. The displayed sections include `&GLOBAL`,
+`&FORCE_EVAL / &DFT`,
 `&FORCE_EVAL / &DFT / &XC`,
 `&FORCE_EVAL / &DFT / &SCF`,
 `&FORCE_EVAL / &DFT / &SCF / &OUTER_SCF`,
 `&FORCE_EVAL / &DFT / &SCF / &MIXING`,
-`&FORCE_EVAL / &DFT / &SCF / &SMEAR`, `&MOTION / &GEO_OPT`,
-`&MOTION / &CELL_OPT`, `&FORCE_EVAL / &SUBSYS / &CELL`,
-`&FORCE_EVAL / &DFT / &KPOINTS`, and
-`&FORCE_EVAL / &SUBSYS / &KIND`.
+`&FORCE_EVAL / &DFT / &SCF / &SMEAR`,
+`&FORCE_EVAL / &DFT / &KPOINTS`,
+`&FORCE_EVAL / &SUBSYS / &CELL`,
+`&FORCE_EVAL / &SUBSYS / &KIND`, `&MOTION / &GEO_OPT`, and
+`&MOTION / &CELL_OPT`.
 The `&GLOBAL` group includes the optional CP2K `PRINT_LEVEL`; leaving it blank
 keeps CP2K's default implicit, while selecting a level renders it explicitly.
 The `&FORCE_EVAL / &DFT` group includes charge, multiplicity, and the optional

@@ -147,6 +147,22 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn('x:Name="TemplateKpointsGroup" Header="&amp;FORCE__EVAL / &amp;DFT / &amp;KPOINTS"', xaml_text)
         self.assertIn('x:Name="TemplateKindGroup" Header="&amp;FORCE__EVAL / &amp;SUBSYS / &amp;KIND"', xaml_text)
         self.assertNotIn('Header="&amp;FORCE_EVAL', xaml_text)
+        expected_template_group_order = [
+            "TemplateGlobalGroup",
+            "TemplateDftGroup",
+            "TemplateXcGroup",
+            "TemplateScfGroup",
+            "TemplateOuterScfGroup",
+            "TemplateMixingGroup",
+            "TemplateSmearingGroup",
+            "TemplateKpointsGroup",
+            "TemplateCellGroup",
+            "TemplateKindGroup",
+            "TemplateGeoOptGroup",
+            "TemplateCellOptGroup",
+        ]
+        template_group_positions = [xaml_text.index(f'x:Name="{name}"') for name in expected_template_group_order]
+        self.assertEqual(template_group_positions, sorted(template_group_positions))
         self.assertIn('x:Name="StructurePreviewViewport"', xaml_text)
         self.assertIn('x:Name="StructurePreviewCamera"', xaml_text)
         self.assertIn('x:Name="StructurePreviewVisual"', xaml_text)
@@ -421,14 +437,14 @@ class GuiPrototypeTests(unittest.TestCase):
                 "&FORCE_EVAL / &DFT / &SCF / &OUTER_SCF",
                 "&FORCE_EVAL / &DFT / &SCF / &MIXING",
                 "&FORCE_EVAL / &DFT / &SCF / &SMEAR",
+                "&FORCE_EVAL / &DFT / &KPOINTS",
+                "&FORCE_EVAL / &SUBSYS / &CELL",
+                "&FORCE_EVAL / &SUBSYS / &KIND",
                 "&MOTION / &GEO_OPT",
                 "&MOTION / &CELL_OPT",
-                "&FORCE_EVAL / &SUBSYS / &CELL",
-                "&FORCE_EVAL / &DFT / &KPOINTS",
-                "&FORCE_EVAL / &SUBSYS / &KIND",
             ],
         )
-        self.assertEqual(report["template_section_group_left_margins"], [0, 18, 36, 36, 54, 54, 54, 18, 18, 36, 36, 36])
+        self.assertEqual(report["template_section_group_left_margins"], [0, 18, 36, 36, 54, 54, 54, 36, 36, 36, 18, 18])
         self.assertEqual(report["template_combo_fields_loaded"], 41)
         self.assertEqual(report["template_combo_fields_editable"], 41)
         self.assertEqual(report["template_run_type_options"], ["ENERGY", "ENERGY_FORCE", "GEO_OPT", "CELL_OPT"])

@@ -29,8 +29,9 @@ Each round should end with a focused commit.
   Environment tab, QuickStep `SCF/&OUTER_SCF` support, QuickStep `DFT/UKS`
   support, a thin double-click `WinQStep.exe` launcher, and QuickStep
   `DFT/&XC` PBE parametrization plus DFT-D3 support, and hierarchical Template
-  section display with escaped CP2K underscores in GUI headers.
-- Next active round: Round 59, expand QuickStep coverage from the next selected
+  section display with escaped CP2K underscores in GUI headers, and CP2K-tree
+  ordering for Template section groups.
+- Next active round: Round 60, expand QuickStep coverage from the next selected
   CP2K feature area.
 - Known local facts:
   - WSL2 is available.
@@ -2018,6 +2019,35 @@ Commit boundary:
 
 - One commit for Template hierarchy display, underscore escaping, tests, and
   docs.
+
+## Round 59: Template Section Tree Ordering
+
+Status: implemented.
+
+Goal: reorder Template tab section groups so the new indentation reads like a
+CP2K input tree instead of historical feature-addition order.
+
+Tasks:
+
+- Move `&FORCE_EVAL / &DFT / &KPOINTS` next to the other DFT child sections.
+- Keep `&FORCE_EVAL / &SUBSYS / &CELL` and
+  `&FORCE_EVAL / &SUBSYS / &KIND` together after the DFT block.
+- Move `&MOTION / &GEO_OPT` and `&MOTION / &CELL_OPT` after the FORCE_EVAL
+  sections.
+- Update GUI smoke-test reporting order, XAML order assertions, and docs.
+
+Acceptance:
+
+- Template section order is `&GLOBAL`, DFT and DFT children, SUBSYS children,
+  then MOTION children.
+- `&KPOINTS` is no longer visually separated near the bottom of the Template
+  tab.
+- Existing Template field values, saved JSON, and renderer behavior are
+  unchanged.
+
+Commit boundary:
+
+- One commit for Template section ordering, tests, and docs.
 
 ## Working Rules
 

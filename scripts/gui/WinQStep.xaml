@@ -554,6 +554,128 @@
             </Grid>
           </GroupBox>
 
+          <GroupBox x:Name="TemplateKpointsGroup" Header="&amp;FORCE__EVAL / &amp;DFT / &amp;KPOINTS" Style="{StaticResource TemplateSectionLevel2GroupBoxStyle}">
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="150"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="150"/>
+                <ColumnDefinition Width="*"/>
+              </Grid.ColumnDefinitions>
+              <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+              </Grid.RowDefinitions>
+
+              <TextBlock x:Name="KpointsSchemeLabel" Grid.Row="0" Grid.Column="0" Text="KPOINTS Scheme"/>
+              <ComboBox x:Name="KpointsSchemeBox" Grid.Row="0" Grid.Column="1" IsEditable="True">
+                <ComboBoxItem Content="NONE"/>
+                <ComboBoxItem Content="GAMMA"/>
+                <ComboBoxItem Content="MONKHORST-PACK"/>
+              </ComboBox>
+              <TextBlock x:Name="KpointsGridLabel" Grid.Row="0" Grid.Column="2" Text="KPOINTS Grid"/>
+              <ComboBox x:Name="KpointsGridBox" Grid.Row="0" Grid.Column="3" IsEditable="True">
+                <ComboBoxItem Content="1 1 1"/>
+                <ComboBoxItem Content="2 2 2"/>
+                <ComboBoxItem Content="3 3 3"/>
+                <ComboBoxItem Content="4 4 4"/>
+                <ComboBoxItem Content="6 6 6"/>
+              </ComboBox>
+
+              <CheckBox x:Name="KpointsFullGridBox" Grid.Row="1" Grid.Column="0"
+                        Content="Full K Grid" Margin="6,4" VerticalAlignment="Center"/>
+              <CheckBox x:Name="KpointsSymmetryBox" Grid.Row="1" Grid.Column="1"
+                        Content="KPOINTS Symmetry" Margin="6,4" VerticalAlignment="Center"/>
+              <TextBlock x:Name="KpointsWavefunctionsLabel" Grid.Row="1" Grid.Column="2" Text="Wavefunctions"/>
+              <ComboBox x:Name="KpointsWavefunctionsBox" Grid.Row="1" Grid.Column="3" IsEditable="True">
+                <ComboBoxItem Content="COMPLEX"/>
+                <ComboBoxItem Content="REAL"/>
+              </ComboBox>
+            </Grid>
+          </GroupBox>
+
+          <GroupBox x:Name="TemplateCellGroup" Header="&amp;FORCE__EVAL / &amp;SUBSYS / &amp;CELL" Style="{StaticResource TemplateSectionLevel2GroupBoxStyle}">
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="150"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="150"/>
+                <ColumnDefinition Width="*"/>
+              </Grid.ColumnDefinitions>
+              <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+              </Grid.RowDefinitions>
+
+              <TextBlock x:Name="FallbackPeriodicLabel" Grid.Row="0" Grid.Column="0" Text="Fallback Periodic"/>
+              <ComboBox x:Name="FallbackPeriodicBox" Grid.Row="0" Grid.Column="1" IsEditable="True">
+                <ComboBoxItem Content="XYZ"/>
+                <ComboBoxItem Content="NONE"/>
+                <ComboBoxItem Content="X"/>
+                <ComboBoxItem Content="Y"/>
+                <ComboBoxItem Content="Z"/>
+                <ComboBoxItem Content="XY"/>
+                <ComboBoxItem Content="XZ"/>
+                <ComboBoxItem Content="YZ"/>
+              </ComboBox>
+              <TextBlock x:Name="FallbackCellALabel" Grid.Row="0" Grid.Column="2" Text="Fallback Cell A"/>
+              <ComboBox x:Name="FallbackCellABox" Grid.Row="0" Grid.Column="3" IsEditable="True">
+                <ComboBoxItem Content="10 0 0"/>
+                <ComboBoxItem Content="12 0 0"/>
+                <ComboBoxItem Content="15 0 0"/>
+                <ComboBoxItem Content="20 0 0"/>
+                <ComboBoxItem Content="5.43 0 0"/>
+              </ComboBox>
+
+              <TextBlock x:Name="FallbackCellBLabel" Grid.Row="1" Grid.Column="0" Text="Fallback Cell B"/>
+              <ComboBox x:Name="FallbackCellBBox" Grid.Row="1" Grid.Column="1" IsEditable="True">
+                <ComboBoxItem Content="0 10 0"/>
+                <ComboBoxItem Content="0 12 0"/>
+                <ComboBoxItem Content="0 15 0"/>
+                <ComboBoxItem Content="0 20 0"/>
+                <ComboBoxItem Content="0 5.43 0"/>
+              </ComboBox>
+              <TextBlock x:Name="FallbackCellCLabel" Grid.Row="1" Grid.Column="2" Text="Fallback Cell C"/>
+              <ComboBox x:Name="FallbackCellCBox" Grid.Row="1" Grid.Column="3" IsEditable="True">
+                <ComboBoxItem Content="0 0 10"/>
+                <ComboBoxItem Content="0 0 12"/>
+                <ComboBoxItem Content="0 0 15"/>
+                <ComboBoxItem Content="0 0 20"/>
+                <ComboBoxItem Content="0 0 5.43"/>
+              </ComboBox>
+            </Grid>
+          </GroupBox>
+
+          <CheckBox x:Name="CenterAtomsBox" Content="Center Atoms" Margin="6,8,6,6" VerticalAlignment="Center"/>
+
+          <GroupBox x:Name="TemplateKindGroup" Header="&amp;FORCE__EVAL / &amp;SUBSYS / &amp;KIND" Style="{StaticResource TemplateSectionLevel2GroupBoxStyle}">
+            <StackPanel>
+              <DataGrid x:Name="KindEntriesGrid" Height="170"
+                        AutoGenerateColumns="False" CanUserAddRows="True" CanUserDeleteRows="True"
+                        SelectionMode="Single" HeadersVisibility="Column" GridLinesVisibility="Horizontal" FontSize="12">
+                <DataGrid.Columns>
+                  <DataGridTextColumn Header="Element" Binding="{Binding element, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="70"/>
+                  <DataGridTextColumn Header="Basis Set" Binding="{Binding basis_set, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="*"/>
+                  <DataGridTextColumn Header="Potential" Binding="{Binding potential, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="*"/>
+                </DataGrid.Columns>
+              </DataGrid>
+              <TextBox x:Name="KindsText" Height="170" Visibility="Collapsed"
+                       FontFamily="Cascadia Mono, Consolas, Microsoft YaHei UI, Microsoft YaHei, SimSun"
+                       FontSize="12" AcceptsReturn="True" AcceptsTab="True" TextWrapping="NoWrap"
+                       HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"/>
+
+              <DataGrid x:Name="DataLabelsGrid" Height="130" Visibility="Collapsed"
+                        AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single"
+                        HeadersVisibility="Column" GridLinesVisibility="Horizontal" FontSize="12">
+                <DataGrid.Columns>
+                  <DataGridTextColumn Header="Element" Binding="{Binding element}" Width="70"/>
+                  <DataGridTextColumn Header="Basis Sets" Binding="{Binding basis_sets}" Width="*"/>
+                  <DataGridTextColumn Header="Potentials" Binding="{Binding potentials}" Width="*"/>
+                </DataGrid.Columns>
+              </DataGrid>
+            </StackPanel>
+          </GroupBox>
+
           <GroupBox x:Name="TemplateGeoOptGroup" Header="&amp;MOTION / &amp;GEO__OPT" Style="{StaticResource TemplateSectionLevel1GroupBoxStyle}">
             <Grid>
               <Grid.ColumnDefinitions>
@@ -627,128 +749,6 @@
               <CheckBox x:Name="CellOptKeepSymmetryBox" Grid.Row="2" Grid.Column="1"
                         Content="Keep Symmetry" Margin="6,4" VerticalAlignment="Center"/>
             </Grid>
-          </GroupBox>
-
-          <GroupBox x:Name="TemplateCellGroup" Header="&amp;FORCE__EVAL / &amp;SUBSYS / &amp;CELL" Style="{StaticResource TemplateSectionLevel2GroupBoxStyle}">
-            <Grid>
-              <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="150"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="150"/>
-                <ColumnDefinition Width="*"/>
-              </Grid.ColumnDefinitions>
-              <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-              </Grid.RowDefinitions>
-
-              <TextBlock x:Name="FallbackPeriodicLabel" Grid.Row="0" Grid.Column="0" Text="Fallback Periodic"/>
-              <ComboBox x:Name="FallbackPeriodicBox" Grid.Row="0" Grid.Column="1" IsEditable="True">
-                <ComboBoxItem Content="XYZ"/>
-                <ComboBoxItem Content="NONE"/>
-                <ComboBoxItem Content="X"/>
-                <ComboBoxItem Content="Y"/>
-                <ComboBoxItem Content="Z"/>
-                <ComboBoxItem Content="XY"/>
-                <ComboBoxItem Content="XZ"/>
-                <ComboBoxItem Content="YZ"/>
-              </ComboBox>
-              <TextBlock x:Name="FallbackCellALabel" Grid.Row="0" Grid.Column="2" Text="Fallback Cell A"/>
-              <ComboBox x:Name="FallbackCellABox" Grid.Row="0" Grid.Column="3" IsEditable="True">
-                <ComboBoxItem Content="10 0 0"/>
-                <ComboBoxItem Content="12 0 0"/>
-                <ComboBoxItem Content="15 0 0"/>
-                <ComboBoxItem Content="20 0 0"/>
-                <ComboBoxItem Content="5.43 0 0"/>
-              </ComboBox>
-
-              <TextBlock x:Name="FallbackCellBLabel" Grid.Row="1" Grid.Column="0" Text="Fallback Cell B"/>
-              <ComboBox x:Name="FallbackCellBBox" Grid.Row="1" Grid.Column="1" IsEditable="True">
-                <ComboBoxItem Content="0 10 0"/>
-                <ComboBoxItem Content="0 12 0"/>
-                <ComboBoxItem Content="0 15 0"/>
-                <ComboBoxItem Content="0 20 0"/>
-                <ComboBoxItem Content="0 5.43 0"/>
-              </ComboBox>
-              <TextBlock x:Name="FallbackCellCLabel" Grid.Row="1" Grid.Column="2" Text="Fallback Cell C"/>
-              <ComboBox x:Name="FallbackCellCBox" Grid.Row="1" Grid.Column="3" IsEditable="True">
-                <ComboBoxItem Content="0 0 10"/>
-                <ComboBoxItem Content="0 0 12"/>
-                <ComboBoxItem Content="0 0 15"/>
-                <ComboBoxItem Content="0 0 20"/>
-                <ComboBoxItem Content="0 0 5.43"/>
-              </ComboBox>
-            </Grid>
-          </GroupBox>
-
-          <GroupBox x:Name="TemplateKpointsGroup" Header="&amp;FORCE__EVAL / &amp;DFT / &amp;KPOINTS" Style="{StaticResource TemplateSectionLevel2GroupBoxStyle}">
-            <Grid>
-              <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="150"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="150"/>
-                <ColumnDefinition Width="*"/>
-              </Grid.ColumnDefinitions>
-              <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-              </Grid.RowDefinitions>
-
-              <TextBlock x:Name="KpointsSchemeLabel" Grid.Row="0" Grid.Column="0" Text="KPOINTS Scheme"/>
-              <ComboBox x:Name="KpointsSchemeBox" Grid.Row="0" Grid.Column="1" IsEditable="True">
-                <ComboBoxItem Content="NONE"/>
-                <ComboBoxItem Content="GAMMA"/>
-                <ComboBoxItem Content="MONKHORST-PACK"/>
-              </ComboBox>
-              <TextBlock x:Name="KpointsGridLabel" Grid.Row="0" Grid.Column="2" Text="KPOINTS Grid"/>
-              <ComboBox x:Name="KpointsGridBox" Grid.Row="0" Grid.Column="3" IsEditable="True">
-                <ComboBoxItem Content="1 1 1"/>
-                <ComboBoxItem Content="2 2 2"/>
-                <ComboBoxItem Content="3 3 3"/>
-                <ComboBoxItem Content="4 4 4"/>
-                <ComboBoxItem Content="6 6 6"/>
-              </ComboBox>
-
-              <CheckBox x:Name="KpointsFullGridBox" Grid.Row="1" Grid.Column="0"
-                        Content="Full K Grid" Margin="6,4" VerticalAlignment="Center"/>
-              <CheckBox x:Name="KpointsSymmetryBox" Grid.Row="1" Grid.Column="1"
-                        Content="KPOINTS Symmetry" Margin="6,4" VerticalAlignment="Center"/>
-              <TextBlock x:Name="KpointsWavefunctionsLabel" Grid.Row="1" Grid.Column="2" Text="Wavefunctions"/>
-              <ComboBox x:Name="KpointsWavefunctionsBox" Grid.Row="1" Grid.Column="3" IsEditable="True">
-                <ComboBoxItem Content="COMPLEX"/>
-                <ComboBoxItem Content="REAL"/>
-              </ComboBox>
-            </Grid>
-          </GroupBox>
-
-          <CheckBox x:Name="CenterAtomsBox" Content="Center Atoms" Margin="6,8,6,6" VerticalAlignment="Center"/>
-
-          <GroupBox x:Name="TemplateKindGroup" Header="&amp;FORCE__EVAL / &amp;SUBSYS / &amp;KIND" Style="{StaticResource TemplateSectionLevel2GroupBoxStyle}">
-            <StackPanel>
-              <DataGrid x:Name="KindEntriesGrid" Height="170"
-                        AutoGenerateColumns="False" CanUserAddRows="True" CanUserDeleteRows="True"
-                        SelectionMode="Single" HeadersVisibility="Column" GridLinesVisibility="Horizontal" FontSize="12">
-                <DataGrid.Columns>
-                  <DataGridTextColumn Header="Element" Binding="{Binding element, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="70"/>
-                  <DataGridTextColumn Header="Basis Set" Binding="{Binding basis_set, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="*"/>
-                  <DataGridTextColumn Header="Potential" Binding="{Binding potential, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="*"/>
-                </DataGrid.Columns>
-              </DataGrid>
-              <TextBox x:Name="KindsText" Height="170" Visibility="Collapsed"
-                       FontFamily="Cascadia Mono, Consolas, Microsoft YaHei UI, Microsoft YaHei, SimSun"
-                       FontSize="12" AcceptsReturn="True" AcceptsTab="True" TextWrapping="NoWrap"
-                       HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"/>
-
-              <DataGrid x:Name="DataLabelsGrid" Height="130" Visibility="Collapsed"
-                        AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single"
-                        HeadersVisibility="Column" GridLinesVisibility="Horizontal" FontSize="12">
-                <DataGrid.Columns>
-                  <DataGridTextColumn Header="Element" Binding="{Binding element}" Width="70"/>
-                  <DataGridTextColumn Header="Basis Sets" Binding="{Binding basis_sets}" Width="*"/>
-                  <DataGridTextColumn Header="Potentials" Binding="{Binding potentials}" Width="*"/>
-                </DataGrid.Columns>
-              </DataGrid>
-            </StackPanel>
           </GroupBox>
 
           <TextBox x:Name="TemplateValidationText" Height="90" Margin="6,6,6,0"

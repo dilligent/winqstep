@@ -3921,8 +3921,8 @@ if ($SmokeTest) {
     )
     $templateSectionGroupNames = @(
         "TemplateGlobalGroup", "TemplateDftGroup", "TemplateXcGroup", "TemplateScfGroup", "TemplateOuterScfGroup",
-        "TemplateMixingGroup", "TemplateSmearingGroup", "TemplateGeoOptGroup", "TemplateCellOptGroup",
-        "TemplateCellGroup", "TemplateKpointsGroup", "TemplateKindGroup"
+        "TemplateMixingGroup", "TemplateSmearingGroup", "TemplateKpointsGroup", "TemplateCellGroup",
+        "TemplateKindGroup", "TemplateGeoOptGroup", "TemplateCellOptGroup"
     )
     $GetTemplateSectionHeaderText = {
         param([Parameter(Mandatory = $true)][string]$Name)
