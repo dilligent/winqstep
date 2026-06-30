@@ -68,7 +68,9 @@ function New-WinQStepWindow {
         "DistroBox", "Cp2kCommandBox", "Cp2kDataDirBox", "MpirunCommandBox",
         "DefaultWorkspaceBox", "WslPreludeBox", "TimeoutBox", "UiLanguageBox", "ConfigValidationText",
         "TemplateProjectLabel", "RunTypeLabel", "BasisFileLabel", "PotentialFileLabel",
-        "XcFunctionalLabel", "EpsScfLabel", "ChargeLabel", "MultiplicityLabel",
+        "XcFunctionalLabel", "XcPbeParametrizationLabel", "DispersionTypeLabel",
+        "DispersionParameterFileLabel", "DispersionReferenceFunctionalLabel",
+        "EpsScfLabel", "ChargeLabel", "MultiplicityLabel",
         "CutoffLabel", "RelCutoffLabel", "PrintLevelLabel", "MaxScfLabel", "OptimizerLabel", "GeoMaxIterLabel",
         "CellOptTypeLabel", "CellOptOptimizerLabel", "CellOptMaxIterLabel",
         "CellOptPressureToleranceLabel",
@@ -81,7 +83,9 @@ function New-WinQStepWindow {
         "KpointsWavefunctionsLabel",
         "FallbackPeriodicLabel", "FallbackCellALabel", "FallbackCellBLabel", "FallbackCellCLabel",
         "TemplateProjectBox", "TemplateRunTypeBox", "PrintLevelBox", "BasisSetFileBox", "PotentialFileBox",
-        "XcFunctionalBox", "ChargeBox", "MultiplicityBox", "CutoffBox", "RelCutoffBox",
+        "XcFunctionalBox", "XcPbeParametrizationBox", "DispersionTypeBox",
+        "DispersionParameterFileBox", "DispersionReferenceFunctionalBox",
+        "ChargeBox", "MultiplicityBox", "CutoffBox", "RelCutoffBox",
         "EpsScfBox", "MaxScfBox", "GeoOptimizerBox", "GeoMaxIterBox",
         "CellOptTypeBox", "CellOptOptimizerBox", "CellOptMaxIterBox",
         "CellOptPressureToleranceBox",
@@ -92,6 +96,7 @@ function New-WinQStepWindow {
         "MixingAlphaBox", "MixingBetaBox", "SmearingMethodBox",
         "ElectronicTemperatureBox", "KpointsSchemeBox", "KpointsGridBox",
         "KpointsWavefunctionsBox", "OuterScfEnabledBox", "MixingEnabledBox", "SmearingEnabledBox",
+        "DispersionEnabledBox",
         "UksEnabledBox", "CellOptKeepAnglesBox", "CellOptKeepSymmetryBox",
         "KpointsFullGridBox", "KpointsSymmetryBox",
         "FallbackPeriodicBox", "FallbackCellABox", "FallbackCellBBox", "FallbackCellCBox",
@@ -146,6 +151,7 @@ function New-WinQStepWindow {
         MixingEnabledBox = "label.mixing_enabled"
         SmearingEnabledBox = "label.smearing_enabled"
         UksEnabledBox = "label.uks_enabled"
+        DispersionEnabledBox = "label.dispersion_enabled"
         CellOptKeepAnglesBox = "label.cell_opt_keep_angles"
         CellOptKeepSymmetryBox = "label.cell_opt_keep_symmetry"
         OuterScfEnabledBox = "label.outer_scf_enabled"
@@ -194,6 +200,10 @@ function New-WinQStepWindow {
         BasisFileLabel = "label.basis_file"
         PotentialFileLabel = "label.potential_file"
         XcFunctionalLabel = "label.xc_functional"
+        XcPbeParametrizationLabel = "label.xc_pbe_parametrization"
+        DispersionTypeLabel = "label.dispersion_type"
+        DispersionParameterFileLabel = "label.dispersion_parameter_file"
+        DispersionReferenceFunctionalLabel = "label.dispersion_reference_functional"
         EpsScfLabel = "label.eps_scf"
         ChargeLabel = "label.charge"
         MultiplicityLabel = "label.multiplicity"
@@ -1992,6 +2002,11 @@ function New-WinQStepWindow {
         $controls["BasisSetFileBox"].Text = & $GetJsonProperty $dft "basis_set_file_name"
         $controls["PotentialFileBox"].Text = & $GetJsonProperty $dft "potential_file_name"
         $controls["XcFunctionalBox"].Text = & $GetJsonProperty $dft "xc_functional"
+        $controls["XcPbeParametrizationBox"].Text = & $GetJsonProperty $dft "xc_pbe_parametrization"
+        $controls["DispersionEnabledBox"].IsChecked = @("1", "true", "yes", "on").Contains((& $GetJsonProperty $dft "dispersion_enabled" "False").ToLowerInvariant())
+        $controls["DispersionTypeBox"].Text = & $GetJsonProperty $dft "dispersion_type"
+        $controls["DispersionParameterFileBox"].Text = & $GetJsonProperty $dft "dispersion_parameter_file_name"
+        $controls["DispersionReferenceFunctionalBox"].Text = & $GetJsonProperty $dft "dispersion_reference_functional"
         $controls["ChargeBox"].Text = & $GetJsonProperty $dft "charge"
         $controls["MultiplicityBox"].Text = & $GetJsonProperty $dft "multiplicity"
         $controls["UksEnabledBox"].IsChecked = @("1", "true", "yes", "on").Contains((& $GetJsonProperty $dft "uks_enabled" "False").ToLowerInvariant())
@@ -2071,6 +2086,11 @@ function New-WinQStepWindow {
             basis_set_file_name = $controls["BasisSetFileBox"].Text
             potential_file_name = $controls["PotentialFileBox"].Text
             xc_functional = $controls["XcFunctionalBox"].Text
+            xc_pbe_parametrization = $controls["XcPbeParametrizationBox"].Text
+            dispersion_enabled = [bool]$controls["DispersionEnabledBox"].IsChecked
+            dispersion_type = $controls["DispersionTypeBox"].Text
+            dispersion_parameter_file_name = $controls["DispersionParameterFileBox"].Text
+            dispersion_reference_functional = $controls["DispersionReferenceFunctionalBox"].Text
             charge = $controls["ChargeBox"].Text
             multiplicity = $controls["MultiplicityBox"].Text
             uks_enabled = [bool]$controls["UksEnabledBox"].IsChecked
@@ -3885,7 +3905,9 @@ if ($SmokeTest) {
     $report["config_validation_text"] = [string]$window.FindName("ConfigValidationText").Text
     $templateComboNames = @(
         "TemplateProjectBox", "TemplateRunTypeBox", "PrintLevelBox", "BasisSetFileBox", "PotentialFileBox",
-        "XcFunctionalBox", "EpsScfBox", "ChargeBox", "MultiplicityBox",
+        "XcFunctionalBox", "XcPbeParametrizationBox", "DispersionTypeBox",
+        "DispersionParameterFileBox", "DispersionReferenceFunctionalBox",
+        "EpsScfBox", "ChargeBox", "MultiplicityBox",
         "CutoffBox", "RelCutoffBox", "MaxScfBox", "GeoOptimizerBox", "GeoMaxIterBox",
         "CellOptTypeBox", "CellOptOptimizerBox", "CellOptMaxIterBox",
         "CellOptPressureToleranceBox",
@@ -3898,7 +3920,7 @@ if ($SmokeTest) {
         "FallbackPeriodicBox", "FallbackCellABox", "FallbackCellBBox", "FallbackCellCBox"
     )
     $templateSectionGroupNames = @(
-        "TemplateGlobalGroup", "TemplateDftGroup", "TemplateScfGroup", "TemplateOuterScfGroup",
+        "TemplateGlobalGroup", "TemplateDftGroup", "TemplateXcGroup", "TemplateScfGroup", "TemplateOuterScfGroup",
         "TemplateMixingGroup", "TemplateSmearingGroup", "TemplateGeoOptGroup", "TemplateCellOptGroup",
         "TemplateCellGroup", "TemplateKpointsGroup", "TemplateKindGroup"
     )
@@ -3914,6 +3936,12 @@ if ($SmokeTest) {
     $report["template_project_name"] = [string]$window.FindName("TemplateProjectBox").Text
     $report["template_run_type"] = [string]$window.FindName("TemplateRunTypeBox").Text
     $report["template_print_level"] = [string]$window.FindName("PrintLevelBox").Text
+    $report["template_xc_functional"] = [string]$window.FindName("XcFunctionalBox").Text
+    $report["template_xc_pbe_parametrization"] = [string]$window.FindName("XcPbeParametrizationBox").Text
+    $report["template_dispersion_enabled"] = [bool]$window.FindName("DispersionEnabledBox").IsChecked
+    $report["template_dispersion_type"] = [string]$window.FindName("DispersionTypeBox").Text
+    $report["template_dispersion_parameter_file"] = [string]$window.FindName("DispersionParameterFileBox").Text
+    $report["template_dispersion_reference_functional"] = [string]$window.FindName("DispersionReferenceFunctionalBox").Text
     $report["template_cutoff"] = [string]$window.FindName("CutoffBox").Text
     $report["template_uks_enabled"] = [bool]$window.FindName("UksEnabledBox").IsChecked
     $report["template_scf_method"] = [string]$window.FindName("ScfMethodBox").Text

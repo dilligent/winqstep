@@ -126,6 +126,28 @@ class TemplateTests(unittest.TestCase):
         self.assertTrue(dft["smearing_enabled"])
         self.assertEqual(dft["electronic_temperature"], "500")
 
+    def test_merge_fields_updates_xc_and_dispersion_controls(self) -> None:
+        template = load_template(ENERGY_TEMPLATE)
+        merged = merge_template_fields(
+            template,
+            {
+                "xc_pbe_parametrization": "pbesol",
+                "dispersion_enabled": True,
+                "dispersion_type": "dftd3",
+                "dispersion_parameter_file_name": "dftd3.dat",
+                "dispersion_reference_functional": "pbe",
+            },
+        )
+        validation = validate_template(merged)
+
+        self.assertTrue(validation["valid"], validation["errors"])
+        dft = validation["template"]["dft"]
+        self.assertEqual(dft["xc_pbe_parametrization"], "PBESOL")
+        self.assertTrue(dft["dispersion_enabled"])
+        self.assertEqual(dft["dispersion_type"], "DFTD3")
+        self.assertEqual(dft["dispersion_parameter_file_name"], "dftd3.dat")
+        self.assertEqual(dft["dispersion_reference_functional"], "PBE")
+
     def test_merge_fields_updates_kpoints_controls(self) -> None:
         template = load_template(ENERGY_TEMPLATE)
         merged = merge_template_fields(
@@ -217,6 +239,14 @@ class TemplateTests(unittest.TestCase):
         self.assertFalse(validation["valid"])
         self.assertIn("dft.uks_enabled", "\n".join(validation["errors"]))
 
+    def test_validate_rejects_pbe_parametrization_with_non_pbe_functional(self) -> None:
+        template = load_template(ENERGY_TEMPLATE)
+        merged = merge_template_fields(template, {"xc_functional": "BLYP", "xc_pbe_parametrization": "PBESOL"})
+        validation = validate_template(merged)
+
+        self.assertFalse(validation["valid"])
+        self.assertIn("dft.xc_pbe_parametrization", "\n".join(validation["errors"]))
+
     def test_validate_rejects_kpoints_options_without_scheme(self) -> None:
         template = load_template(ENERGY_TEMPLATE)
         merged = merge_template_fields(template, {"kpoints_full_grid": True})
@@ -304,6 +334,11 @@ class TemplateTests(unittest.TestCase):
                 "basis_set_file_name",
                 "potential_file_name",
                 "xc_functional",
+                "xc_pbe_parametrization",
+                "dispersion_enabled",
+                "dispersion_type",
+                "dispersion_parameter_file_name",
+                "dispersion_reference_functional",
                 "charge",
                 "multiplicity",
                 "uks_enabled",

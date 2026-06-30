@@ -19,6 +19,7 @@ class PreflightError(ValueError):
 DATA_FILE_RE = {
     "basis": re.compile(r"^\s*BASIS_SET_FILE_NAME\s+(\S+)", re.IGNORECASE | re.MULTILINE),
     "potential": re.compile(r"^\s*POTENTIAL_FILE_NAME\s+(\S+)", re.IGNORECASE | re.MULTILINE),
+    "parameter": re.compile(r"^\s*PARAMETER_FILE_NAME\s+(\S+)", re.IGNORECASE | re.MULTILINE),
 }
 
 
@@ -84,7 +85,7 @@ def validate_existing_input_preflight(
     errors: list[str] = []
     warnings: list[str] = []
     path = Path(input_path).resolve()
-    references = {"basis_set_file_names": [], "potential_file_names": []}
+    references = {"basis_set_file_names": [], "potential_file_names": [], "parameter_file_names": []}
 
     if not path.is_file():
         errors.append(f"input file does not exist: {path}")
@@ -195,6 +196,10 @@ def _validate_template_data_files(template: dict[str, Any], cache: dict[str, Any
         name = str(dft.get(key) or "").strip()
         if name and file_names and name not in file_names:
             warnings.append(f"Template {label} is not present in CP2K data cache: {name}")
+    if bool(dft.get("dispersion_enabled")):
+        name = str(dft.get("dispersion_parameter_file_name") or "").strip()
+        if name and file_names and name not in file_names:
+            warnings.append(f"Template dispersion parameter file is not present in CP2K data cache: {name}")
 
 
 def _validate_kind_labels(kinds: list[dict[str, Any]], cache: dict[str, Any] | None, warnings: list[str]) -> None:
@@ -248,6 +253,7 @@ def _input_data_file_references(text: str) -> dict[str, list[str]]:
     return {
         "basis_set_file_names": sorted(set(DATA_FILE_RE["basis"].findall(text))),
         "potential_file_names": sorted(set(DATA_FILE_RE["potential"].findall(text))),
+        "parameter_file_names": sorted(set(DATA_FILE_RE["parameter"].findall(text))),
     }
 
 
@@ -262,6 +268,7 @@ def _validate_referenced_data_files(
     for key, label in (
         ("basis_set_file_names", "basis set file"),
         ("potential_file_names", "potential file"),
+        ("parameter_file_names", "parameter file"),
     ):
         for name in references.get(key, []):
             if file_names and name not in file_names:

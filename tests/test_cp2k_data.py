@@ -24,7 +24,8 @@ class Cp2kDataTests(unittest.TestCase):
     def test_inspects_windows_fixture_data_dir(self) -> None:
         inspection = inspect_windows_cp2k_data_dir(FIXTURE_DATA)
 
-        self.assertEqual(inspection["counts"]["files"], 2)
+        self.assertEqual(inspection["counts"]["files"], 3)
+        self.assertIn({"name": "dftd3.dat", "type": "dispersion", "line_count": 2}, inspection["files"])
         self.assertIn("DZVP-MOLOPT-SR-GTH", inspection["basis_sets_by_element"]["H"])
         self.assertIn("TZVP-MOLOPT-GTH", inspection["basis_sets_by_element"]["O"])
         self.assertEqual(inspection["potentials_by_element"]["Si"], ["GTH-PBE-q4"])
@@ -48,6 +49,7 @@ class Cp2kDataTests(unittest.TestCase):
         self.assertIn("conda deactivate", command)
         self.assertIn("test -d /home/teng/cp2k/data", command)
         self.assertIn("find /home/teng/cp2k/data -maxdepth 1 -type f", command)
+        self.assertIn("-iname '*dftd3*'", command)
         self.assertIn("head -z -n 7", command)
         self.assertIn("while IFS= read -r -d '' file_path", command)
         self.assertIn("__WINQSTEP_CP2K_DATA_FILE__", command)

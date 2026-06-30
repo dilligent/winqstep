@@ -65,6 +65,46 @@ class QuickStepTests(unittest.TestCase):
 
         self.assertIn("    MULTIPLICITY 2\n    UKS T\n", rendered)
 
+    def test_renders_pbesol_parametrization(self) -> None:
+        data = json.loads((ROOT / "examples" / "quickstep_energy.json").read_text(encoding="utf-8"))
+        data["dft"]["xc_pbe_parametrization"] = "pbesol"
+
+        rendered = render_quickstep_input(quickstep_input_from_dict(data))
+
+        self.assertIn(
+            "    &XC\n"
+            "      &XC_FUNCTIONAL PBE\n"
+            "        PARAMETRIZATION PBESOL\n"
+            "      &END XC_FUNCTIONAL\n"
+            "    &END XC\n",
+            rendered,
+        )
+
+    def test_renders_dftd3_dispersion_when_enabled(self) -> None:
+        data = json.loads((ROOT / "examples" / "quickstep_energy.json").read_text(encoding="utf-8"))
+        data["dft"].update(
+            {
+                "dispersion_enabled": True,
+                "dispersion_type": "DFTD3",
+                "dispersion_parameter_file_name": "dftd3.dat",
+                "dispersion_reference_functional": "PBE",
+            }
+        )
+
+        rendered = render_quickstep_input(quickstep_input_from_dict(data))
+
+        self.assertIn(
+            "      &VDW_POTENTIAL\n"
+            "        POTENTIAL_TYPE PAIR_POTENTIAL\n"
+            "        &PAIR_POTENTIAL\n"
+            "          TYPE DFTD3\n"
+            "          PARAMETER_FILE_NAME dftd3.dat\n"
+            "          REFERENCE_FUNCTIONAL PBE\n"
+            "        &END PAIR_POTENTIAL\n"
+            "      &END VDW_POTENTIAL\n",
+            rendered,
+        )
+
     def test_rejects_non_quickstep_run_type(self) -> None:
         data = json.loads((ROOT / "examples" / "quickstep_energy.json").read_text(encoding="utf-8"))
         data["run_type"] = "MD"
@@ -226,6 +266,13 @@ class QuickStepTests(unittest.TestCase):
         data["dft"]["multiplicity"] = 2
 
         with self.assertRaisesRegex(QuickStepInputError, "uks_enabled"):
+            quickstep_input_from_dict(data)
+
+    def test_rejects_pbe_parametrization_for_non_pbe_shortcut(self) -> None:
+        data = json.loads((ROOT / "examples" / "quickstep_energy.json").read_text(encoding="utf-8"))
+        data["dft"].update({"xc_functional": "BLYP", "xc_pbe_parametrization": "PBESOL"})
+
+        with self.assertRaisesRegex(QuickStepInputError, "xc_pbe_parametrization"):
             quickstep_input_from_dict(data)
 
     def test_cli_writes_output_file(self) -> None:

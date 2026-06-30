@@ -23,11 +23,12 @@ Editable fields include:
 - `run_type`: `ENERGY`, `ENERGY_FORCE`, `GEO_OPT`, or `CELL_OPT`
 - `print_level`: optional `GLOBAL/PRINT_LEVEL`; supported values are
   `SILENT`, `LOW`, `MEDIUM`, `HIGH`, and `DEBUG`
-- DFT fields: basis file, potential file, XC functional, charge,
-  multiplicity, UKS spin polarization, cutoff, relative cutoff, EPS_SCF,
-  MAX_SCF, SCF method, optional OUTER_SCF settings, ADDED_MOS, OT settings,
-  diagonalization settings, mixing settings, and electronic-temperature
-  smearing settings, plus KPOINTS scheme/grid,
+- DFT fields: basis file, potential file, XC functional, optional PBE
+  parametrization, optional DFT-D3 dispersion, charge, multiplicity, UKS spin
+  polarization, cutoff, relative cutoff, EPS_SCF, MAX_SCF, SCF method,
+  optional OUTER_SCF settings, ADDED_MOS, OT settings, diagonalization
+  settings, mixing settings, and electronic-temperature smearing settings,
+  plus KPOINTS scheme/grid,
   full-grid, symmetry, and wavefunction controls
 - GEO_OPT fields: optimizer and max iterations
 - CELL_OPT fields: optimizer, max iterations, optimization type, pressure
@@ -44,6 +45,7 @@ The PowerShell WPF prototype has a `Template` tab plus `Load Template` and
 `Save Template` buttons. The tab exposes conservative fields already supported
 by the renderer and workflow layer. Related controls are grouped by their CP2K
 input-section path, so `&GLOBAL`, `&FORCE_EVAL / &DFT`,
+`&FORCE_EVAL / &DFT / &XC`,
 `&FORCE_EVAL / &DFT / &SCF`, nested blocks such as
 `&FORCE_EVAL / &DFT / &SCF / &OUTER_SCF`,
 `&FORCE_EVAL / &DFT / &SCF / &MIXING`,
@@ -61,6 +63,8 @@ shortcuts, typical SCF/MGRID numeric values, SCF methods such as `DEFAULT`,
 `DIAGONALIZATION`, and `OT`, and `BFGS`, `LBFGS`, or `CG` for GEO_OPT and
 CELL_OPT optimizers. Fallback cell fields expose the supported CP2K periodicity labels
 and common cubic-cell vectors while still accepting direct typed values.
+XC controls expose common `XC_FUNCTIONAL` shortcuts, PBE parametrizations
+(`ORIG`, `PBESOL`, `REVPBE`, `RPBE`), and opt-in DFT-D3 pair-potential settings.
 UKS is exposed as a checkbox in the `&FORCE_EVAL / &DFT` group because it maps
 to the top-level `DFT/UKS` keyword.
 OUTER_SCF fields expose common outer-loop thresholds and iteration counts while
@@ -73,7 +77,8 @@ The candidate lists are intentionally conservative and are based on the CP2K
 manual pages for `GLOBAL/RUN_TYPE`, `GLOBAL/PRINT_LEVEL`,
 `FORCE_EVAL/DFT/BASIS_SET_FILE_NAME`,
 `FORCE_EVAL/DFT/POTENTIAL_FILE_NAME`, `FORCE_EVAL/DFT/XC/XC_FUNCTIONAL`,
-`FORCE_EVAL/DFT/UKS`, `FORCE_EVAL/DFT/MGRID`, `FORCE_EVAL/DFT/SCF`, and
+`FORCE_EVAL/DFT/XC/VDW_POTENTIAL/PAIR_POTENTIAL`, `FORCE_EVAL/DFT/UKS`,
+`FORCE_EVAL/DFT/MGRID`, `FORCE_EVAL/DFT/SCF`, and
 `MOTION/GEO_OPT`, plus
 `FORCE_EVAL/SUBSYS/CELL`, `FORCE_EVAL/DFT/POISSON`,
 `FORCE_EVAL/DFT/SCF/OT`, `FORCE_EVAL/DFT/SCF/DIAGONALIZATION`,
@@ -102,3 +107,5 @@ CELL_OPT inputs reject nonperiodic cells and currently support the
 `DIRECT_CELL_OPT` path. When a CP2K data inspection cache is available, the GUI
 preflight step also compares template data-file names and KIND basis/potential
 labels against the cached CP2K data labels before `Preview` or `Run`.
+When DFT-D3 is enabled, preflight also checks the configured D3 parameter file
+name against the cached CP2K data file list.

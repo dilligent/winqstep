@@ -27,8 +27,9 @@ Each round should end with a focused commit.
   hardening for live GUI job logs, and readable imported-structure display in
   the GUI Structure tab, and readable environment probe display in the GUI
   Environment tab, QuickStep `SCF/&OUTER_SCF` support, QuickStep `DFT/UKS`
-  support, and a thin double-click `WinQStep.exe` launcher.
-- Next active round: Round 57, expand QuickStep coverage from the next selected
+  support, a thin double-click `WinQStep.exe` launcher, and QuickStep
+  `DFT/&XC` PBE parametrization plus DFT-D3 support.
+- Next active round: Round 58, expand QuickStep coverage from the next selected
   CP2K feature area.
 - Known local facts:
   - WSL2 is available.
@@ -1947,6 +1948,44 @@ Acceptance:
 Commit boundary:
 
 - One commit for the thin launcher, builder, release wiring, tests, and docs.
+
+## Round 57: QuickStep XC and DFT-D3 Support
+
+Status: implemented.
+
+Goal: add the most common next layer of QuickStep XC control without taking on
+hybrid functional, ADMM, or restart workflow complexity.
+
+Tasks:
+
+- Preserve the existing default `&XC_FUNCTIONAL PBE` rendering and snapshots.
+- Add `dft.xc_pbe_parametrization` for explicit PBE variants such as `PBESOL`,
+  `REVPBE`, and `RPBE`.
+- Add opt-in DFT-D3 settings that render `DFT/&XC/&VDW_POTENTIAL` with
+  `PAIR_POTENTIAL`, `TYPE`, `PARAMETER_FILE_NAME`, and `REFERENCE_FUNCTIONAL`.
+- Expose the XC controls in a dedicated Template section,
+  `&FORCE_EVAL / &DFT / &XC`, using editable drop-down fields and a DFT-D3
+  enable checkbox.
+- Include D3 parameter files such as `dftd3.dat` in CP2K data inspection caches
+  and warn during preflight when enabled D3 references a missing parameter file.
+- Wire the fields through `manage_template.py`, GUI load/save paths, smoke
+  reports, docs, and tests.
+
+Acceptance:
+
+- Existing generated ENERGY, ENERGY_FORCE, GEO_OPT, and CELL_OPT snapshots stay
+  unchanged unless a non-default PBE parametrization or DFT-D3 is enabled.
+- PBEsol/revPBE/RPBE render as `PARAMETRIZATION` inside `&XC_FUNCTIONAL PBE`.
+- Enabling DFT-D3 renders `&VDW_POTENTIAL` and `&PAIR_POTENTIAL` in the CP2K XC
+  hierarchy.
+- Template validation rejects PBE parametrization when the selected functional
+  is not `PBE`.
+- GUI smoke coverage includes the new XC section and DFT-D3 fields.
+
+Commit boundary:
+
+- One commit for XC/DFT-D3 model, renderer, template/GUI controls, data-cache
+  support, tests, and docs.
 
 ## Working Rules
 

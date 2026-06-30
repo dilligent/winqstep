@@ -62,7 +62,12 @@ class PreflightTests(unittest.TestCase):
     def test_existing_input_preflight_warns_for_missing_cached_data_file(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
             input_path = Path(tmp_dir) / "job.inp"
-            input_path.write_text("BASIS_SET_FILE_NAME MISSING_BASIS\nPOTENTIAL_FILE_NAME GTH_POTENTIALS\n", encoding="utf-8")
+            input_path.write_text(
+                "BASIS_SET_FILE_NAME MISSING_BASIS\n"
+                "POTENTIAL_FILE_NAME GTH_POTENTIALS\n"
+                "PARAMETER_FILE_NAME dftd3.dat\n",
+                encoding="utf-8",
+            )
             cache_path = Path(tmp_dir) / "cache.json"
             cache_path.write_text(
                 json.dumps({"files": [{"name": "GTH_POTENTIALS"}], "counts": {"files": 1}}),
@@ -73,6 +78,38 @@ class PreflightTests(unittest.TestCase):
 
             self.assertTrue(payload["valid"], payload["errors"])
             self.assertIn("MISSING_BASIS", "\n".join(payload["warnings"]))
+            self.assertIn("dftd3.dat", "\n".join(payload["warnings"]))
+
+    def test_workflow_preflight_warns_for_missing_dispersion_parameter_file(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            template = load_json_file(TEMPLATE)
+            template["dft"]["dispersion_enabled"] = True
+            template["dft"]["dispersion_parameter_file_name"] = "dftd3.dat"
+            template_path = Path(tmp_dir) / "d3.json"
+            template_path.write_text(json.dumps(template), encoding="utf-8")
+            cache_path = Path(tmp_dir) / "cache.json"
+            cache_path.write_text(
+                json.dumps(
+                    {
+                        "files": [{"name": "BASIS_MOLOPT"}, {"name": "GTH_POTENTIALS"}],
+                        "labels_by_element": {
+                            "H": {"basis_sets": ["DZVP-MOLOPT-SR-GTH"], "potentials": ["GTH-PBE-q1"]},
+                            "O": {"basis_sets": ["DZVP-MOLOPT-SR-GTH"], "potentials": ["GTH-PBE-q6"]},
+                        },
+                        "counts": {"files": 2, "elements": 2},
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            payload = validate_workflow_preflight(
+                template_path=template_path,
+                structure_path=STRUCTURE,
+                cache_path=cache_path,
+            )
+
+            self.assertTrue(payload["valid"], payload["errors"])
+            self.assertIn("dispersion parameter file", "\n".join(payload["warnings"]))
 
     def test_cli_outputs_json_and_nonzero_for_invalid_workflow(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:

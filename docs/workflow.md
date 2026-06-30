@@ -39,7 +39,9 @@ define calculation settings, optional structure transforms, and a KIND library:
   "dft": {
     "basis_set_file_name": "BASIS_MOLOPT",
     "potential_file_name": "GTH_POTENTIALS",
-    "xc_functional": "PBE"
+    "xc_functional": "PBE",
+    "xc_pbe_parametrization": "ORIG",
+    "dispersion_enabled": false
   },
   "structure_transform": {
     "fallback_cell": {
@@ -71,6 +73,13 @@ renders `UKS T` inside `&DFT`. Multiplicity values greater than 1 require UKS,
 so open-shell templates fail before CP2K is started instead of silently running
 as restricted calculations.
 
+Templates can adjust the conservative XC layer with `xc_functional` and, for
+PBE, `xc_pbe_parametrization`. `ORIG` keeps the historical `&XC_FUNCTIONAL PBE`
+shortcut unchanged; values such as `PBESOL` render a nested `PARAMETRIZATION`
+keyword. `dispersion_enabled` turns on DFT-D3 through
+`DFT/&XC/&VDW_POTENTIAL/&PAIR_POTENTIAL` with editable type, parameter file,
+and reference functional fields.
+
 Templates can optionally enable `DFT/&KPOINTS` for periodic structures.
 `kpoints_scheme` defaults to `NONE`; supported rendered schemes are `GAMMA` and
 `MONKHORST-PACK`, with `kpoints_grid` providing the three Monkhorst-Pack
@@ -98,8 +107,9 @@ python .\scripts\manage_template.py --template .\examples\templates\energy_pbe.j
 ```
 
 The GUI `Template` tab uses the same command. It exposes project name, run type,
-DFT settings, UKS, SCF solver and OUTER_SCF controls, KPOINTS controls, GEO_OPT settings,
-CELL_OPT settings, fallback cell/periodicity settings, centering, and KIND
-basis/potential entries. Supported QuickStep run types are `ENERGY`,
+DFT settings, XC/PBE/DFT-D3 controls, UKS, SCF solver and OUTER_SCF controls,
+KPOINTS controls, GEO_OPT settings, CELL_OPT settings, fallback
+cell/periodicity settings, centering, and KIND basis/potential entries.
+Supported QuickStep run types are `ENERGY`,
 `ENERGY_FORCE`, `GEO_OPT`, and `CELL_OPT`. Workflow preview and run actions
 save and validate the current template before rendering input.

@@ -105,6 +105,14 @@ If `WinQStep.exe` is not present in a source-only handoff, run
 
 ## Current Verification Baseline
 
+Round 57 adds QuickStep XC/PBE parametrization and opt-in DFT-D3 support. The
+local checks for this round were:
+
+- `python .\scripts\run_checks.py --profile fast --compact`: 2/2 checks
+  passed, including 156 unit tests.
+- `python .\scripts\run_checks.py --profile release --compact`: 3/3 checks
+  passed. With the optional EXE present, release planning listed 111 files.
+
 Round 56 adds the optional thin EXE launcher. The local launcher/release checks
 for this round were:
 

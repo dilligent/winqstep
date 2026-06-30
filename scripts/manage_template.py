@@ -27,6 +27,11 @@ FIELD_ARGS = {
     "basis_set_file_name": "basis_set_file_name",
     "potential_file_name": "potential_file_name",
     "xc_functional": "xc_functional",
+    "xc_pbe_parametrization": "xc_pbe_parametrization",
+    "dispersion_enabled": "dispersion_enabled",
+    "dispersion_type": "dispersion_type",
+    "dispersion_parameter_file_name": "dispersion_parameter_file_name",
+    "dispersion_reference_functional": "dispersion_reference_functional",
     "charge": "charge",
     "multiplicity": "multiplicity",
     "uks_enabled": "uks_enabled",
@@ -84,6 +89,11 @@ def main() -> int:
     parser.add_argument("--basis-set-file-name")
     parser.add_argument("--potential-file-name")
     parser.add_argument("--xc-functional")
+    parser.add_argument("--xc-pbe-parametrization")
+    parser.add_argument("--dispersion-enabled")
+    parser.add_argument("--dispersion-type")
+    parser.add_argument("--dispersion-parameter-file-name")
+    parser.add_argument("--dispersion-reference-functional")
     parser.add_argument("--charge")
     parser.add_argument("--multiplicity")
     parser.add_argument("--uks-enabled")

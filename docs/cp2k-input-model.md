@@ -30,6 +30,9 @@ The first generator should target:
 - `DFT/UKS`
 - `DFT/&POISSON`
 - `DFT/&KPOINTS`
+- `DFT/&XC`
+- `DFT/&XC/&XC_FUNCTIONAL`
+- `DFT/&XC/&VDW_POTENTIAL` with `PAIR_POTENTIAL` DFT-D3
 - `&SUBSYS`
 - `SUBSYS/&CELL`
 - `&SCF`
@@ -68,9 +71,9 @@ Top-level fields:
 - `print_level`: optional `GLOBAL/PRINT_LEVEL`, one of `SILENT`, `LOW`,
   `MEDIUM`, `HIGH`, or `DEBUG`; when omitted or blank, WinQStep leaves CP2K's
   default print level implicit
-- `dft`: basis/potential file names, PBE-style functional, charge,
-  multiplicity, optional UKS spin polarization, MGRID cutoff, SCF controls,
-  and optional KPOINTS controls
+- `dft`: basis/potential file names, XC functional settings, optional DFT-D3
+  dispersion, charge, multiplicity, optional UKS spin polarization, MGRID
+  cutoff, SCF controls, and optional KPOINTS controls
 - `geo_opt`: optimizer and max iteration settings for `GEO_OPT`
 - `cell_opt`: optimizer, max iteration, type, pressure tolerance, and simple
   cell-shape constraints for `CELL_OPT`
@@ -88,6 +91,20 @@ renderer writes `UKS T` in `&DFT`; when false, the keyword is omitted. Templates
 with `multiplicity` greater than 1 must enable UKS so open-shell intent is not
 silently reduced to a restricted calculation. UKS with multiplicity 1 remains
 allowed for broken-symmetry singlet workflows.
+
+XC settings are intentionally conservative. `dft.xc_functional` still defaults
+to the CP2K `&XC_FUNCTIONAL PBE` shortcut. `dft.xc_pbe_parametrization` defaults
+to `ORIG` and is omitted from generated input unless a non-default PBE
+parametrization such as `PBESOL`, `REVPBE`, or `RPBE` is selected. Non-default
+PBE parametrizations are rejected unless `dft.xc_functional` is `PBE`, because
+they render as `PARAMETRIZATION` inside the PBE `&XC_FUNCTIONAL` section.
+
+DFT-D3 dispersion is opt-in through `dft.dispersion_enabled`. When enabled, the
+renderer writes `DFT/&XC/&VDW_POTENTIAL` with `POTENTIAL_TYPE PAIR_POTENTIAL`
+and a nested `&PAIR_POTENTIAL` section containing `TYPE`, `PARAMETER_FILE_NAME`,
+and `REFERENCE_FUNCTIONAL`. Supported D3 types are `DFTD3` and `DFTD3(BJ)`.
+The default parameter file is `dftd3.dat`; preflight can warn when the CP2K data
+inspection cache does not list that file.
 
 SCF advanced controls are opt-in. `dft.scf_method` defaults to `DEFAULT`, which
 keeps the previous minimal `EPS_SCF`/`MAX_SCF` output. `OT` renders `SCF/&OT`.
@@ -129,6 +146,8 @@ QuickStep subset with tests.
 - Optional `print_level` renders only as `GLOBAL/PRINT_LEVEL` when explicitly
   set.
 - CELL and POISSON periodicity must stay synchronized.
+- PBE parametrization renders only when explicitly non-default.
+- DFT-D3 renders only when explicitly enabled.
 - UKS is generated only when explicitly enabled.
 - OUTER_SCF is generated only when explicitly enabled.
 - Mixing and smearing are only generated with the diagonalization SCF path.

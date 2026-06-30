@@ -59,6 +59,12 @@ class GuiPrototypeTests(unittest.TestCase):
             "template_project_name": str(template.get("project_name", "")),
             "template_run_type": str(template.get("run_type", "")),
             "template_print_level": str(template.get("print_level", "")),
+            "template_xc_functional": str(dft.get("xc_functional", "")),
+            "template_xc_pbe_parametrization": str(dft.get("xc_pbe_parametrization", "")),
+            "template_dispersion_enabled": bool(dft.get("dispersion_enabled", False)),
+            "template_dispersion_type": str(dft.get("dispersion_type", "")),
+            "template_dispersion_parameter_file": str(dft.get("dispersion_parameter_file_name", "")),
+            "template_dispersion_reference_functional": str(dft.get("dispersion_reference_functional", "")),
             "template_cutoff": str(dft.get("cutoff", "")),
             "template_uks_enabled": bool(dft.get("uks_enabled", False)),
             "template_scf_method": str(dft.get("scf_method", "")),
@@ -127,6 +133,7 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn('x:Key="TemplateSectionGroupBoxStyle"', xaml_text)
         self.assertIn('x:Name="TemplateGlobalGroup" Header="&amp;GLOBAL"', xaml_text)
         self.assertIn('x:Name="TemplateDftGroup" Header="&amp;FORCE_EVAL / &amp;DFT"', xaml_text)
+        self.assertIn('x:Name="TemplateXcGroup" Header="&amp;FORCE_EVAL / &amp;DFT / &amp;XC"', xaml_text)
         self.assertIn('x:Name="TemplateScfGroup" Header="&amp;FORCE_EVAL / &amp;DFT / &amp;SCF"', xaml_text)
         self.assertIn('x:Name="TemplateOuterScfGroup" Header="&amp;FORCE_EVAL / &amp;DFT / &amp;SCF / &amp;OUTER_SCF"', xaml_text)
         self.assertIn('x:Name="TemplateMixingGroup" Header="&amp;FORCE_EVAL / &amp;DFT / &amp;SCF / &amp;MIXING"', xaml_text)
@@ -161,7 +168,14 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn('<ComboBoxItem Content="ENERGY_FORCE"/>', xaml_text)
         self.assertIn('<ComboBoxItem Content="GEO_OPT"/>', xaml_text)
         self.assertIn('<ComboBoxItem Content="CELL_OPT"/>', xaml_text)
-        self.assertIn('x:Name="UksEnabledBox" Grid.Row="3" Grid.Column="2"', xaml_text)
+        self.assertIn('x:Name="UksEnabledBox" Grid.Row="3" Grid.Column="0"', xaml_text)
+        self.assertIn('x:Name="XcPbeParametrizationBox" Grid.Row="0" Grid.Column="3" IsEditable="True"', xaml_text)
+        self.assertIn('<ComboBoxItem Content="PBESOL"/>', xaml_text)
+        self.assertIn('x:Name="DispersionEnabledBox"', xaml_text)
+        self.assertIn('x:Name="DispersionTypeBox" Grid.Row="1" Grid.Column="3" IsEditable="True"', xaml_text)
+        self.assertIn('<ComboBoxItem Content="DFTD3(BJ)"/>', xaml_text)
+        self.assertIn('x:Name="DispersionParameterFileBox" Grid.Row="2" Grid.Column="1" IsEditable="True"', xaml_text)
+        self.assertIn('x:Name="DispersionReferenceFunctionalBox" Grid.Row="2" Grid.Column="3" IsEditable="True"', xaml_text)
         self.assertIn('<ComboBoxItem Content="BFGS"/>', xaml_text)
         self.assertIn('<ComboBoxItem Content="LBFGS"/>', xaml_text)
         self.assertIn('<ComboBoxItem Content="CG"/>', xaml_text)
@@ -207,6 +221,7 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn('"button.apply": "Apply"', english_text)
         self.assertIn('"label.print_level": "Print Level"', english_text)
         self.assertIn('"label.uks_enabled": "UKS"', english_text)
+        self.assertIn('"label.dispersion_enabled": "DFT-D3"', english_text)
         self.assertIn('"label.outer_scf_enabled": "Outer SCF"', english_text)
         self.assertIn('"button.preview": "预览"', chinese_text)
         self.assertIn("[System.Windows.Threading.DispatcherTimer]::new()", script_text)
@@ -391,12 +406,13 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertTrue(str(report["config_workspace_expected_path"]).endswith("outputs"))
         self.assertIn("Config valid", report["config_validation_text"])
         self.assertTrue(report["template_tab_loaded"])
-        self.assertEqual(report["template_section_groups_loaded"], 11)
+        self.assertEqual(report["template_section_groups_loaded"], 12)
         self.assertEqual(
             report["template_section_group_headers"],
             [
                 "&GLOBAL",
                 "&FORCE_EVAL / &DFT",
+                "&FORCE_EVAL / &DFT / &XC",
                 "&FORCE_EVAL / &DFT / &SCF",
                 "&FORCE_EVAL / &DFT / &SCF / &OUTER_SCF",
                 "&FORCE_EVAL / &DFT / &SCF / &MIXING",
@@ -408,8 +424,8 @@ class GuiPrototypeTests(unittest.TestCase):
                 "&FORCE_EVAL / &SUBSYS / &KIND",
             ],
         )
-        self.assertEqual(report["template_combo_fields_loaded"], 37)
-        self.assertEqual(report["template_combo_fields_editable"], 37)
+        self.assertEqual(report["template_combo_fields_loaded"], 41)
+        self.assertEqual(report["template_combo_fields_editable"], 41)
         self.assertEqual(report["template_run_type_options"], ["ENERGY", "ENERGY_FORCE", "GEO_OPT", "CELL_OPT"])
         self.assertEqual(report["template_print_level_options"], ["", "SILENT", "LOW", "MEDIUM", "HIGH", "DEBUG"])
         self.assertEqual(report["template_optimizer_options"], ["BFGS", "LBFGS", "CG"])

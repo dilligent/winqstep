@@ -140,7 +140,7 @@ def build_wsl_data_dump_command(
             f"test -d {quoted_dir}",
             (
                 f"find {quoted_dir} -maxdepth 1 -type f "
-                "\\( -name '*BASIS*' -o -name '*POTENTIAL*' \\) "
+                "\\( -name '*BASIS*' -o -name '*POTENTIAL*' -o -iname '*dftd3*' \\) "
                 f"-print0 | sort -z | head -z -n {normalized_limit} | "
                 "while IFS= read -r -d '' file_path; do "
                 "file_name=${file_path##*/}; "
@@ -174,6 +174,8 @@ def inspect_cp2k_data_texts(
         elif file_type == "potential":
             labels = _parse_potential_labels(text)
             _merge_labels(potentials_by_element, labels)
+        elif file_type == "dispersion":
+            pass
         else:
             continue
         file_summaries.append(
@@ -319,6 +321,8 @@ def _file_type(name: str) -> str | None:
         return "potential"
     if "BASIS" in upper_name:
         return "basis"
+    if "DFTD3" in upper_name:
+        return "dispersion"
     return None
 
 

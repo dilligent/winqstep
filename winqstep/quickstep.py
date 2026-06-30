@@ -34,6 +34,8 @@ MIXING_METHODS = {
     "NEW_PULAY_MIXING",
 }
 SMEARING_METHODS = {"FERMI_DIRAC", "ENERGY_WINDOW", "GAUSSIAN", "METHFESSEL_PAXTON", "MARZARI_VANDERBILT"}
+PBE_PARAMETRIZATIONS = {"ORIG", "REVPBE", "RPBE", "PBESOL"}
+DISPERSION_TYPES = {"DFTD3", "DFTD3(BJ)"}
 
 
 class QuickStepInputError(ValueError):
@@ -66,6 +68,11 @@ class DftSettings:
     basis_set_file_name: str = "BASIS_MOLOPT"
     potential_file_name: str = "GTH_POTENTIALS"
     xc_functional: str = "PBE"
+    xc_pbe_parametrization: str = "ORIG"
+    dispersion_enabled: bool = False
+    dispersion_type: str = "DFTD3(BJ)"
+    dispersion_parameter_file_name: str = "dftd3.dat"
+    dispersion_reference_functional: str = "PBE"
     charge: int = 0
     multiplicity: int = 1
     uks_enabled: bool = False
@@ -216,6 +223,11 @@ def _parse_dft(data: dict[str, Any]) -> DftSettings:
         basis_set_file_name=_optional_string(data, "basis_set_file_name", "BASIS_MOLOPT"),
         potential_file_name=_optional_string(data, "potential_file_name", "GTH_POTENTIALS"),
         xc_functional=_optional_string(data, "xc_functional", "PBE").upper(),
+        xc_pbe_parametrization=_optional_string(data, "xc_pbe_parametrization", "ORIG").upper(),
+        dispersion_enabled=_bool_value(data, "dispersion_enabled", False),
+        dispersion_type=_optional_string(data, "dispersion_type", "DFTD3(BJ)").upper(),
+        dispersion_parameter_file_name=_optional_string(data, "dispersion_parameter_file_name", "dftd3.dat"),
+        dispersion_reference_functional=_optional_string(data, "dispersion_reference_functional", "PBE").upper(),
         charge=_int_value(data, "charge", 0),
         multiplicity=_int_value(data, "multiplicity", 1),
         uks_enabled=_bool_value(data, "uks_enabled", False),
@@ -321,6 +333,16 @@ def validate_quickstep_input(model: QuickStepInput) -> None:
         raise QuickStepInputError("periodic cell vectors must be non-zero")
     if model.dft.cutoff <= 0 or model.dft.rel_cutoff <= 0:
         raise QuickStepInputError("cutoff and rel_cutoff must be positive")
+    if model.dft.xc_pbe_parametrization not in PBE_PARAMETRIZATIONS:
+        raise QuickStepInputError("dft.xc_pbe_parametrization has an unsupported value")
+    if model.dft.xc_pbe_parametrization != "ORIG" and model.dft.xc_functional != "PBE":
+        raise QuickStepInputError("dft.xc_pbe_parametrization requires dft.xc_functional PBE")
+    if model.dft.dispersion_type not in DISPERSION_TYPES:
+        raise QuickStepInputError("dft.dispersion_type has an unsupported value")
+    if model.dft.dispersion_enabled and not model.dft.dispersion_parameter_file_name.strip():
+        raise QuickStepInputError("dft.dispersion_parameter_file_name must be a non-empty string")
+    if model.dft.dispersion_enabled and not model.dft.dispersion_reference_functional.strip():
+        raise QuickStepInputError("dft.dispersion_reference_functional must be a non-empty string")
     if model.dft.multiplicity <= 0:
         raise QuickStepInputError("dft.multiplicity must be positive")
     if model.dft.multiplicity > 1 and not model.dft.uks_enabled:
@@ -416,10 +438,7 @@ def render_quickstep_input(model: QuickStepInput) -> str:
         f"      MAX_SCF {model.dft.max_scf}",
         *_render_scf_extras(model.dft),
         "    &END SCF",
-        "    &XC",
-        f"      &XC_FUNCTIONAL {model.dft.xc_functional}",
-        "      &END XC_FUNCTIONAL",
-        "    &END XC",
+        *_render_xc(model.dft),
         "  &END DFT",
         "  &SUBSYS",
         "    &CELL",
@@ -470,6 +489,31 @@ def _render_spin_keywords(dft: DftSettings) -> list[str]:
     if not dft.uks_enabled:
         return []
     return ["    UKS T"]
+
+
+def _render_xc(dft: DftSettings) -> list[str]:
+    lines = [
+        "    &XC",
+        f"      &XC_FUNCTIONAL {dft.xc_functional}",
+    ]
+    if dft.xc_functional == "PBE" and dft.xc_pbe_parametrization != "ORIG":
+        lines.append(f"        PARAMETRIZATION {dft.xc_pbe_parametrization}")
+    lines.append("      &END XC_FUNCTIONAL")
+    if dft.dispersion_enabled:
+        lines.extend(
+            [
+                "      &VDW_POTENTIAL",
+                "        POTENTIAL_TYPE PAIR_POTENTIAL",
+                "        &PAIR_POTENTIAL",
+                f"          TYPE {dft.dispersion_type}",
+                f"          PARAMETER_FILE_NAME {dft.dispersion_parameter_file_name}",
+                f"          REFERENCE_FUNCTIONAL {dft.dispersion_reference_functional}",
+                "        &END PAIR_POTENTIAL",
+                "      &END VDW_POTENTIAL",
+            ]
+        )
+    lines.append("    &END XC")
+    return lines
 
 
 def _render_motion(model: QuickStepInput) -> list[str]:

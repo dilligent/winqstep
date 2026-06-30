@@ -16,11 +16,13 @@ from .quickstep import (
     MOTION_OPTIMIZERS,
     OT_MINIMIZERS,
     OT_PRECONDITIONERS,
+    PBE_PARAMETRIZATIONS,
     PERIODIC_VALUES,
     PRINT_LEVELS,
     RUN_TYPES,
     SCF_METHODS,
     SMEARING_METHODS,
+    DISPERSION_TYPES,
     CellOptSettings,
     DftSettings,
     GeoOptSettings,
@@ -41,6 +43,11 @@ DFT_KEY_ORDER = (
     "basis_set_file_name",
     "potential_file_name",
     "xc_functional",
+    "xc_pbe_parametrization",
+    "dispersion_enabled",
+    "dispersion_type",
+    "dispersion_parameter_file_name",
+    "dispersion_reference_functional",
     "charge",
     "multiplicity",
     "uks_enabled",
@@ -284,6 +291,29 @@ def _normalize_dft(data: dict[str, Any], errors: list[str]) -> dict[str, Any]:
             "dft.xc_functional",
             errors,
         ).upper(),
+        "xc_pbe_parametrization": _choice_value(
+            data.get("xc_pbe_parametrization", defaults.xc_pbe_parametrization),
+            "dft.xc_pbe_parametrization",
+            PBE_PARAMETRIZATIONS,
+            errors,
+        ),
+        "dispersion_enabled": _bool_value(data.get("dispersion_enabled", defaults.dispersion_enabled)),
+        "dispersion_type": _choice_value(
+            data.get("dispersion_type", defaults.dispersion_type),
+            "dft.dispersion_type",
+            DISPERSION_TYPES,
+            errors,
+        ),
+        "dispersion_parameter_file_name": _required_string(
+            data.get("dispersion_parameter_file_name", defaults.dispersion_parameter_file_name),
+            "dft.dispersion_parameter_file_name",
+            errors,
+        ),
+        "dispersion_reference_functional": _required_string(
+            data.get("dispersion_reference_functional", defaults.dispersion_reference_functional),
+            "dft.dispersion_reference_functional",
+            errors,
+        ).upper(),
         "charge": _int_value(data.get("charge", defaults.charge), "dft.charge", errors),
         "multiplicity": _positive_int_value(
             data.get("multiplicity", defaults.multiplicity),
@@ -384,6 +414,8 @@ def _normalize_dft(data: dict[str, Any], errors: list[str]) -> dict[str, Any]:
         errors.append("dft.smearing_enabled requires dft.added_mos to add unoccupied orbitals")
     if dft["multiplicity"] > 1 and not dft["uks_enabled"]:
         errors.append("dft.multiplicity greater than 1 requires dft.uks_enabled")
+    if dft["xc_pbe_parametrization"] != "ORIG" and dft["xc_functional"] != "PBE":
+        errors.append("dft.xc_pbe_parametrization requires dft.xc_functional PBE")
     eps_scf = _float_string_or_none(dft["eps_scf"])
     outer_scf_eps_scf = _float_string_or_none(dft["outer_scf_eps_scf"])
     if (

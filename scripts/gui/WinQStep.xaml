@@ -278,19 +278,8 @@
                 <ComboBoxItem Content="POTENTIAL_UCL"/>
               </ComboBox>
 
-              <TextBlock x:Name="XcFunctionalLabel" Grid.Row="1" Grid.Column="0" Text="XC Functional"/>
-              <ComboBox x:Name="XcFunctionalBox" Grid.Row="1" Grid.Column="1" IsEditable="True">
-                <ComboBoxItem Content="PBE"/>
-                <ComboBoxItem Content="BLYP"/>
-                <ComboBoxItem Content="BP"/>
-                <ComboBoxItem Content="PADE"/>
-                <ComboBoxItem Content="PBE0"/>
-                <ComboBoxItem Content="B3LYP"/>
-                <ComboBoxItem Content="TPSS"/>
-                <ComboBoxItem Content="NO_SHORTCUT"/>
-              </ComboBox>
-              <TextBlock x:Name="ChargeLabel" Grid.Row="1" Grid.Column="2" Text="Charge"/>
-              <ComboBox x:Name="ChargeBox" Grid.Row="1" Grid.Column="3" IsEditable="True">
+              <TextBlock x:Name="ChargeLabel" Grid.Row="1" Grid.Column="0" Text="Charge"/>
+              <ComboBox x:Name="ChargeBox" Grid.Row="1" Grid.Column="1" IsEditable="True">
                 <ComboBoxItem Content="-2"/>
                 <ComboBoxItem Content="-1"/>
                 <ComboBoxItem Content="0"/>
@@ -298,15 +287,15 @@
                 <ComboBoxItem Content="2"/>
               </ComboBox>
 
-              <TextBlock x:Name="MultiplicityLabel" Grid.Row="2" Grid.Column="0" Text="Multiplicity"/>
-              <ComboBox x:Name="MultiplicityBox" Grid.Row="2" Grid.Column="1" IsEditable="True">
+              <TextBlock x:Name="MultiplicityLabel" Grid.Row="1" Grid.Column="2" Text="Multiplicity"/>
+              <ComboBox x:Name="MultiplicityBox" Grid.Row="1" Grid.Column="3" IsEditable="True">
                 <ComboBoxItem Content="1"/>
                 <ComboBoxItem Content="2"/>
                 <ComboBoxItem Content="3"/>
                 <ComboBoxItem Content="4"/>
               </ComboBox>
-              <TextBlock x:Name="CutoffLabel" Grid.Row="2" Grid.Column="2" Text="Cutoff"/>
-              <ComboBox x:Name="CutoffBox" Grid.Row="2" Grid.Column="3" IsEditable="True">
+              <TextBlock x:Name="CutoffLabel" Grid.Row="2" Grid.Column="0" Text="Cutoff"/>
+              <ComboBox x:Name="CutoffBox" Grid.Row="2" Grid.Column="1" IsEditable="True">
                 <ComboBoxItem Content="300"/>
                 <ComboBoxItem Content="400"/>
                 <ComboBoxItem Content="500"/>
@@ -314,15 +303,68 @@
                 <ComboBoxItem Content="800"/>
               </ComboBox>
 
-              <TextBlock x:Name="RelCutoffLabel" Grid.Row="3" Grid.Column="0" Text="Rel Cutoff"/>
-              <ComboBox x:Name="RelCutoffBox" Grid.Row="3" Grid.Column="1" IsEditable="True">
+              <TextBlock x:Name="RelCutoffLabel" Grid.Row="2" Grid.Column="2" Text="Rel Cutoff"/>
+              <ComboBox x:Name="RelCutoffBox" Grid.Row="2" Grid.Column="3" IsEditable="True">
                 <ComboBoxItem Content="30"/>
                 <ComboBoxItem Content="40"/>
                 <ComboBoxItem Content="50"/>
                 <ComboBoxItem Content="60"/>
               </ComboBox>
-              <CheckBox x:Name="UksEnabledBox" Grid.Row="3" Grid.Column="2"
+              <CheckBox x:Name="UksEnabledBox" Grid.Row="3" Grid.Column="0"
                         Content="UKS" Margin="6,4" VerticalAlignment="Center"/>
+            </Grid>
+          </GroupBox>
+
+          <GroupBox x:Name="TemplateXcGroup" Header="&amp;FORCE_EVAL / &amp;DFT / &amp;XC" Style="{StaticResource TemplateSectionGroupBoxStyle}">
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="150"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="150"/>
+                <ColumnDefinition Width="*"/>
+              </Grid.ColumnDefinitions>
+              <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+              </Grid.RowDefinitions>
+
+              <TextBlock x:Name="XcFunctionalLabel" Grid.Row="0" Grid.Column="0" Text="XC Functional"/>
+              <ComboBox x:Name="XcFunctionalBox" Grid.Row="0" Grid.Column="1" IsEditable="True">
+                <ComboBoxItem Content="PBE"/>
+                <ComboBoxItem Content="BLYP"/>
+                <ComboBoxItem Content="BP"/>
+                <ComboBoxItem Content="PADE"/>
+                <ComboBoxItem Content="TPSS"/>
+                <ComboBoxItem Content="NO_SHORTCUT"/>
+              </ComboBox>
+              <TextBlock x:Name="XcPbeParametrizationLabel" Grid.Row="0" Grid.Column="2" Text="PBE Param"/>
+              <ComboBox x:Name="XcPbeParametrizationBox" Grid.Row="0" Grid.Column="3" IsEditable="True">
+                <ComboBoxItem Content="ORIG"/>
+                <ComboBoxItem Content="PBESOL"/>
+                <ComboBoxItem Content="REVPBE"/>
+                <ComboBoxItem Content="RPBE"/>
+              </ComboBox>
+
+              <CheckBox x:Name="DispersionEnabledBox" Grid.Row="1" Grid.Column="0"
+                        Content="DFT-D3" Margin="6,4" VerticalAlignment="Center"/>
+              <TextBlock x:Name="DispersionTypeLabel" Grid.Row="1" Grid.Column="2" Text="D3 Type"/>
+              <ComboBox x:Name="DispersionTypeBox" Grid.Row="1" Grid.Column="3" IsEditable="True">
+                <ComboBoxItem Content="DFTD3(BJ)"/>
+                <ComboBoxItem Content="DFTD3"/>
+              </ComboBox>
+
+              <TextBlock x:Name="DispersionParameterFileLabel" Grid.Row="2" Grid.Column="0" Text="D3 Param File"/>
+              <ComboBox x:Name="DispersionParameterFileBox" Grid.Row="2" Grid.Column="1" IsEditable="True">
+                <ComboBoxItem Content="dftd3.dat"/>
+              </ComboBox>
+              <TextBlock x:Name="DispersionReferenceFunctionalLabel" Grid.Row="2" Grid.Column="2" Text="D3 Reference XC"/>
+              <ComboBox x:Name="DispersionReferenceFunctionalBox" Grid.Row="2" Grid.Column="3" IsEditable="True">
+                <ComboBoxItem Content="PBE"/>
+                <ComboBoxItem Content="BLYP"/>
+                <ComboBoxItem Content="BP"/>
+                <ComboBoxItem Content="TPSS"/>
+              </ComboBox>
             </Grid>
           </GroupBox>
 
