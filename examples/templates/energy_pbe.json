@@ -10,7 +10,28 @@
     "cutoff": 400,
     "rel_cutoff": 40,
     "eps_scf": "1.0E-6",
-    "max_scf": 50
+    "max_scf": 50,
+    "scf_method": "DIAGONALIZATION",
+    "added_mos": 8,
+    "ot_minimizer": "CG",
+    "ot_preconditioner": "FULL_KINETIC",
+    "diagonalization_algorithm": "STANDARD",
+    "mixing_enabled": false,
+    "mixing_method": "BROYDEN_MIXING",
+    "mixing_alpha": "0.4",
+    "mixing_beta": "1.5",
+    "smearing_enabled": true,
+    "smearing_method": "FERMI_DIRAC",
+    "electronic_temperature": "300",
+    "kpoints_scheme": "NONE",
+    "kpoints_grid": [
+      1,
+      1,
+      1
+    ],
+    "kpoints_full_grid": false,
+    "kpoints_symmetry": false,
+    "kpoints_wavefunctions": "COMPLEX"
   },
   "structure_transform": {
     "fallback_cell": {

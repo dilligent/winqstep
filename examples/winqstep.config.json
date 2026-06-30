@@ -5,6 +5,6 @@
   "cp2k_data_dir": "/home/teng/cp2k/data",
   "default_windows_workspace": "outputs",
   "wsl_shell_prelude": "conda deactivate >/dev/null 2>&1 || true",
-  "ui_language": "",
+  "ui_language": "zh-CN",
   "timeout": 20
 }
