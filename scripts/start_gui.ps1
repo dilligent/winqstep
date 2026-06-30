@@ -92,7 +92,7 @@ function New-WinQStepWindow {
         "MixingAlphaBox", "MixingBetaBox", "SmearingMethodBox",
         "ElectronicTemperatureBox", "KpointsSchemeBox", "KpointsGridBox",
         "KpointsWavefunctionsBox", "OuterScfEnabledBox", "MixingEnabledBox", "SmearingEnabledBox",
-        "CellOptKeepAnglesBox", "CellOptKeepSymmetryBox",
+        "UksEnabledBox", "CellOptKeepAnglesBox", "CellOptKeepSymmetryBox",
         "KpointsFullGridBox", "KpointsSymmetryBox",
         "FallbackPeriodicBox", "FallbackCellABox", "FallbackCellBBox", "FallbackCellCBox",
         "CenterAtomsBox", "KindsText",
@@ -145,6 +145,7 @@ function New-WinQStepWindow {
         ExistingInputModeRadio = "mode.existing_input"
         MixingEnabledBox = "label.mixing_enabled"
         SmearingEnabledBox = "label.smearing_enabled"
+        UksEnabledBox = "label.uks_enabled"
         CellOptKeepAnglesBox = "label.cell_opt_keep_angles"
         CellOptKeepSymmetryBox = "label.cell_opt_keep_symmetry"
         OuterScfEnabledBox = "label.outer_scf_enabled"
@@ -1993,6 +1994,7 @@ function New-WinQStepWindow {
         $controls["XcFunctionalBox"].Text = & $GetJsonProperty $dft "xc_functional"
         $controls["ChargeBox"].Text = & $GetJsonProperty $dft "charge"
         $controls["MultiplicityBox"].Text = & $GetJsonProperty $dft "multiplicity"
+        $controls["UksEnabledBox"].IsChecked = @("1", "true", "yes", "on").Contains((& $GetJsonProperty $dft "uks_enabled" "False").ToLowerInvariant())
         $controls["CutoffBox"].Text = & $GetJsonProperty $dft "cutoff"
         $controls["RelCutoffBox"].Text = & $GetJsonProperty $dft "rel_cutoff"
         $controls["EpsScfBox"].Text = & $GetJsonProperty $dft "eps_scf"
@@ -2071,6 +2073,7 @@ function New-WinQStepWindow {
             xc_functional = $controls["XcFunctionalBox"].Text
             charge = $controls["ChargeBox"].Text
             multiplicity = $controls["MultiplicityBox"].Text
+            uks_enabled = [bool]$controls["UksEnabledBox"].IsChecked
             cutoff = $controls["CutoffBox"].Text
             rel_cutoff = $controls["RelCutoffBox"].Text
             eps_scf = $controls["EpsScfBox"].Text
@@ -3912,6 +3915,7 @@ if ($SmokeTest) {
     $report["template_run_type"] = [string]$window.FindName("TemplateRunTypeBox").Text
     $report["template_print_level"] = [string]$window.FindName("PrintLevelBox").Text
     $report["template_cutoff"] = [string]$window.FindName("CutoffBox").Text
+    $report["template_uks_enabled"] = [bool]$window.FindName("UksEnabledBox").IsChecked
     $report["template_scf_method"] = [string]$window.FindName("ScfMethodBox").Text
     $report["template_added_mos"] = [string]$window.FindName("AddedMosBox").Text
     $report["template_outer_scf_enabled"] = [bool]$window.FindName("OuterScfEnabledBox").IsChecked

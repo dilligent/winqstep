@@ -46,6 +46,7 @@
   "label.eps_scf": "EPS SCF",
   "label.charge": "电荷",
   "label.multiplicity": "多重度",
+  "label.uks_enabled": "UKS",
   "label.cutoff": "截断能",
   "label.rel_cutoff": "相对截断",
   "label.max_scf": "最大 SCF",

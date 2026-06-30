@@ -24,10 +24,10 @@ Editable fields include:
 - `print_level`: optional `GLOBAL/PRINT_LEVEL`; supported values are
   `SILENT`, `LOW`, `MEDIUM`, `HIGH`, and `DEBUG`
 - DFT fields: basis file, potential file, XC functional, charge,
-  multiplicity, cutoff, relative cutoff, EPS_SCF, MAX_SCF, SCF method,
-  optional OUTER_SCF settings, ADDED_MOS, OT settings, diagonalization
-  settings, mixing settings, and electronic-temperature smearing settings,
-  plus KPOINTS scheme/grid,
+  multiplicity, UKS spin polarization, cutoff, relative cutoff, EPS_SCF,
+  MAX_SCF, SCF method, optional OUTER_SCF settings, ADDED_MOS, OT settings,
+  diagonalization settings, mixing settings, and electronic-temperature
+  smearing settings, plus KPOINTS scheme/grid,
   full-grid, symmetry, and wavefunction controls
 - GEO_OPT fields: optimizer and max iterations
 - CELL_OPT fields: optimizer, max iterations, optimization type, pressure
@@ -61,6 +61,8 @@ shortcuts, typical SCF/MGRID numeric values, SCF methods such as `DEFAULT`,
 `DIAGONALIZATION`, and `OT`, and `BFGS`, `LBFGS`, or `CG` for GEO_OPT and
 CELL_OPT optimizers. Fallback cell fields expose the supported CP2K periodicity labels
 and common cubic-cell vectors while still accepting direct typed values.
+UKS is exposed as a checkbox in the `&FORCE_EVAL / &DFT` group because it maps
+to the top-level `DFT/UKS` keyword.
 OUTER_SCF fields expose common outer-loop thresholds and iteration counts while
 remaining editable.
 KPOINTS fields expose `NONE`, `GAMMA`, and `MONKHORST-PACK`, common
@@ -71,7 +73,8 @@ The candidate lists are intentionally conservative and are based on the CP2K
 manual pages for `GLOBAL/RUN_TYPE`, `GLOBAL/PRINT_LEVEL`,
 `FORCE_EVAL/DFT/BASIS_SET_FILE_NAME`,
 `FORCE_EVAL/DFT/POTENTIAL_FILE_NAME`, `FORCE_EVAL/DFT/XC/XC_FUNCTIONAL`,
-`FORCE_EVAL/DFT/MGRID`, `FORCE_EVAL/DFT/SCF`, and `MOTION/GEO_OPT`, plus
+`FORCE_EVAL/DFT/UKS`, `FORCE_EVAL/DFT/MGRID`, `FORCE_EVAL/DFT/SCF`, and
+`MOTION/GEO_OPT`, plus
 `FORCE_EVAL/SUBSYS/CELL`, `FORCE_EVAL/DFT/POISSON`,
 `FORCE_EVAL/DFT/SCF/OT`, `FORCE_EVAL/DFT/SCF/DIAGONALIZATION`,
 `FORCE_EVAL/DFT/SCF/OUTER_SCF`, `FORCE_EVAL/DFT/SCF/MIXING`,
@@ -89,6 +92,7 @@ template editor.
 
 The template editor validates field shape, numeric ranges, run type, SCF method
 choices, duplicate KIND entries, and required basis/potential names. It rejects
+open-shell multiplicity values unless UKS is enabled. It rejects
 mixing or smearing unless the SCF method is `DIAGONALIZATION`; smearing also
 requires `ADDED_MOS` to add unoccupied orbitals. Enabled OUTER_SCF settings
 must use a positive max iteration count and an outer `EPS_SCF` no looser than

@@ -26,8 +26,9 @@ Each round should end with a focused commit.
   ordering, full CP2K input-section labels in the Template tab, and UTF-8
   hardening for live GUI job logs, and readable imported-structure display in
   the GUI Structure tab, and readable environment probe display in the GUI
-  Environment tab, and QuickStep `SCF/&OUTER_SCF` support.
-- Next active round: Round 55, expand QuickStep coverage from the next selected
+  Environment tab, QuickStep `SCF/&OUTER_SCF` support, and QuickStep `DFT/UKS`
+  support.
+- Next active round: Round 56, expand QuickStep coverage from the next selected
   CP2K feature area.
 - Known local facts:
   - WSL2 is available.
@@ -1880,6 +1881,38 @@ Commit boundary:
 
 - One commit for OUTER_SCF model, renderer, template/GUI controls, tests, and
   docs.
+
+## Round 55: QuickStep UKS Spin Polarization
+
+Status: implemented.
+
+Goal: add explicit spin-polarized QuickStep DFT support through the CP2K
+`FORCE_EVAL/DFT/UKS` keyword.
+
+Tasks:
+
+- Add a typed `dft.uks_enabled` field to the QuickStep input model and workflow
+  template model.
+- Render `UKS T` inside `&DFT` only when the field is explicitly enabled,
+  preserving existing generated input snapshots by default.
+- Reject `multiplicity` values greater than 1 unless UKS is enabled, so
+  open-shell templates cannot run as restricted calculations by mistake.
+- Expose UKS in the Template tab as a checkbox in the
+  `&FORCE_EVAL / &DFT` group.
+- Wire the field through `manage_template.py`, GUI load/save paths,
+  localization resources, smoke reports, docs, and tests.
+
+Acceptance:
+
+- Existing snapshots remain unchanged when `uks_enabled` is false or omitted.
+- Enabling UKS renders `UKS T` near the DFT charge/multiplicity keywords.
+- Open-shell multiplicity without UKS fails in both QuickStep model validation
+  and template validation.
+- GUI smoke coverage includes the UKS checkbox state.
+
+Commit boundary:
+
+- One commit for UKS model, renderer, template/GUI controls, tests, and docs.
 
 ## Working Rules
 

@@ -66,6 +66,11 @@ The resolved periodicity is rendered consistently in both `SUBSYS/&CELL` and
 `DFT/&POISSON`. Supported periodicity labels are `NONE`, `X`, `Y`, `Z`, `XY`,
 `XZ`, `YZ`, and `XYZ`; periodic cells must have non-zero A, B, and C vectors.
 
+Templates can enable spin-polarized QuickStep DFT with `uks_enabled`, which
+renders `UKS T` inside `&DFT`. Multiplicity values greater than 1 require UKS,
+so open-shell templates fail before CP2K is started instead of silently running
+as restricted calculations.
+
 Templates can optionally enable `DFT/&KPOINTS` for periodic structures.
 `kpoints_scheme` defaults to `NONE`; supported rendered schemes are `GAMMA` and
 `MONKHORST-PACK`, with `kpoints_grid` providing the three Monkhorst-Pack
@@ -93,7 +98,7 @@ python .\scripts\manage_template.py --template .\examples\templates\energy_pbe.j
 ```
 
 The GUI `Template` tab uses the same command. It exposes project name, run type,
-DFT settings, SCF solver and OUTER_SCF controls, KPOINTS controls, GEO_OPT settings,
+DFT settings, UKS, SCF solver and OUTER_SCF controls, KPOINTS controls, GEO_OPT settings,
 CELL_OPT settings, fallback cell/periodicity settings, centering, and KIND
 basis/potential entries. Supported QuickStep run types are `ENERGY`,
 `ENERGY_FORCE`, `GEO_OPT`, and `CELL_OPT`. Workflow preview and run actions

@@ -60,6 +60,7 @@ class GuiPrototypeTests(unittest.TestCase):
             "template_run_type": str(template.get("run_type", "")),
             "template_print_level": str(template.get("print_level", "")),
             "template_cutoff": str(dft.get("cutoff", "")),
+            "template_uks_enabled": bool(dft.get("uks_enabled", False)),
             "template_scf_method": str(dft.get("scf_method", "")),
             "template_added_mos": str(dft.get("added_mos", "")),
             "template_outer_scf_enabled": bool(dft.get("outer_scf_enabled", False)),
@@ -160,6 +161,7 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn('<ComboBoxItem Content="ENERGY_FORCE"/>', xaml_text)
         self.assertIn('<ComboBoxItem Content="GEO_OPT"/>', xaml_text)
         self.assertIn('<ComboBoxItem Content="CELL_OPT"/>', xaml_text)
+        self.assertIn('x:Name="UksEnabledBox" Grid.Row="3" Grid.Column="2"', xaml_text)
         self.assertIn('<ComboBoxItem Content="BFGS"/>', xaml_text)
         self.assertIn('<ComboBoxItem Content="LBFGS"/>', xaml_text)
         self.assertIn('<ComboBoxItem Content="CG"/>', xaml_text)
@@ -204,6 +206,7 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn('"button.preview": "Preview"', english_text)
         self.assertIn('"button.apply": "Apply"', english_text)
         self.assertIn('"label.print_level": "Print Level"', english_text)
+        self.assertIn('"label.uks_enabled": "UKS"', english_text)
         self.assertIn('"label.outer_scf_enabled": "Outer SCF"', english_text)
         self.assertIn('"button.preview": "预览"', chinese_text)
         self.assertIn("[System.Windows.Threading.DispatcherTimer]::new()", script_text)
@@ -231,6 +234,7 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn('"button.results": "结果"', chinese_text)
         self.assertIn("scripts\\validate_job_inputs.py", script_text)
         self.assertIn("template_section_groups_loaded", script_text)
+        self.assertIn("template_uks_enabled", script_text)
         self.assertIn("template_outer_scf_enabled", script_text)
         self.assertIn("language_apply_switched_to_zh", script_text)
         self.assertIn("scripts\\check_startup.py", helper_text)

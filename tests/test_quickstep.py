@@ -57,6 +57,14 @@ class QuickStepTests(unittest.TestCase):
 
         self.assertIn("  PRINT_LEVEL LOW\n", rendered)
 
+    def test_renders_uks_when_enabled(self) -> None:
+        data = json.loads((ROOT / "examples" / "quickstep_energy.json").read_text(encoding="utf-8"))
+        data["dft"].update({"uks_enabled": True, "multiplicity": 2})
+
+        rendered = render_quickstep_input(quickstep_input_from_dict(data))
+
+        self.assertIn("    MULTIPLICITY 2\n    UKS T\n", rendered)
+
     def test_rejects_non_quickstep_run_type(self) -> None:
         data = json.loads((ROOT / "examples" / "quickstep_energy.json").read_text(encoding="utf-8"))
         data["run_type"] = "MD"
@@ -211,6 +219,13 @@ class QuickStepTests(unittest.TestCase):
         )
 
         with self.assertRaisesRegex(QuickStepInputError, "outer_scf_eps_scf"):
+            quickstep_input_from_dict(data)
+
+    def test_rejects_open_shell_multiplicity_without_uks(self) -> None:
+        data = json.loads((ROOT / "examples" / "quickstep_energy.json").read_text(encoding="utf-8"))
+        data["dft"]["multiplicity"] = 2
+
+        with self.assertRaisesRegex(QuickStepInputError, "uks_enabled"):
             quickstep_input_from_dict(data)
 
     def test_cli_writes_output_file(self) -> None:

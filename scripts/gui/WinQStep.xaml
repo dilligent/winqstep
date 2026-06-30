@@ -321,6 +321,8 @@
                 <ComboBoxItem Content="50"/>
                 <ComboBoxItem Content="60"/>
               </ComboBox>
+              <CheckBox x:Name="UksEnabledBox" Grid.Row="3" Grid.Column="2"
+                        Content="UKS" Margin="6,4" VerticalAlignment="Center"/>
             </Grid>
           </GroupBox>
 

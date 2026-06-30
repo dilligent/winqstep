@@ -43,6 +43,7 @@ DFT_KEY_ORDER = (
     "xc_functional",
     "charge",
     "multiplicity",
+    "uks_enabled",
     "cutoff",
     "rel_cutoff",
     "eps_scf",
@@ -289,6 +290,7 @@ def _normalize_dft(data: dict[str, Any], errors: list[str]) -> dict[str, Any]:
             "dft.multiplicity",
             errors,
         ),
+        "uks_enabled": _bool_value(data.get("uks_enabled", defaults.uks_enabled)),
         "cutoff": _positive_int_value(data.get("cutoff", defaults.cutoff), "dft.cutoff", errors),
         "rel_cutoff": _positive_int_value(
             data.get("rel_cutoff", defaults.rel_cutoff),
@@ -380,6 +382,8 @@ def _normalize_dft(data: dict[str, Any], errors: list[str]) -> dict[str, Any]:
         errors.append("dft.smearing_enabled requires dft.scf_method DIAGONALIZATION")
     if dft["smearing_enabled"] and dft["added_mos"] == 0:
         errors.append("dft.smearing_enabled requires dft.added_mos to add unoccupied orbitals")
+    if dft["multiplicity"] > 1 and not dft["uks_enabled"]:
+        errors.append("dft.multiplicity greater than 1 requires dft.uks_enabled")
     eps_scf = _float_string_or_none(dft["eps_scf"])
     outer_scf_eps_scf = _float_string_or_none(dft["outer_scf_eps_scf"])
     if (

@@ -173,10 +173,12 @@ including `&GLOBAL`, `&FORCE_EVAL / &DFT`,
 `&FORCE_EVAL / &SUBSYS / &KIND`.
 The `&GLOBAL` group includes the optional CP2K `PRINT_LEVEL`; leaving it blank
 keeps CP2K's default implicit, while selecting a level renders it explicitly.
-SCF controls include method selection, ADDED_MOS, OT minimizer/preconditioner,
-diagonalization algorithm, optional OUTER_SCF, optional mixing, and optional
-smearing. OUTER_SCF, mixing, and smearing remain disabled by default and
-validate through the same template writer before preview or run.
+The `&FORCE_EVAL / &DFT` group includes charge, multiplicity, and the optional
+UKS spin-polarization checkbox. SCF controls include method selection,
+ADDED_MOS, OT minimizer/preconditioner, diagonalization algorithm, optional
+OUTER_SCF, optional mixing, and optional smearing. UKS, OUTER_SCF, mixing, and
+smearing remain disabled by default and validate through the same template
+writer before preview or run.
 KPOINTS controls include scheme, grid, full-grid, symmetry, and wavefunction
 selection. They default to `NONE` and validate through the same template writer
 and QuickStep renderer before preview or run.

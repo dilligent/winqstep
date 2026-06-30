@@ -96,6 +96,7 @@ class TemplateTests(unittest.TestCase):
             {
                 "scf_method": "diagonalization",
                 "added_mos": "8",
+                "uks_enabled": True,
                 "outer_scf_enabled": True,
                 "outer_scf_eps_scf": "1.0E-7",
                 "outer_scf_max_scf": "30",
@@ -115,6 +116,7 @@ class TemplateTests(unittest.TestCase):
         dft = validation["template"]["dft"]
         self.assertEqual(dft["scf_method"], "DIAGONALIZATION")
         self.assertEqual(dft["added_mos"], 8)
+        self.assertTrue(dft["uks_enabled"])
         self.assertTrue(dft["outer_scf_enabled"])
         self.assertEqual(dft["outer_scf_eps_scf"], "1.0E-7")
         self.assertEqual(dft["outer_scf_max_scf"], 30)
@@ -207,6 +209,14 @@ class TemplateTests(unittest.TestCase):
         self.assertFalse(validation["valid"])
         self.assertIn("dft.outer_scf_eps_scf", "\n".join(validation["errors"]))
 
+    def test_validate_rejects_open_shell_multiplicity_without_uks(self) -> None:
+        template = load_template(ENERGY_TEMPLATE)
+        merged = merge_template_fields(template, {"multiplicity": "2", "uks_enabled": False})
+        validation = validate_template(merged)
+
+        self.assertFalse(validation["valid"])
+        self.assertIn("dft.uks_enabled", "\n".join(validation["errors"]))
+
     def test_validate_rejects_kpoints_options_without_scheme(self) -> None:
         template = load_template(ENERGY_TEMPLATE)
         merged = merge_template_fields(template, {"kpoints_full_grid": True})
@@ -296,6 +306,7 @@ class TemplateTests(unittest.TestCase):
                 "xc_functional",
                 "charge",
                 "multiplicity",
+                "uks_enabled",
                 "cutoff",
                 "rel_cutoff",
                 "eps_scf",

@@ -29,6 +29,7 @@ FIELD_ARGS = {
     "xc_functional": "xc_functional",
     "charge": "charge",
     "multiplicity": "multiplicity",
+    "uks_enabled": "uks_enabled",
     "cutoff": "cutoff",
     "rel_cutoff": "rel_cutoff",
     "eps_scf": "eps_scf",
@@ -85,6 +86,7 @@ def main() -> int:
     parser.add_argument("--xc-functional")
     parser.add_argument("--charge")
     parser.add_argument("--multiplicity")
+    parser.add_argument("--uks-enabled")
     parser.add_argument("--cutoff")
     parser.add_argument("--rel-cutoff")
     parser.add_argument("--eps-scf")

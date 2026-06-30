@@ -27,6 +27,7 @@ The first generator should target:
 - `&GLOBAL`
 - `&FORCE_EVAL`
 - `&DFT`
+- `DFT/UKS`
 - `DFT/&POISSON`
 - `DFT/&KPOINTS`
 - `&SUBSYS`
@@ -68,7 +69,8 @@ Top-level fields:
   `MEDIUM`, `HIGH`, or `DEBUG`; when omitted or blank, WinQStep leaves CP2K's
   default print level implicit
 - `dft`: basis/potential file names, PBE-style functional, charge,
-  multiplicity, MGRID cutoff, SCF controls, and optional KPOINTS controls
+  multiplicity, optional UKS spin polarization, MGRID cutoff, SCF controls,
+  and optional KPOINTS controls
 - `geo_opt`: optimizer and max iteration settings for `GEO_OPT`
 - `cell_opt`: optimizer, max iteration, type, pressure tolerance, and simple
   cell-shape constraints for `CELL_OPT`
@@ -80,6 +82,12 @@ prints an atom-by-atom force table that WinQStep can summarize.
 The renderer writes the resolved periodicity to both `SUBSYS/&CELL/PERIODIC`
 and `DFT/&POISSON/PERIODIC`. Supported values are `NONE`, `X`, `Y`, `Z`, `XY`,
 `XZ`, `YZ`, and `XYZ`. Periodic cells must provide non-zero A, B, and C vectors.
+
+Spin polarization is opt-in through `dft.uks_enabled`. When it is true, the
+renderer writes `UKS T` in `&DFT`; when false, the keyword is omitted. Templates
+with `multiplicity` greater than 1 must enable UKS so open-shell intent is not
+silently reduced to a restricted calculation. UKS with multiplicity 1 remains
+allowed for broken-symmetry singlet workflows.
 
 SCF advanced controls are opt-in. `dft.scf_method` defaults to `DEFAULT`, which
 keeps the previous minimal `EPS_SCF`/`MAX_SCF` output. `OT` renders `SCF/&OT`.
@@ -121,6 +129,7 @@ QuickStep subset with tests.
 - Optional `print_level` renders only as `GLOBAL/PRINT_LEVEL` when explicitly
   set.
 - CELL and POISSON periodicity must stay synchronized.
+- UKS is generated only when explicitly enabled.
 - OUTER_SCF is generated only when explicitly enabled.
 - Mixing and smearing are only generated with the diagonalization SCF path.
 - KPOINTS are only generated for explicitly selected periodic calculations.

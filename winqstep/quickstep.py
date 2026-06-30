@@ -68,6 +68,7 @@ class DftSettings:
     xc_functional: str = "PBE"
     charge: int = 0
     multiplicity: int = 1
+    uks_enabled: bool = False
     cutoff: int = 400
     rel_cutoff: int = 40
     eps_scf: str = "1.0E-6"
@@ -217,6 +218,7 @@ def _parse_dft(data: dict[str, Any]) -> DftSettings:
         xc_functional=_optional_string(data, "xc_functional", "PBE").upper(),
         charge=_int_value(data, "charge", 0),
         multiplicity=_int_value(data, "multiplicity", 1),
+        uks_enabled=_bool_value(data, "uks_enabled", False),
         cutoff=_int_value(data, "cutoff", 400),
         rel_cutoff=_int_value(data, "rel_cutoff", 40),
         eps_scf=_optional_string(data, "eps_scf", "1.0E-6"),
@@ -319,6 +321,10 @@ def validate_quickstep_input(model: QuickStepInput) -> None:
         raise QuickStepInputError("periodic cell vectors must be non-zero")
     if model.dft.cutoff <= 0 or model.dft.rel_cutoff <= 0:
         raise QuickStepInputError("cutoff and rel_cutoff must be positive")
+    if model.dft.multiplicity <= 0:
+        raise QuickStepInputError("dft.multiplicity must be positive")
+    if model.dft.multiplicity > 1 and not model.dft.uks_enabled:
+        raise QuickStepInputError("dft.multiplicity greater than 1 requires dft.uks_enabled")
     if model.dft.max_scf <= 0:
         raise QuickStepInputError("max_scf must be positive")
     if model.dft.outer_scf_max_scf <= 0:
@@ -396,6 +402,7 @@ def render_quickstep_input(model: QuickStepInput) -> str:
         f"    POTENTIAL_FILE_NAME {model.dft.potential_file_name}",
         f"    CHARGE {model.dft.charge}",
         f"    MULTIPLICITY {model.dft.multiplicity}",
+        *_render_spin_keywords(model.dft),
         "    &MGRID",
         f"      CUTOFF {model.dft.cutoff}",
         f"      REL_CUTOFF {model.dft.rel_cutoff}",
@@ -457,6 +464,12 @@ def _render_force_eval_keywords(model: QuickStepInput) -> list[str]:
     if model.run_type != "CELL_OPT":
         return []
     return ["  STRESS_TENSOR ANALYTICAL"]
+
+
+def _render_spin_keywords(dft: DftSettings) -> list[str]:
+    if not dft.uks_enabled:
+        return []
+    return ["    UKS T"]
 
 
 def _render_motion(model: QuickStepInput) -> list[str]:

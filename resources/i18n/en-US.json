@@ -46,6 +46,7 @@
   "label.eps_scf": "EPS SCF",
   "label.charge": "Charge",
   "label.multiplicity": "Multiplicity",
+  "label.uks_enabled": "UKS",
   "label.cutoff": "Cutoff",
   "label.rel_cutoff": "Rel Cutoff",
   "label.max_scf": "Max SCF",
