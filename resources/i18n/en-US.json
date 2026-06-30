@@ -76,6 +76,8 @@
   "label.kpoints_full_grid": "Full K Grid",
   "label.kpoints_symmetry": "KPOINTS Symmetry",
   "label.kpoints_wavefunctions": "Wavefunctions",
+  "label.print_mulliken": "Mulliken",
+  "label.print_lowdin": "Lowdin",
   "label.optimizer": "Optimizer",
   "label.geo_max_iter": "GEO Max Iter",
   "label.cell_opt_type": "CELL_OPT Type",

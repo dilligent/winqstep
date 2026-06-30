@@ -38,6 +38,8 @@ FIELD_ARGS = {
     "cutoff": "cutoff",
     "rel_cutoff": "rel_cutoff",
     "poisson_solver": "poisson_solver",
+    "print_mulliken": "print_mulliken",
+    "print_lowdin": "print_lowdin",
     "eps_scf": "eps_scf",
     "max_scf": "max_scf",
     "outer_scf_enabled": "outer_scf_enabled",
@@ -101,6 +103,8 @@ def main() -> int:
     parser.add_argument("--cutoff")
     parser.add_argument("--rel-cutoff")
     parser.add_argument("--poisson-solver")
+    parser.add_argument("--print-mulliken")
+    parser.add_argument("--print-lowdin")
     parser.add_argument("--eps-scf")
     parser.add_argument("--max-scf")
     parser.add_argument("--outer-scf-enabled")

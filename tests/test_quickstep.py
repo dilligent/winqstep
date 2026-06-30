@@ -128,6 +128,22 @@ class QuickStepTests(unittest.TestCase):
         self.assertIn("    &POISSON\n      PERIODIC XYZ\n    &END POISSON\n", rendered)
         self.assertNotIn("POISSON_SOLVER", rendered)
 
+    def test_renders_dft_print_population_sections_when_enabled(self) -> None:
+        data = json.loads((ROOT / "examples" / "quickstep_energy.json").read_text(encoding="utf-8"))
+        data["dft"].update({"print_mulliken": True, "print_lowdin": True})
+
+        rendered = render_quickstep_input(quickstep_input_from_dict(data))
+
+        self.assertIn(
+            "    &PRINT\n"
+            "      &MULLIKEN ON\n"
+            "      &END MULLIKEN\n"
+            "      &LOWDIN ON\n"
+            "      &END LOWDIN\n"
+            "    &END PRINT\n",
+            rendered,
+        )
+
     def test_rejects_non_quickstep_run_type(self) -> None:
         data = json.loads((ROOT / "examples" / "quickstep_energy.json").read_text(encoding="utf-8"))
         data["run_type"] = "MD"

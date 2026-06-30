@@ -80,6 +80,8 @@ class DftSettings:
     cutoff: int = 400
     rel_cutoff: int = 40
     poisson_solver: str | None = None
+    print_mulliken: bool = False
+    print_lowdin: bool = False
     eps_scf: str = "1.0E-6"
     max_scf: int = 50
     outer_scf_enabled: bool = False
@@ -236,6 +238,8 @@ def _parse_dft(data: dict[str, Any]) -> DftSettings:
         cutoff=_int_value(data, "cutoff", 400),
         rel_cutoff=_int_value(data, "rel_cutoff", 40),
         poisson_solver=_optional_choice(data, "poisson_solver"),
+        print_mulliken=_bool_value(data, "print_mulliken", False),
+        print_lowdin=_bool_value(data, "print_lowdin", False),
         eps_scf=_optional_string(data, "eps_scf", "1.0E-6"),
         max_scf=_int_value(data, "max_scf", 50),
         outer_scf_enabled=_bool_value(data, "outer_scf_enabled", False),
@@ -446,6 +450,7 @@ def render_quickstep_input(model: QuickStepInput) -> str:
         *_render_scf_extras(model.dft),
         "    &END SCF",
         *_render_xc(model.dft),
+        *_render_dft_print(model.dft),
         "  &END DFT",
         "  &SUBSYS",
         "    &CELL",
@@ -502,6 +507,27 @@ def _render_poisson_solver(dft: DftSettings) -> list[str]:
     if dft.poisson_solver is None:
         return []
     return [f"      POISSON_SOLVER {dft.poisson_solver}"]
+
+
+def _render_dft_print(dft: DftSettings) -> list[str]:
+    lines: list[str] = []
+    if dft.print_mulliken:
+        lines.extend(
+            [
+                "      &MULLIKEN ON",
+                "      &END MULLIKEN",
+            ]
+        )
+    if dft.print_lowdin:
+        lines.extend(
+            [
+                "      &LOWDIN ON",
+                "      &END LOWDIN",
+            ]
+        )
+    if not lines:
+        return []
+    return ["    &PRINT", *lines, "    &END PRINT"]
 
 
 def _render_xc(dft: DftSettings) -> list[str]:

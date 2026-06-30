@@ -124,6 +124,7 @@ function New-WinQStepWindow {
         "ElectronicTemperatureBox", "KpointsSchemeBox", "KpointsGridBox",
         "KpointsWavefunctionsBox", "OuterScfEnabledBox", "MixingEnabledBox", "SmearingEnabledBox",
         "DispersionEnabledBox",
+        "PrintMullikenBox", "PrintLowdinBox",
         "UksEnabledBox", "CellOptKeepAnglesBox", "CellOptKeepSymmetryBox",
         "KpointsFullGridBox", "KpointsSymmetryBox",
         "FallbackPeriodicBox", "FallbackCellABox", "FallbackCellBBox", "FallbackCellCBox",
@@ -184,6 +185,8 @@ function New-WinQStepWindow {
         OuterScfEnabledBox = "label.outer_scf_enabled"
         KpointsFullGridBox = "label.kpoints_full_grid"
         KpointsSymmetryBox = "label.kpoints_symmetry"
+        PrintMullikenBox = "label.print_mulliken"
+        PrintLowdinBox = "label.print_lowdin"
         CenterAtomsBox = "label.center_atoms"
         }
         foreach ($entry in $contentLocalization.GetEnumerator()) {
@@ -2063,6 +2066,8 @@ function New-WinQStepWindow {
         $controls["KpointsFullGridBox"].IsChecked = @("1", "true", "yes", "on").Contains((& $GetJsonProperty $dft "kpoints_full_grid" "False").ToLowerInvariant())
         $controls["KpointsSymmetryBox"].IsChecked = @("1", "true", "yes", "on").Contains((& $GetJsonProperty $dft "kpoints_symmetry" "False").ToLowerInvariant())
         $controls["KpointsWavefunctionsBox"].Text = & $GetJsonProperty $dft "kpoints_wavefunctions"
+        $controls["PrintMullikenBox"].IsChecked = @("1", "true", "yes", "on").Contains((& $GetJsonProperty $dft "print_mulliken" "False").ToLowerInvariant())
+        $controls["PrintLowdinBox"].IsChecked = @("1", "true", "yes", "on").Contains((& $GetJsonProperty $dft "print_lowdin" "False").ToLowerInvariant())
         $controls["GeoOptimizerBox"].Text = & $GetJsonProperty $geoOpt "optimizer"
         $controls["GeoMaxIterBox"].Text = & $GetJsonProperty $geoOpt "max_iter"
         $controls["CellOptTypeBox"].Text = & $GetJsonProperty $cellOpt "type"
@@ -2148,6 +2153,8 @@ function New-WinQStepWindow {
             kpoints_full_grid = [bool]$controls["KpointsFullGridBox"].IsChecked
             kpoints_symmetry = [bool]$controls["KpointsSymmetryBox"].IsChecked
             kpoints_wavefunctions = $controls["KpointsWavefunctionsBox"].Text
+            print_mulliken = [bool]$controls["PrintMullikenBox"].IsChecked
+            print_lowdin = [bool]$controls["PrintLowdinBox"].IsChecked
             optimizer = $controls["GeoOptimizerBox"].Text
             geo_opt_max_iter = $controls["GeoMaxIterBox"].Text
             cell_opt_type = $controls["CellOptTypeBox"].Text
@@ -4001,7 +4008,7 @@ if ($SmokeTest) {
     )
     $templateSectionGroupNames = @(
         "TemplateGlobalGroup", "TemplateDftGroup", "TemplatePoissonGroup", "TemplateXcGroup", "TemplateScfGroup", "TemplateOuterScfGroup",
-        "TemplateMixingGroup", "TemplateSmearingGroup", "TemplateKpointsGroup", "TemplateCellGroup",
+        "TemplateMixingGroup", "TemplateSmearingGroup", "TemplateKpointsGroup", "TemplateDftPrintGroup", "TemplateCellGroup",
         "TemplateKindGroup", "TemplateGeoOptGroup", "TemplateCellOptGroup"
     )
     $GetTemplateSectionHeaderText = {
@@ -4060,6 +4067,8 @@ if ($SmokeTest) {
     $report["template_kpoints_full_grid"] = [bool]$window.FindName("KpointsFullGridBox").IsChecked
     $report["template_kpoints_symmetry"] = [bool]$window.FindName("KpointsSymmetryBox").IsChecked
     $report["template_kpoints_wavefunctions"] = [string]$window.FindName("KpointsWavefunctionsBox").Text
+    $report["template_print_mulliken"] = [bool]$window.FindName("PrintMullikenBox").IsChecked
+    $report["template_print_lowdin"] = [bool]$window.FindName("PrintLowdinBox").IsChecked
     $report["template_fallback_periodic"] = [string]$window.FindName("FallbackPeriodicBox").Text
     $report["template_fallback_cell_a"] = [string]$window.FindName("FallbackCellABox").Text
     $report["template_center_atoms"] = [bool]$window.FindName("CenterAtomsBox").IsChecked

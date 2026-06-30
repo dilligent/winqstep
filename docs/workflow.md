@@ -92,6 +92,10 @@ subdivision counts. Optional `kpoints_full_grid`, `kpoints_symmetry`, and
 `kpoints_wavefunctions` fields map to the corresponding CP2K KPOINTS keywords.
 KPOINTS are rejected for `PERIODIC NONE` inputs.
 
+Templates can optionally enable text-oriented `DFT/&PRINT` output through
+`print_mulliken` and `print_lowdin`. These fields render `&MULLIKEN ON` and
+`&LOWDIN ON` under `DFT/&PRINT`; leaving both false omits the section entirely.
+
 Templates can also optionally enable `DFT/&SCF/&OUTER_SCF` with
 `outer_scf_enabled`, `outer_scf_eps_scf`, and `outer_scf_max_scf`. The section
 is omitted unless enabled, and the outer convergence threshold must be no looser
@@ -113,9 +117,9 @@ python .\scripts\manage_template.py --template .\examples\templates\energy_pbe.e
 
 The GUI `Template` tab uses the same command. It exposes project name, run type,
 DFT settings, XC/PBE/DFT-D3 controls, UKS, POISSON solver controls, SCF solver
-and OUTER_SCF controls, KPOINTS controls, GEO_OPT settings, CELL_OPT settings,
-fallback cell/periodicity settings, centering, and KIND basis/potential
-entries.
+and OUTER_SCF controls, KPOINTS controls, DFT PRINT controls, GEO_OPT settings,
+CELL_OPT settings, fallback cell/periodicity settings, centering, and KIND
+basis/potential entries.
 Supported QuickStep run types are `ENERGY`,
 `ENERGY_FORCE`, `GEO_OPT`, and `CELL_OPT`. Workflow preview and run actions
 save and validate the current template before rendering input.

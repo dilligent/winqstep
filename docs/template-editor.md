@@ -31,7 +31,8 @@ Editable fields include:
   MAX_SCF, SCF method, optional OUTER_SCF settings, ADDED_MOS, OT settings,
   diagonalization settings, mixing settings, and electronic-temperature
   smearing settings, plus KPOINTS scheme/grid,
-  full-grid, symmetry, and wavefunction controls
+  full-grid, symmetry, wavefunction controls, and optional Mulliken/Lowdin DFT
+  print controls
 - GEO_OPT fields: optimizer and max iterations
 - CELL_OPT fields: optimizer, max iterations, optimization type, pressure
   tolerance, keep-angles, and keep-symmetry
@@ -57,8 +58,9 @@ tree from `&GLOBAL` through DFT and SUBSYS to MOTION, so
 `&FORCE_EVAL / &DFT / &SCF / &OUTER_SCF`,
 `&FORCE_EVAL / &DFT / &SCF / &MIXING`,
 `&FORCE_EVAL / &DFT / &SCF / &SMEAR`,
-`&FORCE_EVAL / &DFT / &KPOINTS`, `&FORCE_EVAL / &SUBSYS / &CELL`,
-`&FORCE_EVAL / &SUBSYS / &KIND`, `&MOTION / &GEO_OPT`, and
+`&FORCE_EVAL / &DFT / &KPOINTS`, `&FORCE_EVAL / &DFT / &PRINT`,
+`&FORCE_EVAL / &SUBSYS / &CELL`, `&FORCE_EVAL / &SUBSYS / &KIND`,
+`&MOTION / &GEO_OPT`, and
 `&MOTION / &CELL_OPT` are visible as sections instead of a flat list of peer
 fields.
 
@@ -81,6 +83,8 @@ preserves the historical generated input; explicit choices are normalized and
 validated by the same template and QuickStep model code as other DFT fields.
 KPOINTS fields expose `NONE`, `GAMMA`, and `MONKHORST-PACK`, common
 Monkhorst-Pack grids, `FULL_GRID`, `SYMMETRY`, and `WAVEFUNCTIONS` choices.
+DFT PRINT fields expose Mulliken and Lowdin population-analysis checkboxes;
+leaving them unchecked omits `DFT/&PRINT` entirely.
 The controls remain editable, so values not listed in the drop-down can still
 be typed directly and saved through the same template writer.
 The candidate lists are intentionally conservative and are based on the CP2K
@@ -94,8 +98,10 @@ manual pages for `GLOBAL/RUN_TYPE`, `GLOBAL/PRINT_LEVEL`,
 `FORCE_EVAL/DFT/SCF/OT`,
 `FORCE_EVAL/DFT/SCF/DIAGONALIZATION`,
 `FORCE_EVAL/DFT/SCF/OUTER_SCF`, `FORCE_EVAL/DFT/SCF/MIXING`,
-`FORCE_EVAL/DFT/SCF/SMEAR`, and `FORCE_EVAL/DFT/KPOINTS` for periodicity,
-POISSON solver, SCF solver, and k-point controls, plus `MOTION/CELL_OPT` for
+`FORCE_EVAL/DFT/SCF/SMEAR`, `FORCE_EVAL/DFT/KPOINTS`,
+`FORCE_EVAL/DFT/PRINT/MULLIKEN`, and `FORCE_EVAL/DFT/PRINT/LOWDIN` for
+periodicity, POISSON solver, SCF solver, k-point controls, and DFT print
+controls, plus `MOTION/CELL_OPT` for
 direct cell optimization controls.
 
 KIND entries are shown in an editable `Element`, `Basis Set`, `Potential` table

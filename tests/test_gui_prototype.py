@@ -86,6 +86,8 @@ class GuiPrototypeTests(unittest.TestCase):
             "template_kpoints_full_grid": bool(dft.get("kpoints_full_grid", False)),
             "template_kpoints_symmetry": bool(dft.get("kpoints_symmetry", False)),
             "template_kpoints_wavefunctions": str(dft.get("kpoints_wavefunctions", "")),
+            "template_print_mulliken": bool(dft.get("print_mulliken", False)),
+            "template_print_lowdin": bool(dft.get("print_lowdin", False)),
             "template_fallback_periodic": str(fallback_cell.get("periodic", "")),
             "template_fallback_cell_a": cls._template_vector_text(fallback_cell.get("a")),
             "template_center_atoms": bool(
@@ -151,6 +153,7 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn('x:Name="TemplateCellOptGroup" Header="&amp;MOTION / &amp;CELL__OPT"', xaml_text)
         self.assertIn('x:Name="TemplateCellGroup" Header="&amp;FORCE__EVAL / &amp;SUBSYS / &amp;CELL"', xaml_text)
         self.assertIn('x:Name="TemplateKpointsGroup" Header="&amp;FORCE__EVAL / &amp;DFT / &amp;KPOINTS"', xaml_text)
+        self.assertIn('x:Name="TemplateDftPrintGroup" Header="&amp;FORCE__EVAL / &amp;DFT / &amp;PRINT"', xaml_text)
         self.assertIn('x:Name="TemplateKindGroup" Header="&amp;FORCE__EVAL / &amp;SUBSYS / &amp;KIND"', xaml_text)
         self.assertNotIn('Header="&amp;FORCE_EVAL', xaml_text)
         expected_template_group_order = [
@@ -163,6 +166,7 @@ class GuiPrototypeTests(unittest.TestCase):
             "TemplateMixingGroup",
             "TemplateSmearingGroup",
             "TemplateKpointsGroup",
+            "TemplateDftPrintGroup",
             "TemplateCellGroup",
             "TemplateKindGroup",
             "TemplateGeoOptGroup",
@@ -237,6 +241,8 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn('x:Name="KpointsSymmetryBox"', xaml_text)
         self.assertIn('x:Name="KpointsWavefunctionsBox" Grid.Row="1" Grid.Column="3" IsEditable="True"', xaml_text)
         self.assertIn('<ComboBoxItem Content="REAL"/>', xaml_text)
+        self.assertIn('x:Name="PrintMullikenBox"', xaml_text)
+        self.assertIn('x:Name="PrintLowdinBox"', xaml_text)
         self.assertIn('x:Name="FallbackPeriodicBox" Grid.Row="0" Grid.Column="1" IsEditable="True"', xaml_text)
         self.assertIn('<ComboBoxItem Content="NONE"/>', xaml_text)
         self.assertIn('x:Name="FallbackCellABox" Grid.Row="0" Grid.Column="3" IsEditable="True"', xaml_text)
@@ -255,6 +261,8 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn('"label.uks_enabled": "UKS"', english_text)
         self.assertIn('"label.dispersion_enabled": "DFT-D3"', english_text)
         self.assertIn('"label.outer_scf_enabled": "Outer SCF"', english_text)
+        self.assertIn('"label.print_mulliken": "Mulliken"', english_text)
+        self.assertIn('"label.print_lowdin": "Lowdin"', english_text)
         self.assertIn('"button.preview": "预览"', chinese_text)
         self.assertIn("[System.Windows.Threading.DispatcherTimer]::new()", script_text)
         self.assertIn("Start-WinQStepPythonProcess", helper_text)
@@ -440,7 +448,7 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertTrue(report["template_tab_loaded"])
         self.assertTrue(report["template_manual_link_loaded"])
         self.assertEqual(report["template_manual_link_uri"], "https://manual.cp2k.org/trunk/CP2K_INPUT.html")
-        self.assertEqual(report["template_section_groups_loaded"], 13)
+        self.assertEqual(report["template_section_groups_loaded"], 14)
         self.assertEqual(
             report["template_section_group_headers"],
             [
@@ -453,13 +461,14 @@ class GuiPrototypeTests(unittest.TestCase):
                 "&FORCE_EVAL / &DFT / &SCF / &MIXING",
                 "&FORCE_EVAL / &DFT / &SCF / &SMEAR",
                 "&FORCE_EVAL / &DFT / &KPOINTS",
+                "&FORCE_EVAL / &DFT / &PRINT",
                 "&FORCE_EVAL / &SUBSYS / &CELL",
                 "&FORCE_EVAL / &SUBSYS / &KIND",
                 "&MOTION / &GEO_OPT",
                 "&MOTION / &CELL_OPT",
             ],
         )
-        self.assertEqual(report["template_section_group_left_margins"], [0, 18, 36, 36, 36, 54, 54, 54, 36, 36, 36, 18, 18])
+        self.assertEqual(report["template_section_group_left_margins"], [0, 18, 36, 36, 36, 54, 54, 54, 36, 36, 36, 36, 18, 18])
         self.assertEqual(report["template_combo_fields_loaded"], 42)
         self.assertEqual(report["template_combo_fields_editable"], 42)
         self.assertEqual(report["template_run_type_options"], ["ENERGY", "ENERGY_FORCE", "GEO_OPT", "CELL_OPT"])

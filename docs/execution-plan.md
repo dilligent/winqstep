@@ -33,9 +33,9 @@ Each round should end with a focused commit.
   ordering for Template section groups, and a Template tab hyperlink to the
   CP2K INPUT manual, and separated tracked example JSON files from ignored
   local config/template working copies, and optional QuickStep
-  `DFT/&POISSON/POISSON_SOLVER` controls.
-- Next active round: Round 63, add conservative QuickStep `DFT/&PRINT` output
-  controls.
+  `DFT/&POISSON/POISSON_SOLVER` controls, and conservative QuickStep
+  `DFT/&PRINT` Mulliken/Lowdin population-analysis controls.
+- Next active round: Round 64, add explicit restart workflow support.
 - Known local facts:
   - WSL2 is available.
   - Default distro is `Ubuntu`.
@@ -2163,18 +2163,54 @@ Commit boundary:
 - One commit for POISSON model fields, Template controls, validation, tests, and
   documentation.
 
+## Round 63: QuickStep DFT PRINT Controls
+
+Status: implemented.
+
+Goal: expose a conservative first slice of `FORCE_EVAL/&DFT/&PRINT` without
+starting broad artifact discovery or cube-file management yet.
+
+Rationale:
+
+- Population-analysis output is commonly requested after static and optimization
+  jobs, and Mulliken/Lowdin print keys can write text into the normal CP2K
+  output stream.
+- Text output keeps this round small because existing Job Log, Output, Artifacts,
+  and summary inspection already let users view the CP2K `.out` file.
+- File-generating print keys such as cube, DOS, PDOS, and MO outputs should wait
+  for a follow-up that extends artifact discovery and UI presentation.
+
+Tasks:
+
+- Add typed `dft.print_mulliken` and `dft.print_lowdin` booleans.
+- Render `DFT/&PRINT/&MULLIKEN ON` and `DFT/&PRINT/&LOWDIN ON` only when the
+  corresponding field is enabled.
+- Expose the controls in `scripts/manage_template.py` and in a Template
+  `&FORCE_EVAL / &DFT / &PRINT` group.
+- Add renderer, template, workflow, GUI smoke/static tests, and documentation.
+
+Acceptance:
+
+- Existing templates with both print controls disabled render exactly as before.
+- Enabling Mulliken/Lowdin writes a stable `DFT/&PRINT` section.
+- Template GUI load/save carries both print controls without raw JSON editing.
+- Fast checks pass.
+
+Commit boundary:
+
+- One commit for DFT PRINT model fields, Template controls, tests, and docs.
+
 ## QuickStep Feature Backlog
 
-Status: planned queue after Round 62.
+Status: planned queue after Round 63.
 
 Priority order:
 
-1. `DFT/&PRINT` output controls. Start with text-oriented outputs such as
-   Mulliken/Lowdin-style population analysis and force/stress-related print
-   options, then extend Artifacts recognition for generated files.
-2. Restart workflows. Support explicit restart files and wavefunction restart
+1. Restart workflows. Support explicit restart files and wavefunction restart
    intent so long CP2K jobs can resume without users hand-editing generated
    input.
+2. Extend `DFT/&PRINT` output controls. Add file-generating print keys only
+   together with artifact discovery and clear GUI presentation.
 3. `MOTION/&CONSTRAINT`. Add fixed-atom constraints first, because surface,
    slab, and adsorbate optimizations commonly need them and they can later be
    connected to the 3D structure preview.

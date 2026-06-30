@@ -187,6 +187,7 @@ then MOTION sections. The displayed sections include `&GLOBAL`,
 `&FORCE_EVAL / &DFT / &SCF / &MIXING`,
 `&FORCE_EVAL / &DFT / &SCF / &SMEAR`,
 `&FORCE_EVAL / &DFT / &KPOINTS`,
+`&FORCE_EVAL / &DFT / &PRINT`,
 `&FORCE_EVAL / &SUBSYS / &CELL`,
 `&FORCE_EVAL / &SUBSYS / &KIND`, `&MOTION / &GEO_OPT`, and
 `&MOTION / &CELL_OPT`.
@@ -200,11 +201,13 @@ XC functional shortcut, PBE parametrization, and optional DFT-D3 pair-potential
 dispersion controls. SCF controls include method selection, ADDED_MOS, OT
 minimizer/preconditioner, diagonalization algorithm, optional OUTER_SCF,
 optional mixing, and optional smearing. DFT-D3, UKS, OUTER_SCF, optional
-POISSON solver, mixing, and smearing remain disabled by default and validate
-through the same template writer before preview or run.
+POISSON solver, DFT PRINT controls, mixing, and smearing remain disabled by
+default and validate through the same template writer before preview or run.
 KPOINTS controls include scheme, grid, full-grid, symmetry, and wavefunction
 selection. They default to `NONE` and validate through the same template writer
 and QuickStep renderer before preview or run.
+DFT PRINT controls include Mulliken and Lowdin population-analysis checkboxes.
+They default to disabled and render `DFT/&PRINT` only when selected.
 CELL_OPT controls include direct optimization type, optimizer, max iterations,
 pressure tolerance, keep-angles, and keep-symmetry. They validate through the
 same template writer and reject nonperiodic structures before CP2K is started.

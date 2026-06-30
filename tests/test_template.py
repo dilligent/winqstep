@@ -21,6 +21,8 @@ class TemplateTests(unittest.TestCase):
         self.assertEqual(template["run_type"], "ENERGY")
         self.assertEqual(template["dft"]["charge"], 0)
         self.assertEqual(template["dft"]["poisson_solver"], "")
+        self.assertFalse(template["dft"]["print_mulliken"])
+        self.assertFalse(template["dft"]["print_lowdin"])
         self.assertEqual(template["dft"]["eps_scf"], "1.0E-6")
         self.assertEqual(template["kinds"][0]["element"], "H")
 
@@ -183,6 +185,16 @@ class TemplateTests(unittest.TestCase):
         cleared_validation = validate_template(cleared)
         self.assertTrue(cleared_validation["valid"], cleared_validation["errors"])
         self.assertEqual(cleared_validation["template"]["dft"]["poisson_solver"], "")
+
+    def test_merge_fields_updates_dft_print_controls(self) -> None:
+        template = load_template(ENERGY_TEMPLATE)
+        merged = merge_template_fields(template, {"print_mulliken": "yes", "print_lowdin": True})
+        validation = validate_template(merged)
+
+        self.assertTrue(validation["valid"], validation["errors"])
+        dft = validation["template"]["dft"]
+        self.assertTrue(dft["print_mulliken"])
+        self.assertTrue(dft["print_lowdin"])
 
     def test_merge_fields_updates_cell_opt_controls(self) -> None:
         template = load_template(ENERGY_TEMPLATE)
@@ -367,6 +379,8 @@ class TemplateTests(unittest.TestCase):
                 "cutoff",
                 "rel_cutoff",
                 "poisson_solver",
+                "print_mulliken",
+                "print_lowdin",
                 "eps_scf",
                 "max_scf",
                 "outer_scf_enabled",

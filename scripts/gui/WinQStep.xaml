@@ -628,6 +628,25 @@
             </Grid>
           </GroupBox>
 
+          <GroupBox x:Name="TemplateDftPrintGroup" Header="&amp;FORCE__EVAL / &amp;DFT / &amp;PRINT" Style="{StaticResource TemplateSectionLevel2GroupBoxStyle}">
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="150"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="150"/>
+                <ColumnDefinition Width="*"/>
+              </Grid.ColumnDefinitions>
+              <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+              </Grid.RowDefinitions>
+
+              <CheckBox x:Name="PrintMullikenBox" Grid.Row="0" Grid.Column="0"
+                        Content="Mulliken" Margin="6,4" VerticalAlignment="Center"/>
+              <CheckBox x:Name="PrintLowdinBox" Grid.Row="0" Grid.Column="1"
+                        Content="Lowdin" Margin="6,4" VerticalAlignment="Center"/>
+            </Grid>
+          </GroupBox>
+
           <GroupBox x:Name="TemplateCellGroup" Header="&amp;FORCE__EVAL / &amp;SUBSYS / &amp;CELL" Style="{StaticResource TemplateSectionLevel2GroupBoxStyle}">
             <Grid>
               <Grid.ColumnDefinitions>
