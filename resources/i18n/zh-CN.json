@@ -83,6 +83,8 @@
   "label.print_mulliken": "Mulliken",
   "label.print_lowdin": "Lowdin",
   "label.print_pdos": "PDOS",
+  "label.print_e_density_cube": "电子密度 Cube",
+  "label.print_v_hartree_cube": "Hartree 势 Cube",
   "label.optimizer": "优化器",
   "label.geo_max_iter": "GEO 最大步数",
   "label.cell_opt_type": "CELL_OPT 类型",

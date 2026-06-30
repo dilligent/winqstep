@@ -66,6 +66,12 @@ class JobHistoryTests(unittest.TestCase):
                                     "name": "water-k1-1.pdos",
                                     "type": "pdos",
                                     "size": 4,
+                                },
+                                {
+                                    "path": str(workspace / "water-ELECTRON_DENSITY.cube"),
+                                    "name": "water-ELECTRON_DENSITY.cube",
+                                    "type": "electron_density_cube",
+                                    "size": 4,
                                 }
                             ],
                         },
@@ -96,8 +102,9 @@ class JobHistoryTests(unittest.TestCase):
             self.assertAlmostEqual(job["total_energy_hartree"], -17.219350325303314)
             self.assertAlmostEqual(job["total_atomic_force"], 0.00148299452)
             self.assertEqual(job["force_unit"], "hartree/bohr")
-            self.assertEqual(job["generated_artifact_count"], 1)
+            self.assertEqual(job["generated_artifact_count"], 2)
             self.assertEqual(job["generated_artifacts"][0]["type"], "pdos")
+            self.assertEqual(job["generated_artifacts"][1]["type"], "electron_density_cube")
 
     def test_bad_metadata_is_reported_without_stopping_scan(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:

@@ -63,6 +63,8 @@ DFT_KEY_ORDER = (
     "print_mulliken",
     "print_lowdin",
     "print_pdos",
+    "print_e_density_cube",
+    "print_v_hartree_cube",
     "scf_guess",
     "eps_scf",
     "max_scf",
@@ -365,6 +367,12 @@ def _normalize_dft(data: dict[str, Any], errors: list[str]) -> dict[str, Any]:
         "print_mulliken": _bool_value(data.get("print_mulliken", defaults.print_mulliken)),
         "print_lowdin": _bool_value(data.get("print_lowdin", defaults.print_lowdin)),
         "print_pdos": _bool_value(data.get("print_pdos", defaults.print_pdos)),
+        "print_e_density_cube": _bool_value(
+            data.get("print_e_density_cube", defaults.print_e_density_cube)
+        ),
+        "print_v_hartree_cube": _bool_value(
+            data.get("print_v_hartree_cube", defaults.print_v_hartree_cube)
+        ),
         "scf_guess": _optional_choice_value(
             data.get("scf_guess"),
             "dft.scf_guess",

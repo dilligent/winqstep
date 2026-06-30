@@ -99,11 +99,12 @@ subdivision counts. Optional `kpoints_full_grid`, `kpoints_symmetry`, and
 KPOINTS are rejected for `PERIODIC NONE` inputs.
 
 Templates can optionally enable `DFT/&PRINT` output through `print_mulliken`,
-`print_lowdin`, and `print_pdos`. These fields render `&MULLIKEN ON`,
-`&LOWDIN ON`, and `&PDOS ON` under `DFT/&PRINT`; leaving all false omits the
-section entirely. After a run, generated `.pdos` and `.pdos_raw` files are
-recorded in job metadata under `files.generated` and shown in the GUI artifact
-summary.
+`print_lowdin`, `print_pdos`, `print_e_density_cube`, and
+`print_v_hartree_cube`. These fields render `&MULLIKEN ON`, `&LOWDIN ON`,
+`&PDOS ON`, `&E_DENSITY_CUBE ON`, and `&V_HARTREE_CUBE ON` under
+`DFT/&PRINT`; leaving all false omits the section entirely. After a run,
+generated `.pdos`, `.pdos_raw`, and `.cube` files are recorded in job metadata
+under `files.generated` and shown in the GUI artifact summary.
 
 Templates can also optionally enable `DFT/&SCF/&OUTER_SCF` with
 `outer_scf_enabled`, `outer_scf_eps_scf`, and `outer_scf_max_scf`. The section

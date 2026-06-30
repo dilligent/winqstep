@@ -36,6 +36,8 @@ The first generator should target:
 - `DFT/&PRINT/&MULLIKEN`
 - `DFT/&PRINT/&LOWDIN`
 - `DFT/&PRINT/&PDOS`
+- `DFT/&PRINT/&E_DENSITY_CUBE`
+- `DFT/&PRINT/&V_HARTREE_CUBE`
 - `DFT/&XC`
 - `DFT/&XC/&XC_FUNCTIONAL`
 - `DFT/&XC/&VDW_POTENTIAL` with `PAIR_POTENTIAL` DFT-D3
@@ -105,12 +107,14 @@ current model does not deliberately support.
 
 DFT print controls are opt-in. `dft.print_mulliken` renders
 `DFT/&PRINT/&MULLIKEN ON`, `dft.print_lowdin` renders
-`DFT/&PRINT/&LOWDIN ON`, and `dft.print_pdos` renders
-`DFT/&PRINT/&PDOS ON`. All default to false so existing generated inputs do not
-add population analysis output or PDOS files unless users request them. When
-PDOS is enabled, the runner records generated `.pdos` and `.pdos_raw` files in
-metadata under `files.generated` so the GUI can list them with the other job
-artifacts.
+`DFT/&PRINT/&LOWDIN ON`, `dft.print_pdos` renders
+`DFT/&PRINT/&PDOS ON`, `dft.print_e_density_cube` renders
+`DFT/&PRINT/&E_DENSITY_CUBE ON`, and `dft.print_v_hartree_cube` renders
+`DFT/&PRINT/&V_HARTREE_CUBE ON`. All default to false so existing generated
+inputs do not add population analysis output, PDOS files, or cube files unless
+users request them. When these file-generating print controls are enabled, the
+runner records generated `.pdos`, `.pdos_raw`, and `.cube` files in metadata
+under `files.generated` so the GUI can list them with the other job artifacts.
 
 Wavefunction restart is explicit and opt-in. `dft.wfn_restart_file_name` renders
 `DFT/WFN_RESTART_FILE_NAME`, while `dft.scf_guess` renders `SCF/SCF_GUESS`.

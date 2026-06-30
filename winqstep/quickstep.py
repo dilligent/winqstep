@@ -95,6 +95,8 @@ class DftSettings:
     print_mulliken: bool = False
     print_lowdin: bool = False
     print_pdos: bool = False
+    print_e_density_cube: bool = False
+    print_v_hartree_cube: bool = False
     scf_guess: str | None = None
     eps_scf: str = "1.0E-6"
     max_scf: int = 50
@@ -293,6 +295,8 @@ def _parse_dft(data: dict[str, Any]) -> DftSettings:
         print_mulliken=_bool_value(data, "print_mulliken", False),
         print_lowdin=_bool_value(data, "print_lowdin", False),
         print_pdos=_bool_value(data, "print_pdos", False),
+        print_e_density_cube=_bool_value(data, "print_e_density_cube", False),
+        print_v_hartree_cube=_bool_value(data, "print_v_hartree_cube", False),
         scf_guess=_optional_choice(data, "scf_guess"),
         eps_scf=_optional_string(data, "eps_scf", "1.0E-6"),
         max_scf=_int_value(data, "max_scf", 50),
@@ -626,6 +630,20 @@ def _render_dft_print(dft: DftSettings) -> list[str]:
             [
                 "      &PDOS ON",
                 "      &END PDOS",
+            ]
+        )
+    if dft.print_e_density_cube:
+        lines.extend(
+            [
+                "      &E_DENSITY_CUBE ON",
+                "      &END E_DENSITY_CUBE",
+            ]
+        )
+    if dft.print_v_hartree_cube:
+        lines.extend(
+            [
+                "      &V_HARTREE_CUBE ON",
+                "      &END V_HARTREE_CUBE",
             ]
         )
     if not lines:

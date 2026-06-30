@@ -2092,6 +2092,8 @@ function New-WinQStepWindow {
         $controls["PrintMullikenBox"].IsChecked = @("1", "true", "yes", "on").Contains((& $GetJsonProperty $dft "print_mulliken" "False").ToLowerInvariant())
         $controls["PrintLowdinBox"].IsChecked = @("1", "true", "yes", "on").Contains((& $GetJsonProperty $dft "print_lowdin" "False").ToLowerInvariant())
         $controls["PrintPdosBox"].IsChecked = @("1", "true", "yes", "on").Contains((& $GetJsonProperty $dft "print_pdos" "False").ToLowerInvariant())
+        $controls["PrintEDensityCubeBox"].IsChecked = @("1", "true", "yes", "on").Contains((& $GetJsonProperty $dft "print_e_density_cube" "False").ToLowerInvariant())
+        $controls["PrintVHartreeCubeBox"].IsChecked = @("1", "true", "yes", "on").Contains((& $GetJsonProperty $dft "print_v_hartree_cube" "False").ToLowerInvariant())
         $controls["FixedAtomsBox"].Text = & $GetJsonVectorText $motion "fixed_atoms"
         $controls["FixedAtomComponentsBox"].Text = & $GetJsonProperty $motion "fixed_atom_components" "XYZ"
         $controls["GeoOptimizerBox"].Text = & $GetJsonProperty $geoOpt "optimizer"
@@ -2184,6 +2186,8 @@ function New-WinQStepWindow {
             print_mulliken = [bool]$controls["PrintMullikenBox"].IsChecked
             print_lowdin = [bool]$controls["PrintLowdinBox"].IsChecked
             print_pdos = [bool]$controls["PrintPdosBox"].IsChecked
+            print_e_density_cube = [bool]$controls["PrintEDensityCubeBox"].IsChecked
+            print_v_hartree_cube = [bool]$controls["PrintVHartreeCubeBox"].IsChecked
             fixed_atoms = $controls["FixedAtomsBox"].Text
             fixed_atom_components = $controls["FixedAtomComponentsBox"].Text
             optimizer = $controls["GeoOptimizerBox"].Text
@@ -4196,6 +4200,8 @@ if ($SmokeTest) {
     $report["template_print_mulliken"] = [bool]$window.FindName("PrintMullikenBox").IsChecked
     $report["template_print_lowdin"] = [bool]$window.FindName("PrintLowdinBox").IsChecked
     $report["template_print_pdos"] = [bool]$window.FindName("PrintPdosBox").IsChecked
+    $report["template_print_e_density_cube"] = [bool]$window.FindName("PrintEDensityCubeBox").IsChecked
+    $report["template_print_v_hartree_cube"] = [bool]$window.FindName("PrintVHartreeCubeBox").IsChecked
     $report["template_fixed_atoms"] = [string]$window.FindName("FixedAtomsBox").Text
     $report["template_fixed_atom_components"] = [string]$window.FindName("FixedAtomComponentsBox").Text
     $report["template_fallback_periodic"] = [string]$window.FindName("FallbackPeriodicBox").Text

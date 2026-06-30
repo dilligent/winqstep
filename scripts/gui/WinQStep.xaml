@@ -669,6 +669,7 @@
               </Grid.ColumnDefinitions>
               <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
               </Grid.RowDefinitions>
 
               <CheckBox x:Name="PrintMullikenBox" Grid.Row="0" Grid.Column="0"
@@ -677,6 +678,10 @@
                         Content="Lowdin" Margin="6,4" VerticalAlignment="Center"/>
               <CheckBox x:Name="PrintPdosBox" Grid.Row="0" Grid.Column="2"
                         Content="PDOS" Margin="6,4" VerticalAlignment="Center"/>
+              <CheckBox x:Name="PrintEDensityCubeBox" Grid.Row="1" Grid.Column="0"
+                        Content="Electron Density Cube" Margin="6,4" VerticalAlignment="Center"/>
+              <CheckBox x:Name="PrintVHartreeCubeBox" Grid.Row="1" Grid.Column="1"
+                        Content="Hartree Potential Cube" Margin="6,4" VerticalAlignment="Center"/>
             </Grid>
           </GroupBox>
 

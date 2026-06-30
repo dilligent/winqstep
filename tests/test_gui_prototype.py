@@ -94,6 +94,8 @@ class GuiPrototypeTests(unittest.TestCase):
             "template_print_mulliken": bool(dft.get("print_mulliken", False)),
             "template_print_lowdin": bool(dft.get("print_lowdin", False)),
             "template_print_pdos": bool(dft.get("print_pdos", False)),
+            "template_print_e_density_cube": bool(dft.get("print_e_density_cube", False)),
+            "template_print_v_hartree_cube": bool(dft.get("print_v_hartree_cube", False)),
             "template_fixed_atoms": cls._template_vector_text(motion.get("fixed_atoms")),
             "template_fixed_atom_components": str(motion.get("fixed_atom_components", "XYZ")),
             "template_fallback_periodic": str(fallback_cell.get("periodic", "")),
@@ -278,6 +280,8 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn('<ComboBoxItem Content="REAL"/>', xaml_text)
         self.assertIn('x:Name="PrintMullikenBox"', xaml_text)
         self.assertIn('x:Name="PrintLowdinBox"', xaml_text)
+        self.assertIn('x:Name="PrintEDensityCubeBox"', xaml_text)
+        self.assertIn('x:Name="PrintVHartreeCubeBox"', xaml_text)
         self.assertIn('x:Name="FixedAtomsBox" Grid.Row="0" Grid.Column="1" IsEditable="True"', xaml_text)
         self.assertIn('x:Name="FixedAtomComponentsBox" Grid.Row="0" Grid.Column="3" IsEditable="True"', xaml_text)
         self.assertIn('<ComboBoxItem Content="YZ"/>', xaml_text)
@@ -310,8 +314,12 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn('"label.print_mulliken": "Mulliken"', english_text)
         self.assertIn('"label.print_lowdin": "Lowdin"', english_text)
         self.assertIn('"label.print_pdos": "PDOS"', english_text)
+        self.assertIn('"label.print_e_density_cube": "Electron Density Cube"', english_text)
+        self.assertIn('"label.print_v_hartree_cube": "Hartree Potential Cube"', english_text)
         self.assertIn('x:Name="PrintPdosBox"', xaml_text)
         self.assertIn("generated_artifacts", script_text)
+        self.assertIn("template_print_e_density_cube", script_text)
+        self.assertIn("template_print_v_hartree_cube", script_text)
         self.assertIn('"button.preview": "预览"', chinese_text)
         self.assertIn("[System.Windows.Threading.DispatcherTimer]::new()", script_text)
         self.assertIn("Start-WinQStepPythonProcess", helper_text)

@@ -103,12 +103,16 @@ class WorkflowTests(unittest.TestCase):
         template["dft"]["print_mulliken"] = True
         template["dft"]["print_lowdin"] = True
         template["dft"]["print_pdos"] = True
+        template["dft"]["print_e_density_cube"] = True
+        template["dft"]["print_v_hartree_cube"] = True
 
         quickstep_data = build_quickstep_data(template, imported, project_name="water_print")
 
         self.assertTrue(quickstep_data["dft"]["print_mulliken"])
         self.assertTrue(quickstep_data["dft"]["print_lowdin"])
         self.assertTrue(quickstep_data["dft"]["print_pdos"])
+        self.assertTrue(quickstep_data["dft"]["print_e_density_cube"])
+        self.assertTrue(quickstep_data["dft"]["print_v_hartree_cube"])
 
     def test_builds_cell_opt_workflow_data(self) -> None:
         imported = import_structure(STRUCTURES / "POSCAR")

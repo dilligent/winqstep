@@ -176,6 +176,12 @@ Existing-input mode skips template handling but still validates that the input
 file exists and warns in the preview/log panes when referenced basis or
 potential files are obviously missing from the cached CP2K data inspection.
 
+The Template tab includes opt-in `DFT/&PRINT` controls for Mulliken, Lowdin,
+PDOS, electron-density cube, and Hartree-potential cube output. File-generating
+print controls are reflected after a run through generated artifact discovery,
+so `.pdos`, `.pdos_raw`, and `.cube` files appear in the Artifacts tab and
+result summary when CP2K creates them.
+
 After `Preview`, the `Input Preview` pane is editable. If the text differs from
 the last generated or loaded preview when `Run` is pressed, the GUI asks for
 confirmation before using the edited text. Confirming writes the edited text to

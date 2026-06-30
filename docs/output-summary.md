@@ -40,7 +40,7 @@ Example metadata:
 The GUI turns the same metadata into a structured `Results` text view. For an
 `ENERGY_FORCE` job, it includes the job status, return code, CP2K status,
 warning count, total energy, total atomic force, known artifact paths, and a
-per-atom force table. When file-generating print controls such as PDOS produce
+per-atom force table. When file-generating print controls such as PDOS or cube output produce
 recognized outputs, the result summary also lists `files.generated` entries.
 `Save Results` writes the text as `*.results.txt` next to the `.winqstep.json`
 metadata file. If CP2K did not print a force block, the result summary reports

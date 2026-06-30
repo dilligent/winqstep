@@ -25,6 +25,8 @@ class TemplateTests(unittest.TestCase):
         self.assertFalse(template["dft"]["print_mulliken"])
         self.assertFalse(template["dft"]["print_lowdin"])
         self.assertFalse(template["dft"]["print_pdos"])
+        self.assertFalse(template["dft"]["print_e_density_cube"])
+        self.assertFalse(template["dft"]["print_v_hartree_cube"])
         self.assertEqual(template["dft"]["scf_guess"], "")
         self.assertEqual(template["dft"]["eps_scf"], "1.0E-6")
         self.assertNotIn("motion", template)
@@ -216,7 +218,13 @@ class TemplateTests(unittest.TestCase):
         template = load_template(ENERGY_TEMPLATE)
         merged = merge_template_fields(
             template,
-            {"print_mulliken": "yes", "print_lowdin": True, "print_pdos": True},
+            {
+                "print_mulliken": "yes",
+                "print_lowdin": True,
+                "print_pdos": True,
+                "print_e_density_cube": True,
+                "print_v_hartree_cube": "yes",
+            },
         )
         validation = validate_template(merged)
 
@@ -225,6 +233,8 @@ class TemplateTests(unittest.TestCase):
         self.assertTrue(dft["print_mulliken"])
         self.assertTrue(dft["print_lowdin"])
         self.assertTrue(dft["print_pdos"])
+        self.assertTrue(dft["print_e_density_cube"])
+        self.assertTrue(dft["print_v_hartree_cube"])
 
     def test_merge_fields_updates_cell_opt_controls(self) -> None:
         template = load_template(ENERGY_TEMPLATE)
@@ -481,6 +491,8 @@ class TemplateTests(unittest.TestCase):
                 "print_mulliken",
                 "print_lowdin",
                 "print_pdos",
+                "print_e_density_cube",
+                "print_v_hartree_cube",
                 "scf_guess",
                 "eps_scf",
                 "max_scf",

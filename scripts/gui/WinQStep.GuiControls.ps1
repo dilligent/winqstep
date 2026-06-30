@@ -52,6 +52,7 @@ function Get-WinQStepGuiControlNames {
         "KpointsWavefunctionsBox", "OuterScfEnabledBox", "MixingEnabledBox", "SmearingEnabledBox",
         "DispersionEnabledBox",
         "PrintMullikenBox", "PrintLowdinBox", "PrintPdosBox",
+        "PrintEDensityCubeBox", "PrintVHartreeCubeBox",
         "UksEnabledBox", "CellOptKeepAnglesBox", "CellOptKeepSymmetryBox",
         "KpointsFullGridBox", "KpointsSymmetryBox",
         "FallbackPeriodicBox", "FallbackCellABox", "FallbackCellBBox", "FallbackCellCBox",
@@ -120,6 +121,8 @@ function Set-WinQStepLocalizedControls {
     PrintMullikenBox = "label.print_mulliken"
     PrintLowdinBox = "label.print_lowdin"
     PrintPdosBox = "label.print_pdos"
+    PrintEDensityCubeBox = "label.print_e_density_cube"
+    PrintVHartreeCubeBox = "label.print_v_hartree_cube"
     CenterAtomsBox = "label.center_atoms"
     }
     foreach ($entry in $contentLocalization.GetEnumerator()) {

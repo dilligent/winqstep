@@ -42,6 +42,8 @@ FIELD_ARGS = {
     "print_mulliken": "print_mulliken",
     "print_lowdin": "print_lowdin",
     "print_pdos": "print_pdos",
+    "print_e_density_cube": "print_e_density_cube",
+    "print_v_hartree_cube": "print_v_hartree_cube",
     "scf_guess": "scf_guess",
     "eps_scf": "eps_scf",
     "max_scf": "max_scf",
@@ -112,6 +114,8 @@ def main() -> int:
     parser.add_argument("--print-mulliken")
     parser.add_argument("--print-lowdin")
     parser.add_argument("--print-pdos")
+    parser.add_argument("--print-e-density-cube")
+    parser.add_argument("--print-v-hartree-cube")
     parser.add_argument("--scf-guess")
     parser.add_argument("--eps-scf")
     parser.add_argument("--max-scf")

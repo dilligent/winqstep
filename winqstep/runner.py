@@ -17,7 +17,7 @@ from .jobs import build_cp2k_job_dry_run
 from .quickstep import quickstep_input_from_dict, render_quickstep_input
 
 
-GENERATED_ARTIFACT_SUFFIXES = (".pdos", ".pdos_raw")
+GENERATED_ARTIFACT_SUFFIXES = (".pdos", ".pdos_raw", ".cube")
 
 
 class RunnerError(ValueError):
@@ -317,6 +317,14 @@ def _generated_artifact_type(path: Path) -> str | None:
         return "pdos_raw"
     if name.endswith(".pdos"):
         return "pdos"
+    if name.endswith(".cube"):
+        if "electron_density" in name:
+            return "electron_density_cube"
+        if "spin_density" in name:
+            return "spin_density_cube"
+        if "v_hartree" in name:
+            return "hartree_potential_cube"
+        return "cube"
     if any(name.endswith(suffix) for suffix in GENERATED_ARTIFACT_SUFFIXES):
         return "generated"
     return None

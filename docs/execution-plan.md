@@ -2496,14 +2496,56 @@ Commit boundary:
 
 - One commit for the artifact-preview fix, regression test, and docs.
 
+## Round 71: QuickStep DFT PRINT Cube Artifacts
+
+Status: implemented.
+
+Goal: extend QuickStep `DFT/&PRINT` file output support beyond PDOS with two
+low-risk cube outputs.
+
+Rationale:
+
+- `E_DENSITY_CUBE` and `V_HARTREE_CUBE` are direct DFT PRINT subsections that
+  fit the existing boolean Template control model.
+- Both create file artifacts that should be visible in metadata, Artifacts,
+  results, and history rather than only appearing in the job directory.
+- More complex print sections such as `MO_CUBES` need additional file-count and
+  orbital-selection controls, so they should wait for a separate round.
+
+Tasks:
+
+- Add typed `dft.print_e_density_cube` and `dft.print_v_hartree_cube` support
+  to the QuickStep model, template normalizer, CLI field updater, and Template
+  GUI.
+- Render `DFT/&PRINT/&E_DENSITY_CUBE ON` and
+  `DFT/&PRINT/&V_HARTREE_CUBE ON` only when enabled.
+- Extend generated-artifact discovery to include `.cube` files and classify
+  electron-density, spin-density, and Hartree-potential cube outputs.
+- Add renderer, template, workflow, runner, history, GUI static/smoke tests,
+  and documentation.
+
+Acceptance:
+
+- Existing templates with cube print controls disabled render exactly as before.
+- Enabling the new controls writes stable DFT PRINT cube sections.
+- A completed job that creates recognized `.cube` files records them under
+  `files.generated` and shows them in GUI summaries.
+- Fast checks pass.
+
+Commit boundary:
+
+- One commit for DFT PRINT cube controls, generated artifact discovery, tests,
+  and docs.
+
 ## QuickStep Feature Backlog
 
-Status: planned queue after Round 70.
+Status: planned queue after Round 71.
 
 Priority order:
 
-1. Extend `DFT/&PRINT` output controls beyond PDOS. Add file-generating print
-   keys only together with artifact discovery and clear GUI presentation.
+1. Continue `DFT/&PRINT` output coverage beyond PDOS and the first cube
+   controls. Add file-generating print keys only together with artifact
+   discovery and clear GUI presentation.
 2. `RUN_TYPE MD` with `MOTION/&MD`. Treat this as a larger milestone because it
    changes run duration, log expectations, trajectory artifacts, and Template
    defaults.
