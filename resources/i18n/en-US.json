@@ -88,6 +88,8 @@
   "label.cell_opt_pressure_tolerance": "Pressure Tol",
   "label.cell_opt_keep_angles": "Keep Angles",
   "label.cell_opt_keep_symmetry": "Keep Symmetry",
+  "label.fixed_atoms": "Fixed Atoms",
+  "label.fixed_atom_components": "Components",
   "label.fallback_periodic": "Fallback Periodic",
   "label.fallback_cell_a": "Fallback Cell A",
   "label.fallback_cell_b": "Fallback Cell B",

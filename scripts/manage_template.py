@@ -64,6 +64,8 @@ FIELD_ARGS = {
     "kpoints_full_grid": "kpoints_full_grid",
     "kpoints_symmetry": "kpoints_symmetry",
     "kpoints_wavefunctions": "kpoints_wavefunctions",
+    "fixed_atoms": "fixed_atoms",
+    "fixed_atom_components": "fixed_atom_components",
     "optimizer": "optimizer",
     "geo_opt_max_iter": "geo_opt_max_iter",
     "cell_opt_optimizer": "cell_opt_optimizer",
@@ -131,6 +133,8 @@ def main() -> int:
     parser.add_argument("--kpoints-full-grid")
     parser.add_argument("--kpoints-symmetry")
     parser.add_argument("--kpoints-wavefunctions")
+    parser.add_argument("--fixed-atoms")
+    parser.add_argument("--fixed-atom-components")
     parser.add_argument("--optimizer")
     parser.add_argument("--geo-opt-max-iter")
     parser.add_argument("--cell-opt-optimizer")

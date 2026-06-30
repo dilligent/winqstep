@@ -34,6 +34,27 @@ class QuickStepTests(unittest.TestCase):
 
         self.assertEqual(render_quickstep_input(quickstep_input_from_dict(data)), expected)
 
+    def test_renders_fixed_atom_constraints_for_geo_opt(self) -> None:
+        data = json.loads((ROOT / "examples" / "quickstep_geo_opt.json").read_text(encoding="utf-8"))
+        data["motion"] = {
+            "fixed_atoms": [1, 3],
+            "fixed_atom_components": "xy",
+        }
+
+        rendered = render_quickstep_input(quickstep_input_from_dict(data))
+
+        self.assertIn(
+            "&MOTION\n"
+            "  &CONSTRAINT\n"
+            "    &FIXED_ATOMS\n"
+            "      LIST 1 3\n"
+            "      COMPONENTS_TO_FIX XY\n"
+            "    &END FIXED_ATOMS\n"
+            "  &END CONSTRAINT\n"
+            "  &GEO_OPT\n",
+            rendered,
+        )
+
     def test_renders_energy_force_snapshot(self) -> None:
         data = json.loads((ROOT / "examples" / "quickstep_energy_force.json").read_text(encoding="utf-8"))
         expected = (ROOT / "tests" / "fixtures" / "quickstep_energy_force.inp").read_text(encoding="utf-8")
@@ -307,6 +328,34 @@ class QuickStepTests(unittest.TestCase):
         data["dft"]["kpoints_scheme"] = "NONE"
 
         with self.assertRaisesRegex(QuickStepInputError, "CELL_OPT requires"):
+            quickstep_input_from_dict(data)
+
+    def test_rejects_fixed_atoms_for_energy_run(self) -> None:
+        data = json.loads((ROOT / "examples" / "quickstep_energy.json").read_text(encoding="utf-8"))
+        data["motion"] = {"fixed_atoms": "1 2", "fixed_atom_components": "XYZ"}
+
+        with self.assertRaisesRegex(QuickStepInputError, "fixed_atoms requires"):
+            quickstep_input_from_dict(data)
+
+    def test_rejects_fixed_atom_index_outside_structure(self) -> None:
+        data = json.loads((ROOT / "examples" / "quickstep_geo_opt.json").read_text(encoding="utf-8"))
+        data["motion"] = {"fixed_atoms": [4], "fixed_atom_components": "XYZ"}
+
+        with self.assertRaisesRegex(QuickStepInputError, "outside the structure atom count"):
+            quickstep_input_from_dict(data)
+
+    def test_rejects_duplicate_fixed_atom_indices(self) -> None:
+        data = json.loads((ROOT / "examples" / "quickstep_geo_opt.json").read_text(encoding="utf-8"))
+        data["motion"] = {"fixed_atoms": [1, 1], "fixed_atom_components": "XYZ"}
+
+        with self.assertRaisesRegex(QuickStepInputError, "duplicate"):
+            quickstep_input_from_dict(data)
+
+    def test_rejects_unknown_fixed_atom_components(self) -> None:
+        data = json.loads((ROOT / "examples" / "quickstep_geo_opt.json").read_text(encoding="utf-8"))
+        data["motion"] = {"fixed_atoms": [1], "fixed_atom_components": "AB"}
+
+        with self.assertRaisesRegex(QuickStepInputError, "fixed_atom_components"):
             quickstep_input_from_dict(data)
 
     def test_rejects_poisson_solver_for_unsupported_periodicity(self) -> None:

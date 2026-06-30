@@ -746,6 +746,38 @@
             </StackPanel>
           </GroupBox>
 
+          <GroupBox x:Name="TemplateFixedAtomsGroup" Header="&amp;MOTION / &amp;CONSTRAINT / &amp;FIXED__ATOMS" Style="{StaticResource TemplateSectionLevel3GroupBoxStyle}">
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="150"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="150"/>
+                <ColumnDefinition Width="*"/>
+              </Grid.ColumnDefinitions>
+              <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+              </Grid.RowDefinitions>
+
+              <TextBlock x:Name="FixedAtomsLabel" Grid.Row="0" Grid.Column="0" Text="Fixed Atoms"/>
+              <ComboBox x:Name="FixedAtomsBox" Grid.Row="0" Grid.Column="1" IsEditable="True">
+                <ComboBoxItem Content=""/>
+                <ComboBoxItem Content="1"/>
+                <ComboBoxItem Content="1 2"/>
+                <ComboBoxItem Content="1 2 3"/>
+              </ComboBox>
+              <TextBlock x:Name="FixedAtomComponentsLabel" Grid.Row="0" Grid.Column="2" Text="Components"/>
+              <ComboBox x:Name="FixedAtomComponentsBox" Grid.Row="0" Grid.Column="3" IsEditable="True">
+                <ComboBoxItem Content="XYZ"/>
+                <ComboBoxItem Content="X"/>
+                <ComboBoxItem Content="Y"/>
+                <ComboBoxItem Content="Z"/>
+                <ComboBoxItem Content="XY"/>
+                <ComboBoxItem Content="XZ"/>
+                <ComboBoxItem Content="YZ"/>
+              </ComboBox>
+            </Grid>
+          </GroupBox>
+
           <GroupBox x:Name="TemplateGeoOptGroup" Header="&amp;MOTION / &amp;GEO__OPT" Style="{StaticResource TemplateSectionLevel1GroupBoxStyle}">
             <Grid>
               <Grid.ColumnDefinitions>

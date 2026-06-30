@@ -107,6 +107,21 @@ Templates can also optionally enable `DFT/&SCF/&OUTER_SCF` with
 is omitted unless enabled, and the outer convergence threshold must be no looser
 than the inner `eps_scf`.
 
+Templates can optionally define fixed atom constraints for optimization runs:
+
+```json
+"motion": {
+  "fixed_atoms": [1, 3],
+  "fixed_atom_components": "XYZ"
+}
+```
+
+The list uses CP2K's 1-based atom indices after structure import and optional
+fallback-cell centering. The renderer writes
+`MOTION/&CONSTRAINT/&FIXED_ATOMS` with `LIST` and `COMPONENTS_TO_FIX`.
+Constraints are rejected for non-optimization run types and for indices outside
+the resolved structure atom count.
+
 The workflow selects only KIND entries needed by the imported elements. Missing
 KIND definitions fail before CP2K is started. The GUI runs the same preflight
 check before `Preview` and `Run` so those errors appear in the `Template` and
@@ -124,8 +139,9 @@ python .\scripts\manage_template.py --template .\examples\templates\energy_pbe.e
 The GUI `Template` tab uses the same command. It exposes project name, run type,
 DFT settings, XC/PBE/DFT-D3 controls, UKS, POISSON solver controls, SCF solver
 and OUTER_SCF controls, wavefunction restart controls, KPOINTS controls, DFT
-PRINT controls, GEO_OPT settings, CELL_OPT settings, fallback cell/periodicity
-settings, centering, and KIND basis/potential entries.
+PRINT controls, fixed atom constraints, GEO_OPT settings, CELL_OPT settings,
+fallback cell/periodicity settings, centering, and KIND basis/potential
+entries.
 Supported QuickStep run types are `ENERGY`,
 `ENERGY_FORCE`, `GEO_OPT`, and `CELL_OPT`. Workflow preview and run actions
 save and validate the current template before rendering input.

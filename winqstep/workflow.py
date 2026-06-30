@@ -52,6 +52,8 @@ def build_quickstep_data(
     }
     if "print_level" in template:
         quickstep_data["print_level"] = copy.deepcopy(template.get("print_level"))
+    if "motion" in template:
+        quickstep_data["motion"] = copy.deepcopy(_object(template.get("motion"), "motion"))
     if "geo_opt" in template:
         quickstep_data["geo_opt"] = copy.deepcopy(_object(template.get("geo_opt"), "geo_opt"))
     if "cell_opt" in template:

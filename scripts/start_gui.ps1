@@ -101,6 +101,7 @@ function New-WinQStepWindow {
         "WfnRestartFileNameLabel", "ScfGuessLabel",
         "CellOptTypeLabel", "CellOptOptimizerLabel", "CellOptMaxIterLabel",
         "CellOptPressureToleranceLabel",
+        "FixedAtomsLabel", "FixedAtomComponentsLabel",
         "ScfMethodLabel", "AddedMosLabel", "DiagonalizationAlgorithmLabel",
         "OtMinimizerLabel", "OtPreconditionerLabel",
         "OuterScfEpsScfLabel", "OuterScfMaxScfLabel",
@@ -118,6 +119,7 @@ function New-WinQStepWindow {
         "EpsScfBox", "MaxScfBox", "GeoOptimizerBox", "GeoMaxIterBox",
         "CellOptTypeBox", "CellOptOptimizerBox", "CellOptMaxIterBox",
         "CellOptPressureToleranceBox",
+        "FixedAtomsBox", "FixedAtomComponentsBox",
         "ScfMethodBox", "AddedMosBox", "DiagonalizationAlgorithmBox",
         "ScfGuessBox",
         "OtMinimizerBox", "OtPreconditionerBox",
@@ -267,6 +269,8 @@ function New-WinQStepWindow {
         CellOptOptimizerLabel = "label.cell_opt_optimizer"
         CellOptMaxIterLabel = "label.cell_opt_max_iter"
         CellOptPressureToleranceLabel = "label.cell_opt_pressure_tolerance"
+        FixedAtomsLabel = "label.fixed_atoms"
+        FixedAtomComponentsLabel = "label.fixed_atom_components"
         FallbackPeriodicLabel = "label.fallback_periodic"
         FallbackCellALabel = "label.fallback_cell_a"
         FallbackCellBLabel = "label.fallback_cell_b"
@@ -719,7 +723,7 @@ function New-WinQStepWindow {
             return $value
         }
         $items = @($value)
-        if ($items.Count -eq 3) {
+        if ($items.Count -gt 0) {
             return (($items | ForEach-Object {
                 try {
                     "{0:g}" -f [double]$_
@@ -2025,6 +2029,7 @@ function New-WinQStepWindow {
         param([Parameter(Mandatory = $true)]$Payload)
         $template = $Payload.template
         $dft = $template.dft
+        $motion = $template.motion
         $geoOpt = $template.geo_opt
         $cellOpt = $template.cell_opt
         $structureTransform = $template.structure_transform
@@ -2075,6 +2080,8 @@ function New-WinQStepWindow {
         $controls["KpointsWavefunctionsBox"].Text = & $GetJsonProperty $dft "kpoints_wavefunctions"
         $controls["PrintMullikenBox"].IsChecked = @("1", "true", "yes", "on").Contains((& $GetJsonProperty $dft "print_mulliken" "False").ToLowerInvariant())
         $controls["PrintLowdinBox"].IsChecked = @("1", "true", "yes", "on").Contains((& $GetJsonProperty $dft "print_lowdin" "False").ToLowerInvariant())
+        $controls["FixedAtomsBox"].Text = & $GetJsonVectorText $motion "fixed_atoms"
+        $controls["FixedAtomComponentsBox"].Text = & $GetJsonProperty $motion "fixed_atom_components" "XYZ"
         $controls["GeoOptimizerBox"].Text = & $GetJsonProperty $geoOpt "optimizer"
         $controls["GeoMaxIterBox"].Text = & $GetJsonProperty $geoOpt "max_iter"
         $controls["CellOptTypeBox"].Text = & $GetJsonProperty $cellOpt "type"
@@ -2164,6 +2171,8 @@ function New-WinQStepWindow {
             kpoints_wavefunctions = $controls["KpointsWavefunctionsBox"].Text
             print_mulliken = [bool]$controls["PrintMullikenBox"].IsChecked
             print_lowdin = [bool]$controls["PrintLowdinBox"].IsChecked
+            fixed_atoms = $controls["FixedAtomsBox"].Text
+            fixed_atom_components = $controls["FixedAtomComponentsBox"].Text
             optimizer = $controls["GeoOptimizerBox"].Text
             geo_opt_max_iter = $controls["GeoMaxIterBox"].Text
             cell_opt_type = $controls["CellOptTypeBox"].Text
@@ -4007,6 +4016,7 @@ if ($SmokeTest) {
         "CutoffBox", "RelCutoffBox", "MaxScfBox", "GeoOptimizerBox", "GeoMaxIterBox",
         "CellOptTypeBox", "CellOptOptimizerBox", "CellOptMaxIterBox",
         "CellOptPressureToleranceBox",
+        "FixedAtomsBox", "FixedAtomComponentsBox",
         "ScfMethodBox", "ScfGuessBox", "AddedMosBox", "DiagonalizationAlgorithmBox",
         "OtMinimizerBox", "OtPreconditionerBox",
         "OuterScfEpsScfBox", "OuterScfMaxScfBox", "MixingMethodBox",
@@ -4018,7 +4028,7 @@ if ($SmokeTest) {
     $templateSectionGroupNames = @(
         "TemplateGlobalGroup", "TemplateDftGroup", "TemplatePoissonGroup", "TemplateXcGroup", "TemplateScfGroup", "TemplateOuterScfGroup",
         "TemplateMixingGroup", "TemplateSmearingGroup", "TemplateKpointsGroup", "TemplateDftPrintGroup", "TemplateCellGroup",
-        "TemplateKindGroup", "TemplateGeoOptGroup", "TemplateCellOptGroup"
+        "TemplateKindGroup", "TemplateFixedAtomsGroup", "TemplateGeoOptGroup", "TemplateCellOptGroup"
     )
     $GetTemplateSectionHeaderText = {
         param([Parameter(Mandatory = $true)][string]$Name)
@@ -4045,6 +4055,7 @@ if ($SmokeTest) {
     $report["template_print_level_options"] = @($window.FindName("PrintLevelBox").Items | ForEach-Object { [string]$_.Content })
     $report["template_poisson_solver_options"] = @($window.FindName("PoissonSolverBox").Items | ForEach-Object { [string]$_.Content })
     $report["template_scf_guess_options"] = @($window.FindName("ScfGuessBox").Items | ForEach-Object { [string]$_.Content })
+    $report["template_fixed_atom_components_options"] = @($window.FindName("FixedAtomComponentsBox").Items | ForEach-Object { [string]$_.Content })
     $report["template_optimizer_options"] = @($window.FindName("GeoOptimizerBox").Items | ForEach-Object { [string]$_.Content })
     $report["template_cell_opt_type_options"] = @($window.FindName("CellOptTypeBox").Items | ForEach-Object { [string]$_.Content })
     $report["template_project_name"] = [string]$window.FindName("TemplateProjectBox").Text
@@ -4081,6 +4092,8 @@ if ($SmokeTest) {
     $report["template_kpoints_wavefunctions"] = [string]$window.FindName("KpointsWavefunctionsBox").Text
     $report["template_print_mulliken"] = [bool]$window.FindName("PrintMullikenBox").IsChecked
     $report["template_print_lowdin"] = [bool]$window.FindName("PrintLowdinBox").IsChecked
+    $report["template_fixed_atoms"] = [string]$window.FindName("FixedAtomsBox").Text
+    $report["template_fixed_atom_components"] = [string]$window.FindName("FixedAtomComponentsBox").Text
     $report["template_fallback_periodic"] = [string]$window.FindName("FallbackPeriodicBox").Text
     $report["template_fallback_cell_a"] = [string]$window.FindName("FallbackCellABox").Text
     $report["template_center_atoms"] = [bool]$window.FindName("CenterAtomsBox").IsChecked

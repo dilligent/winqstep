@@ -85,6 +85,18 @@ class WorkflowTests(unittest.TestCase):
         self.assertEqual(quickstep_data["dft"]["wfn_restart_file_name"], "previous-RESTART.wfn")
         self.assertEqual(quickstep_data["dft"]["scf_guess"], "RESTART")
 
+    def test_builds_workflow_data_with_fixed_atom_constraints(self) -> None:
+        imported = import_structure(STRUCTURES / "water.xyz")
+        template = json.loads(json.dumps(self.template))
+        template["run_type"] = "GEO_OPT"
+        template["motion"] = {"fixed_atoms": [1, 3], "fixed_atom_components": "XYZ"}
+
+        quickstep_data = build_quickstep_data(template, imported, project_name="water_fixed")
+
+        self.assertEqual(quickstep_data["run_type"], "GEO_OPT")
+        self.assertEqual(quickstep_data["motion"]["fixed_atoms"], [1, 3])
+        self.assertEqual(quickstep_data["motion"]["fixed_atom_components"], "XYZ")
+
     def test_builds_workflow_data_with_dft_print_controls(self) -> None:
         imported = import_structure(STRUCTURES / "water.xyz")
         template = json.loads(json.dumps(self.template))

@@ -25,9 +25,11 @@ from .quickstep import (
     SCF_METHODS,
     SMEARING_METHODS,
     DISPERSION_TYPES,
+    FIXED_ATOM_COMPONENTS,
     CellOptSettings,
     DftSettings,
     GeoOptSettings,
+    MotionSettings,
 )
 
 
@@ -36,6 +38,7 @@ TEMPLATE_KEY_ORDER = (
     "run_type",
     "print_level",
     "dft",
+    "motion",
     "geo_opt",
     "cell_opt",
     "structure_transform",
@@ -92,6 +95,7 @@ CELL_OPT_KEY_ORDER = (
     "keep_angles",
     "keep_symmetry",
 )
+MOTION_KEY_ORDER = ("fixed_atoms", "fixed_atom_components")
 FALLBACK_CELL_FIELD_KEYS = (
     "fallback_cell_periodic",
     "fallback_cell_a",
@@ -151,6 +155,7 @@ def validate_template(data: dict[str, Any]) -> dict[str, Any]:
     print_level = _optional_choice_value(data.get("print_level"), "print_level", PRINT_LEVELS, errors)
 
     dft = _normalize_dft(_object_value(data.get("dft", {}), "dft", errors), errors)
+    motion = _normalize_motion(_object_value(data.get("motion", {}), "motion", errors), errors)
     geo_opt = _normalize_geo_opt(_object_value(data.get("geo_opt", {}), "geo_opt", errors), errors)
     cell_opt = _normalize_cell_opt(_object_value(data.get("cell_opt", {}), "cell_opt", errors), errors)
     structure_transform = _normalize_structure_transform(data.get("structure_transform", {}), errors, warnings)
@@ -162,6 +167,8 @@ def validate_template(data: dict[str, Any]) -> dict[str, Any]:
         warnings.append("CELL_OPT template did not define cell_opt; defaults were added.")
     if not kinds:
         warnings.append("Template has no usable KIND entries.")
+    if motion and run_type not in {"GEO_OPT", "CELL_OPT"}:
+        errors.append("motion.fixed_atoms requires run_type GEO_OPT or CELL_OPT")
 
     template: dict[str, Any] = {
         "project_name": project_name,
@@ -170,6 +177,8 @@ def validate_template(data: dict[str, Any]) -> dict[str, Any]:
     }
     if print_level:
         template["print_level"] = print_level
+    if motion:
+        template["motion"] = motion
     if run_type == "GEO_OPT":
         template["geo_opt"] = geo_opt
     if run_type == "CELL_OPT":
@@ -194,6 +203,7 @@ def merge_template_fields(template: dict[str, Any], fields: dict[str, Any]) -> d
     """Merge flat editable fields into the nested workflow template shape."""
     merged = json.loads(json.dumps(template))
     dft = _ensure_object(merged, "dft")
+    motion = _ensure_object(merged, "motion") if isinstance(merged.get("motion"), dict) else None
     geo_opt = _ensure_object(merged, "geo_opt")
     cell_opt = _ensure_object(merged, "cell_opt")
 
@@ -207,6 +217,12 @@ def merge_template_fields(template: dict[str, Any], fields: dict[str, Any]) -> d
     for key in DFT_KEY_ORDER:
         if key in fields:
             dft[key] = fields[key]
+    if _field_has_value(fields, "fixed_atoms") or motion is not None:
+        motion = _ensure_object(merged, "motion")
+        if "fixed_atoms" in fields:
+            motion["fixed_atoms"] = fields["fixed_atoms"]
+        if "fixed_atom_components" in fields:
+            motion["fixed_atom_components"] = fields["fixed_atom_components"]
     if _field_has_value(fields, "optimizer"):
         geo_opt["optimizer"] = fields["optimizer"]
     if _field_has_value(fields, "geo_opt_max_iter"):
@@ -505,6 +521,26 @@ def _normalize_cell_opt(data: dict[str, Any], errors: list[str]) -> dict[str, An
     return {key: cell_opt[key] for key in CELL_OPT_KEY_ORDER}
 
 
+def _normalize_motion(data: dict[str, Any], errors: list[str]) -> dict[str, Any]:
+    defaults = MotionSettings()
+    fixed_atoms = _positive_int_list_value(data.get("fixed_atoms", defaults.fixed_atoms), "motion.fixed_atoms", errors)
+    if not fixed_atoms:
+        return {}
+    components = _choice_value(
+        data.get("fixed_atom_components", defaults.fixed_atom_components),
+        "motion.fixed_atom_components",
+        FIXED_ATOM_COMPONENTS,
+        errors,
+    )
+    if len(set(fixed_atoms)) != len(fixed_atoms):
+        errors.append("motion.fixed_atoms must not contain duplicate indices")
+    motion = {
+        "fixed_atoms": fixed_atoms,
+        "fixed_atom_components": components,
+    }
+    return {key: motion[key] for key in MOTION_KEY_ORDER}
+
+
 def _normalize_structure_transform(value: Any, errors: list[str], warnings: list[str]) -> dict[str, Any]:
     data = _object_value(value, "structure_transform", errors)
     if not data:
@@ -639,6 +675,30 @@ def _positive_int_triplet_value(value: Any, key: str, errors: list[str]) -> list
             return [1, 1, 1]
     if any(item <= 0 for item in parsed):
         errors.append(f"{key} values must be positive")
+    return parsed
+
+
+def _positive_int_list_value(value: Any, key: str, errors: list[str]) -> list[int]:
+    if isinstance(value, str):
+        value = [part for part in value.replace(",", " ").split() if part]
+    if value is None:
+        return []
+    if not isinstance(value, list | tuple):
+        errors.append(f"{key} must be an integer list")
+        return []
+
+    parsed: list[int] = []
+    for item in value:
+        if isinstance(item, bool) or not isinstance(item, int | str):
+            errors.append(f"{key} must contain integer values")
+            return []
+        try:
+            parsed.append(int(item))
+        except ValueError:
+            errors.append(f"{key} must contain integer values")
+            return []
+    if any(item <= 0 for item in parsed):
+        errors.append(f"{key} must contain positive 1-based atom indices")
     return parsed
 
 

@@ -189,7 +189,8 @@ then MOTION sections. The displayed sections include `&GLOBAL`,
 `&FORCE_EVAL / &DFT / &KPOINTS`,
 `&FORCE_EVAL / &DFT / &PRINT`,
 `&FORCE_EVAL / &SUBSYS / &CELL`,
-`&FORCE_EVAL / &SUBSYS / &KIND`, `&MOTION / &GEO_OPT`, and
+`&FORCE_EVAL / &SUBSYS / &KIND`,
+`&MOTION / &CONSTRAINT / &FIXED_ATOMS`, `&MOTION / &GEO_OPT`, and
 `&MOTION / &CELL_OPT`.
 The `&GLOBAL` group includes the optional CP2K `PRINT_LEVEL`; leaving it blank
 keeps CP2K's default implicit, while selecting a level renders it explicitly.
@@ -210,6 +211,9 @@ selection. They default to `NONE` and validate through the same template writer
 and QuickStep renderer before preview or run.
 DFT PRINT controls include Mulliken and Lowdin population-analysis checkboxes.
 They default to disabled and render `DFT/&PRINT` only when selected.
+Fixed atom controls include a 1-based atom-index list and coordinate components
+to fix. They default to an empty list and render
+`MOTION/&CONSTRAINT/&FIXED_ATOMS` only for optimization run types.
 CELL_OPT controls include direct optimization type, optimizer, max iterations,
 pressure tolerance, keep-angles, and keep-symmetry. They validate through the
 same template writer and reject nonperiodic structures before CP2K is started.

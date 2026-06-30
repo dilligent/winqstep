@@ -37,6 +37,8 @@ Editable fields include:
 - GEO_OPT fields: optimizer and max iterations
 - CELL_OPT fields: optimizer, max iterations, optimization type, pressure
   tolerance, keep-angles, and keep-symmetry
+- MOTION constraint fields: optional fixed atom index list and fixed coordinate
+  components for `MOTION/CONSTRAINT/FIXED_ATOMS`
 - Structure transform fields: fallback periodicity, fallback cell A/B/C
   vectors, and whether fallback-cell structures should be centered
 - `kinds_text`: one KIND per line as `element basis_set potential`
@@ -61,6 +63,7 @@ tree from `&GLOBAL` through DFT and SUBSYS to MOTION, so
 `&FORCE_EVAL / &DFT / &SCF / &SMEAR`,
 `&FORCE_EVAL / &DFT / &KPOINTS`, `&FORCE_EVAL / &DFT / &PRINT`,
 `&FORCE_EVAL / &SUBSYS / &CELL`, `&FORCE_EVAL / &SUBSYS / &KIND`,
+`&MOTION / &CONSTRAINT / &FIXED_ATOMS`,
 `&MOTION / &GEO_OPT`, and
 `&MOTION / &CELL_OPT` are visible as sections instead of a flat list of peer
 fields.
@@ -91,6 +94,9 @@ KPOINTS fields expose `NONE`, `GAMMA`, and `MONKHORST-PACK`, common
 Monkhorst-Pack grids, `FULL_GRID`, `SYMMETRY`, and `WAVEFUNCTIONS` choices.
 DFT PRINT fields expose Mulliken and Lowdin population-analysis checkboxes;
 leaving them unchecked omits `DFT/&PRINT` entirely.
+Fixed-atom constraint fields expose a space- or comma-separated list of
+1-based atom indices and a `COMPONENTS_TO_FIX` selector. They only save a
+`motion` template object when the atom list is non-empty.
 The controls remain editable, so values not listed in the drop-down can still
 be typed directly and saved through the same template writer.
 The candidate lists are intentionally conservative and are based on the CP2K
@@ -108,7 +114,7 @@ manual pages for `GLOBAL/RUN_TYPE`, `GLOBAL/PRINT_LEVEL`,
 `FORCE_EVAL/DFT/SCF/SMEAR`, `FORCE_EVAL/DFT/KPOINTS`,
 `FORCE_EVAL/DFT/PRINT/MULLIKEN`, and `FORCE_EVAL/DFT/PRINT/LOWDIN` for
 periodicity, POISSON solver, SCF solver, k-point controls, and DFT print
-controls, plus `MOTION/CELL_OPT` for
+controls, plus `MOTION/CONSTRAINT/FIXED_ATOMS` and `MOTION/CELL_OPT` for
 direct cell optimization controls.
 
 KIND entries are shown in an editable `Element`, `Basis Set`, `Potential` table
@@ -132,6 +138,9 @@ are rejected unless a KPOINTS scheme is selected, and rendered workflow inputs
 reject KPOINTS for nonperiodic cells.
 Wavefunction restart file names are rejected unless `SCF_GUESS` is `RESTART`
 or `HISTORY_RESTART`.
+Fixed atom constraints are rejected unless the run type is `GEO_OPT` or
+`CELL_OPT`; their atom indices must be positive and unique, and the renderer
+also rejects indices outside the resolved structure atom count.
 CELL_OPT inputs reject nonperiodic cells and currently support the
 `DIRECT_CELL_OPT` path. When a CP2K data inspection cache is available, the GUI
 preflight step also compares template data-file names and KIND basis/potential

@@ -88,6 +88,8 @@
   "label.cell_opt_pressure_tolerance": "压力容差",
   "label.cell_opt_keep_angles": "保持夹角",
   "label.cell_opt_keep_symmetry": "保持对称性",
+  "label.fixed_atoms": "固定原子",
+  "label.fixed_atom_components": "固定分量",
   "label.fallback_periodic": "备用周期性",
   "label.fallback_cell_a": "备用晶胞 A",
   "label.fallback_cell_b": "备用晶胞 B",

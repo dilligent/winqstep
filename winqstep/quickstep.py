@@ -25,6 +25,7 @@ SCF_GUESSES = {
 KPOINTS_SCHEMES = {"NONE", "GAMMA", "MONKHORST-PACK"}
 KPOINTS_WAVEFUNCTIONS = {"COMPLEX", "REAL"}
 MOTION_OPTIMIZERS = {"BFGS", "LBFGS", "CG"}
+FIXED_ATOM_COMPONENTS = {"X", "Y", "Z", "XY", "XZ", "YZ", "XYZ"}
 CELL_OPT_TYPES = {"DIRECT_CELL_OPT"}
 OT_MINIMIZERS = {"SD", "CG", "DIIS", "BROYDEN"}
 OT_PRECONDITIONERS = {
@@ -135,6 +136,12 @@ class CellOptSettings:
 
 
 @dataclass(frozen=True)
+class MotionSettings:
+    fixed_atoms: tuple[int, ...] = ()
+    fixed_atom_components: str = "XYZ"
+
+
+@dataclass(frozen=True)
 class QuickStepInput:
     project_name: str
     run_type: RunType
@@ -145,6 +152,7 @@ class QuickStepInput:
     dft: DftSettings = DftSettings()
     geo_opt: GeoOptSettings = GeoOptSettings()
     cell_opt: CellOptSettings = CellOptSettings()
+    motion: MotionSettings = MotionSettings()
 
 
 def _required_string(data: dict[str, Any], key: str) -> str:
@@ -214,6 +222,24 @@ def _int_triplet(value: Any, key: str) -> tuple[int, int, int]:
             raise QuickStepInputError(f"{key} must contain integer values") from exc
     parsed = (parsed_values[0], parsed_values[1], parsed_values[2])
     return parsed
+
+
+def _int_list(value: Any, key: str) -> tuple[int, ...]:
+    if value is None:
+        return ()
+    if isinstance(value, str):
+        value = [part for part in value.replace(",", " ").split() if part]
+    if not isinstance(value, list | tuple):
+        raise QuickStepInputError(f"{key} must be an integer list")
+    parsed_values: list[int] = []
+    for item in value:
+        if isinstance(item, bool) or not isinstance(item, int | str):
+            raise QuickStepInputError(f"{key} must contain integer values")
+        try:
+            parsed_values.append(int(item))
+        except ValueError as exc:
+            raise QuickStepInputError(f"{key} must contain integer values") from exc
+    return tuple(parsed_values)
 
 
 def _vector(value: Any, key: str) -> tuple[float, float, float]:
@@ -309,6 +335,13 @@ def _parse_cell_opt(data: dict[str, Any]) -> CellOptSettings:
     )
 
 
+def _parse_motion(data: dict[str, Any]) -> MotionSettings:
+    return MotionSettings(
+        fixed_atoms=_int_list(data.get("fixed_atoms"), "motion.fixed_atoms"),
+        fixed_atom_components=_optional_string(data, "fixed_atom_components", "XYZ").upper(),
+    )
+
+
 def quickstep_input_from_dict(data: dict[str, Any]) -> QuickStepInput:
     run_type = _required_string(data, "run_type").upper()
     if run_type not in RUN_TYPES:
@@ -338,6 +371,7 @@ def quickstep_input_from_dict(data: dict[str, Any]) -> QuickStepInput:
         dft=_parse_dft(_object(data.get("dft", {}), "dft")),
         geo_opt=_parse_geo_opt(_object(data.get("geo_opt", {}), "geo_opt")),
         cell_opt=_parse_cell_opt(_object(data.get("cell_opt", {}), "cell_opt")),
+        motion=_parse_motion(_object(data.get("motion", {}), "motion")),
     )
     validate_quickstep_input(model)
     return model
@@ -443,6 +477,22 @@ def validate_quickstep_input(model: QuickStepInput) -> None:
     _positive_float(model.cell_opt.pressure_tolerance, "cell_opt.pressure_tolerance")
     if model.run_type == "CELL_OPT" and model.cell.periodic == "NONE":
         raise QuickStepInputError("CELL_OPT requires a periodic cell")
+    if model.motion.fixed_atom_components not in FIXED_ATOM_COMPONENTS:
+        raise QuickStepInputError("motion.fixed_atom_components has an unsupported value")
+    if model.motion.fixed_atoms:
+        if model.run_type not in {"GEO_OPT", "CELL_OPT"}:
+            raise QuickStepInputError("motion.fixed_atoms requires run_type GEO_OPT or CELL_OPT")
+        if any(index <= 0 for index in model.motion.fixed_atoms):
+            raise QuickStepInputError("motion.fixed_atoms must contain positive 1-based atom indices")
+        if len(set(model.motion.fixed_atoms)) != len(model.motion.fixed_atoms):
+            raise QuickStepInputError("motion.fixed_atoms must not contain duplicate indices")
+        atom_count = len(model.atoms)
+        out_of_range = [index for index in model.motion.fixed_atoms if index > atom_count]
+        if out_of_range:
+            raise QuickStepInputError(
+                "motion.fixed_atoms contains atom indices outside the structure atom count: "
+                + ", ".join(str(index) for index in out_of_range)
+            )
 
 
 def render_quickstep_input(model: QuickStepInput) -> str:
@@ -600,24 +650,33 @@ def _render_xc(dft: DftSettings) -> list[str]:
 
 
 def _render_motion(model: QuickStepInput) -> list[str]:
+    if model.run_type not in {"GEO_OPT", "CELL_OPT"}:
+        return []
+    lines = [
+        "&MOTION",
+        *_render_motion_constraint(model.motion),
+    ]
     if model.run_type == "GEO_OPT":
-        return [
-            "&MOTION",
-            "  &GEO_OPT",
-            f"    OPTIMIZER {model.geo_opt.optimizer}",
-            f"    MAX_ITER {model.geo_opt.max_iter}",
-            "  &END GEO_OPT",
-            "&END MOTION",
-        ]
+        lines.extend(
+            [
+                "  &GEO_OPT",
+                f"    OPTIMIZER {model.geo_opt.optimizer}",
+                f"    MAX_ITER {model.geo_opt.max_iter}",
+                "  &END GEO_OPT",
+            ]
+        )
+        lines.append("&END MOTION")
+        return lines
     if model.run_type == "CELL_OPT":
-        lines = [
-            "&MOTION",
-            "  &CELL_OPT",
-            f"    OPTIMIZER {model.cell_opt.optimizer}",
-            f"    MAX_ITER {model.cell_opt.max_iter}",
-            f"    TYPE {model.cell_opt.type}",
-            f"    PRESSURE_TOLERANCE [bar] {model.cell_opt.pressure_tolerance}",
-        ]
+        lines.extend(
+            [
+                "  &CELL_OPT",
+                f"    OPTIMIZER {model.cell_opt.optimizer}",
+                f"    MAX_ITER {model.cell_opt.max_iter}",
+                f"    TYPE {model.cell_opt.type}",
+                f"    PRESSURE_TOLERANCE [bar] {model.cell_opt.pressure_tolerance}",
+            ]
+        )
         if model.cell_opt.keep_angles:
             lines.append("    KEEP_ANGLES T")
         if model.cell_opt.keep_symmetry:
@@ -625,6 +684,19 @@ def _render_motion(model: QuickStepInput) -> list[str]:
         lines.extend(["  &END CELL_OPT", "&END MOTION"])
         return lines
     return []
+
+
+def _render_motion_constraint(motion: MotionSettings) -> list[str]:
+    if not motion.fixed_atoms:
+        return []
+    return [
+        "  &CONSTRAINT",
+        "    &FIXED_ATOMS",
+        f"      LIST {_format_int_list(motion.fixed_atoms)}",
+        f"      COMPONENTS_TO_FIX {motion.fixed_atom_components}",
+        "    &END FIXED_ATOMS",
+        "  &END CONSTRAINT",
+    ]
 
 
 def _render_scf_extras(dft: DftSettings) -> list[str]:
@@ -705,6 +777,10 @@ def _format_vector(vector: tuple[float, float, float]) -> str:
 
 def _format_int_triplet(vector: tuple[int, int, int]) -> str:
     return " ".join(str(value) for value in vector)
+
+
+def _format_int_list(values: Iterable[int]) -> str:
+    return " ".join(str(value) for value in values)
 
 
 def _vector_norm(vector: tuple[float, float, float]) -> float:

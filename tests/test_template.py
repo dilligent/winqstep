@@ -26,6 +26,7 @@ class TemplateTests(unittest.TestCase):
         self.assertFalse(template["dft"]["print_lowdin"])
         self.assertEqual(template["dft"]["scf_guess"], "")
         self.assertEqual(template["dft"]["eps_scf"], "1.0E-6")
+        self.assertNotIn("motion", template)
         self.assertEqual(template["kinds"][0]["element"], "H")
 
     def test_load_template_normalizes_cell_opt_example(self) -> None:
@@ -251,6 +252,27 @@ class TemplateTests(unittest.TestCase):
         self.assertTrue(normalized["cell_opt"]["keep_angles"])
         self.assertTrue(normalized["cell_opt"]["keep_symmetry"])
 
+    def test_merge_fields_updates_fixed_atom_constraints(self) -> None:
+        template = load_template(ENERGY_TEMPLATE)
+        merged = merge_template_fields(
+            template,
+            {
+                "run_type": "GEO_OPT",
+                "fixed_atoms": "1, 3",
+                "fixed_atom_components": "yz",
+            },
+        )
+        validation = validate_template(merged)
+
+        self.assertTrue(validation["valid"], validation["errors"])
+        self.assertEqual(validation["template"]["motion"]["fixed_atoms"], [1, 3])
+        self.assertEqual(validation["template"]["motion"]["fixed_atom_components"], "YZ")
+
+        cleared = merge_template_fields(validation["template"], {"fixed_atoms": "", "fixed_atom_components": "XYZ"})
+        cleared_validation = validate_template(cleared)
+        self.assertTrue(cleared_validation["valid"], cleared_validation["errors"])
+        self.assertNotIn("motion", cleared_validation["template"])
+
     def test_validate_rejects_smearing_without_added_mos(self) -> None:
         template = load_template(ENERGY_TEMPLATE)
         merged = merge_template_fields(
@@ -312,6 +334,37 @@ class TemplateTests(unittest.TestCase):
 
         self.assertFalse(validation["valid"])
         self.assertIn("dft.poisson_solver has an unsupported value", validation["errors"])
+
+    def test_validate_rejects_fixed_atoms_without_motion_run_type(self) -> None:
+        template = load_template(ENERGY_TEMPLATE)
+        merged = merge_template_fields(template, {"fixed_atoms": "1 2"})
+        validation = validate_template(merged)
+
+        self.assertFalse(validation["valid"])
+        self.assertIn("motion.fixed_atoms requires run_type GEO_OPT or CELL_OPT", validation["errors"])
+
+    def test_validate_rejects_duplicate_fixed_atoms(self) -> None:
+        template = load_template(ENERGY_TEMPLATE)
+        merged = merge_template_fields(template, {"run_type": "GEO_OPT", "fixed_atoms": "1 1"})
+        validation = validate_template(merged)
+
+        self.assertFalse(validation["valid"])
+        self.assertIn("motion.fixed_atoms must not contain duplicate indices", validation["errors"])
+
+    def test_validate_rejects_unknown_fixed_atom_components(self) -> None:
+        template = load_template(ENERGY_TEMPLATE)
+        merged = merge_template_fields(
+            template,
+            {
+                "run_type": "GEO_OPT",
+                "fixed_atoms": "1",
+                "fixed_atom_components": "AB",
+            },
+        )
+        validation = validate_template(merged)
+
+        self.assertFalse(validation["valid"])
+        self.assertIn("motion.fixed_atom_components has an unsupported value", validation["errors"])
 
     def test_validate_rejects_wfn_restart_file_without_restart_guess(self) -> None:
         template = load_template(ENERGY_TEMPLATE)
@@ -447,6 +500,28 @@ class TemplateTests(unittest.TestCase):
                 "kpoints_wavefunctions",
             ])
             self.assertFalse(template_path.read_bytes().startswith(b"\xef\xbb\xbf"))
+
+    def test_save_template_writes_motion_key_when_constraints_are_enabled(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            template_path = Path(tmp_dir) / "template.json"
+            template = merge_template_fields(
+                load_template(ENERGY_TEMPLATE),
+                {
+                    "run_type": "GEO_OPT",
+                    "fixed_atoms": "1 3",
+                    "fixed_atom_components": "X",
+                },
+            )
+
+            saved = save_template(template_path, template)
+
+            self.assertEqual(
+                list(saved),
+                ["project_name", "run_type", "dft", "motion", "geo_opt", "structure_transform", "kinds"],
+            )
+            self.assertEqual(list(saved["motion"]), ["fixed_atoms", "fixed_atom_components"])
+            self.assertEqual(saved["motion"]["fixed_atoms"], [1, 3])
+            self.assertEqual(saved["motion"]["fixed_atom_components"], "X")
 
     def test_save_template_writes_print_level_after_run_type(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:

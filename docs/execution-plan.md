@@ -35,8 +35,9 @@ Each round should end with a focused commit.
   local config/template working copies, and optional QuickStep
   `DFT/&POISSON/POISSON_SOLVER` controls, and conservative QuickStep
   `DFT/&PRINT` Mulliken/Lowdin population-analysis controls, and explicit
-  QuickStep wavefunction restart controls.
-- Next active round: Round 65, choose the next QuickStep expansion slice.
+  QuickStep wavefunction restart controls, and QuickStep
+  `MOTION/&CONSTRAINT/&FIXED_ATOMS` controls.
+- Next active round: Round 66, choose the next QuickStep expansion slice.
 - Known local facts:
   - WSL2 is available.
   - Default distro is `Ubuntu`.
@@ -2241,17 +2242,57 @@ Commit boundary:
 - One commit for wavefunction restart model fields, Template controls,
   validation, tests, and docs.
 
+## Round 65: QuickStep Fixed Atom Constraints
+
+Status: implemented.
+
+Goal: add a conservative first `MOTION/&CONSTRAINT` slice for fixed atom
+geometry and cell optimization workflows.
+
+Rationale:
+
+- Surface, slab, adsorbate, and defect optimizations commonly need selected
+  atoms held fixed.
+- `MOTION/&CONSTRAINT/&FIXED_ATOMS` maps cleanly to typed fields and stable
+  renderer output.
+- Index-based fixed atoms are small enough to validate now; richer selection
+  from the 3D viewer can build on the same model later.
+
+Tasks:
+
+- Add optional `motion.fixed_atoms` and `motion.fixed_atom_components` fields.
+- Render `MOTION/&CONSTRAINT/&FIXED_ATOMS` with `LIST` and
+  `COMPONENTS_TO_FIX` only when atom indices are explicitly set.
+- Validate optimization run type, positive unique 1-based indices, structure
+  atom-count bounds, and supported coordinate components.
+- Expose both fields in `scripts/manage_template.py` and the Template GUI using
+  editable drop-down controls.
+- Add renderer, template, workflow, GUI smoke/static tests, and documentation.
+
+Acceptance:
+
+- Existing templates with no fixed atoms render exactly as before.
+- GEO_OPT and CELL_OPT templates with fixed atoms write a stable constraint
+  block before their optimization section.
+- Invalid fixed atom inputs are rejected before CP2K is run.
+- Fast checks pass.
+
+Commit boundary:
+
+- One commit for fixed atom constraint model fields, Template controls,
+  validation, tests, and docs.
+
 ## QuickStep Feature Backlog
 
-Status: planned queue after Round 64.
+Status: planned queue after Round 65.
 
 Priority order:
 
-1. `MOTION/&CONSTRAINT`. Add fixed-atom constraints first, because surface,
-   slab, and adsorbate optimizations commonly need them and they can later be
-   connected to the 3D structure preview.
-2. Extend `DFT/&PRINT` output controls. Add file-generating print keys only
+1. Extend `DFT/&PRINT` output controls. Add file-generating print keys only
    together with artifact discovery and clear GUI presentation.
+2. 3D-assisted atom selection for fixed atoms. Connect the existing structure
+   preview to the new `motion.fixed_atoms` model so users can pick indices
+   visually instead of typing them manually.
 3. `RUN_TYPE MD` with `MOTION/&MD`. Treat this as a larger milestone because it
    changes run duration, log expectations, trajectory artifacts, and Template
    defaults.

@@ -42,6 +42,7 @@ class GuiPrototypeTests(unittest.TestCase):
     def _example_template_expectations(cls) -> dict[str, object]:
         template = cls._example_template()
         dft = template.get("dft", {})
+        motion = template.get("motion", {})
         cell_opt = template.get("cell_opt", {})
         structure_transform = template.get("structure_transform", {})
         fallback_cell = {}
@@ -50,6 +51,8 @@ class GuiPrototypeTests(unittest.TestCase):
 
         if not isinstance(dft, dict):
             dft = {}
+        if not isinstance(motion, dict):
+            motion = {}
         if not isinstance(cell_opt, dict):
             cell_opt = {}
         if not isinstance(fallback_cell, dict):
@@ -90,6 +93,8 @@ class GuiPrototypeTests(unittest.TestCase):
             "template_kpoints_wavefunctions": str(dft.get("kpoints_wavefunctions", "")),
             "template_print_mulliken": bool(dft.get("print_mulliken", False)),
             "template_print_lowdin": bool(dft.get("print_lowdin", False)),
+            "template_fixed_atoms": cls._template_vector_text(motion.get("fixed_atoms")),
+            "template_fixed_atom_components": str(motion.get("fixed_atom_components", "XYZ")),
             "template_fallback_periodic": str(fallback_cell.get("periodic", "")),
             "template_fallback_cell_a": cls._template_vector_text(fallback_cell.get("a")),
             "template_center_atoms": bool(
@@ -151,6 +156,7 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn('x:Name="TemplateOuterScfGroup" Header="&amp;FORCE__EVAL / &amp;DFT / &amp;SCF / &amp;OUTER__SCF"', xaml_text)
         self.assertIn('x:Name="TemplateMixingGroup" Header="&amp;FORCE__EVAL / &amp;DFT / &amp;SCF / &amp;MIXING"', xaml_text)
         self.assertIn('x:Name="TemplateSmearingGroup" Header="&amp;FORCE__EVAL / &amp;DFT / &amp;SCF / &amp;SMEAR"', xaml_text)
+        self.assertIn('x:Name="TemplateFixedAtomsGroup" Header="&amp;MOTION / &amp;CONSTRAINT / &amp;FIXED__ATOMS"', xaml_text)
         self.assertIn('x:Name="TemplateGeoOptGroup" Header="&amp;MOTION / &amp;GEO__OPT"', xaml_text)
         self.assertIn('x:Name="TemplateCellOptGroup" Header="&amp;MOTION / &amp;CELL__OPT"', xaml_text)
         self.assertIn('x:Name="TemplateCellGroup" Header="&amp;FORCE__EVAL / &amp;SUBSYS / &amp;CELL"', xaml_text)
@@ -171,6 +177,7 @@ class GuiPrototypeTests(unittest.TestCase):
             "TemplateDftPrintGroup",
             "TemplateCellGroup",
             "TemplateKindGroup",
+            "TemplateFixedAtomsGroup",
             "TemplateGeoOptGroup",
             "TemplateCellOptGroup",
         ]
@@ -250,6 +257,9 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn('<ComboBoxItem Content="REAL"/>', xaml_text)
         self.assertIn('x:Name="PrintMullikenBox"', xaml_text)
         self.assertIn('x:Name="PrintLowdinBox"', xaml_text)
+        self.assertIn('x:Name="FixedAtomsBox" Grid.Row="0" Grid.Column="1" IsEditable="True"', xaml_text)
+        self.assertIn('x:Name="FixedAtomComponentsBox" Grid.Row="0" Grid.Column="3" IsEditable="True"', xaml_text)
+        self.assertIn('<ComboBoxItem Content="YZ"/>', xaml_text)
         self.assertIn('x:Name="FallbackPeriodicBox" Grid.Row="0" Grid.Column="1" IsEditable="True"', xaml_text)
         self.assertIn('<ComboBoxItem Content="NONE"/>', xaml_text)
         self.assertIn('x:Name="FallbackCellABox" Grid.Row="0" Grid.Column="3" IsEditable="True"', xaml_text)
@@ -267,6 +277,8 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn('"label.poisson_solver": "Poisson Solver"', english_text)
         self.assertIn('"label.wfn_restart_file_name": "WFN Restart File"', english_text)
         self.assertIn('"label.scf_guess": "SCF Guess"', english_text)
+        self.assertIn('"label.fixed_atoms": "Fixed Atoms"', english_text)
+        self.assertIn('"label.fixed_atom_components": "Components"', english_text)
         self.assertIn('"label.uks_enabled": "UKS"', english_text)
         self.assertIn('"label.dispersion_enabled": "DFT-D3"', english_text)
         self.assertIn('"label.outer_scf_enabled": "Outer SCF"', english_text)
@@ -457,7 +469,7 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertTrue(report["template_tab_loaded"])
         self.assertTrue(report["template_manual_link_loaded"])
         self.assertEqual(report["template_manual_link_uri"], "https://manual.cp2k.org/trunk/CP2K_INPUT.html")
-        self.assertEqual(report["template_section_groups_loaded"], 14)
+        self.assertEqual(report["template_section_groups_loaded"], 15)
         self.assertEqual(
             report["template_section_group_headers"],
             [
@@ -473,13 +485,14 @@ class GuiPrototypeTests(unittest.TestCase):
                 "&FORCE_EVAL / &DFT / &PRINT",
                 "&FORCE_EVAL / &SUBSYS / &CELL",
                 "&FORCE_EVAL / &SUBSYS / &KIND",
+                "&MOTION / &CONSTRAINT / &FIXED_ATOMS",
                 "&MOTION / &GEO_OPT",
                 "&MOTION / &CELL_OPT",
             ],
         )
-        self.assertEqual(report["template_section_group_left_margins"], [0, 18, 36, 36, 36, 54, 54, 54, 36, 36, 36, 36, 18, 18])
-        self.assertEqual(report["template_combo_fields_loaded"], 44)
-        self.assertEqual(report["template_combo_fields_editable"], 44)
+        self.assertEqual(report["template_section_group_left_margins"], [0, 18, 36, 36, 36, 54, 54, 54, 36, 36, 36, 36, 54, 18, 18])
+        self.assertEqual(report["template_combo_fields_loaded"], 46)
+        self.assertEqual(report["template_combo_fields_editable"], 46)
         self.assertEqual(report["template_run_type_options"], ["ENERGY", "ENERGY_FORCE", "GEO_OPT", "CELL_OPT"])
         self.assertEqual(report["template_print_level_options"], ["", "SILENT", "LOW", "MEDIUM", "HIGH", "DEBUG"])
         self.assertEqual(
@@ -490,6 +503,7 @@ class GuiPrototypeTests(unittest.TestCase):
             report["template_scf_guess_options"],
             ["", "ATOMIC", "RESTART", "HISTORY_RESTART", "CORE", "RANDOM", "SPARSE", "NONE", "MOPAC"],
         )
+        self.assertEqual(report["template_fixed_atom_components_options"], ["XYZ", "X", "Y", "Z", "XY", "XZ", "YZ"])
         self.assertEqual(report["template_optimizer_options"], ["BFGS", "LBFGS", "CG"])
         self.assertEqual(report["template_cell_opt_type_options"], ["DIRECT_CELL_OPT"])
         expected_template = self._example_template_expectations()
