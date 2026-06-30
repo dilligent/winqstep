@@ -15,6 +15,11 @@ over tested Python commands for QuickStep input generation, existing-input runs,
 job history, config/template editing, CP2K data inspection, startup diagnostics,
 and source-release packaging.
 
+The current distribution is a source-release zip, not a Windows installer or a
+single-file application. It does not bundle Python, WSL, CP2K, CP2K data files,
+or Python package dependencies. Users should expect to unpack the zip on a
+Windows machine that already has, or can install, the runtime environment below.
+
 The local execution plan is tracked in `docs/execution-plan.md`.
 
 ## Current Target
@@ -30,11 +35,42 @@ The current usable path is:
   workspace folder;
 - package and smoke-test a source release that can be unpacked on Windows.
 
+## Requirements
+
+WinQStep currently expects these components on the user's Windows computer:
+
+- Windows desktop session with Windows PowerShell 5.1 and WPF desktop
+  assemblies available.
+- Python 3.11 or newer available as `python` on `PATH`.
+- Python package dependency `ase>=3.23` for structure import. From the unpacked
+  WinQStep folder, install it with:
+
+  ```powershell
+  python -m pip install ase
+  ```
+
+- WSL2 with the configured Linux distro available through `wsl.exe`.
+- A CP2K QuickStep executable inside WSL, for example
+  `/home/user/cp2k/exe/local/cp2k.ssmp`.
+- A matching CP2K data directory inside WSL, for example `/home/user/cp2k/data`.
+- Optional: an MPI launcher such as `mpirun` when using an MPI-enabled CP2K
+  build.
+
+The GUI `Config` tab stores the machine-specific WSL distro, CP2K command,
+CP2K data directory, optional MPI command, shell prelude, and Windows job
+workspace. The sample config uses direct `cp2k.ssmp` execution and a shell
+prelude that deactivates conda before each WSL-side command.
+
+CP2K binaries, CP2K source trees, CP2K data files, WSL distros, Python, and
+virtual environments are external dependencies and are intentionally not copied
+into release archives.
+
 ## Quick Start
 
 From an unpacked WinQStep folder on Windows:
 
 ```powershell
+python -m pip install ase
 .\WinQStep.ps1 -Diagnostics -SkipLiveProbes
 ```
 
@@ -53,6 +89,10 @@ Open the GUI with:
 The sample config in `examples/winqstep.config.json` defaults job output to the
 relative `outputs` folder inside the current WinQStep directory. Edit it from
 the GUI `Config` tab or with `scripts/manage_config.py` for your own CP2K paths.
+
+If startup diagnostics report that `python`, `powershell`, `wsl.exe`, the CP2K
+command, or the CP2K data directory cannot be found, fix the Windows/WSL
+environment or the `Config` tab values before running jobs.
 
 ## Development
 
