@@ -43,9 +43,11 @@ The writer saves UTF-8 JSON with stable key order.
 
 The PowerShell WPF prototype has a `Template` tab plus `Load Template` and
 `Save Template` buttons. The tab exposes conservative fields already supported
-by the renderer and workflow layer. Related controls are grouped by their CP2K
-input-section path with left indentation for nested CP2K sections. The display
-order follows the input tree from `&GLOBAL` through DFT and SUBSYS to MOTION, so
+by the renderer and workflow layer. The top of the tab includes a
+`CP2K INPUT manual` hyperlink to the trunk CP2K input manual for keyword
+details. Related controls are grouped by their CP2K input-section path with
+left indentation for nested CP2K sections. The display order follows the input
+tree from `&GLOBAL` through DFT and SUBSYS to MOTION, so
 `&GLOBAL`, `&FORCE_EVAL / &DFT`,
 `&FORCE_EVAL / &DFT / &XC`,
 `&FORCE_EVAL / &DFT / &SCF`, nested blocks such as

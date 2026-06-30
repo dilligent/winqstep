@@ -63,6 +63,7 @@ function New-WinQStepWindow {
         "ConfigTab", "TemplateTab", "EnvironmentTab", "StructureTab",
         "InputPreviewTab", "JobLogTab", "ArtifactsTab", "HistoryTab",
         "StructurePreviewStatusText", "StructurePreviewViewport", "StructurePreviewCamera", "StructurePreviewVisual",
+        "TemplateManualText", "Cp2kInputManualLink",
         "DistroLabel", "Cp2kCommandLabel", "Cp2kDataDirLabel", "MpiCommandLabel",
         "WorkspaceLabel", "WslPreludeLabel", "TimeoutLabel", "UiLanguageLabel",
         "DistroBox", "Cp2kCommandBox", "Cp2kDataDirBox", "MpirunCommandBox",
@@ -2711,6 +2712,35 @@ function New-WinQStepWindow {
         ) | Out-Null
     }.GetNewClosure())
 
+    $OpenExternalUri = {
+        param([Parameter(Mandatory = $true)][string]$Uri)
+        try {
+            $startInfo = [System.Diagnostics.ProcessStartInfo]::new($Uri)
+            $startInfo.UseShellExecute = $true
+            [System.Diagnostics.Process]::Start($startInfo) | Out-Null
+            $controls["StatusText"].Text = "Opened CP2K manual."
+        }
+        catch {
+            $message = "Failed to open external link: $($_.Exception.Message)"
+            $controls["StatusText"].Text = $message
+            if (-not $Script:SuppressGuiMessageBoxes) {
+                [System.Windows.MessageBox]::Show(
+                    $window,
+                    $message,
+                    (Get-WinQStepText "message.error_caption"),
+                    [System.Windows.MessageBoxButton]::OK,
+                    [System.Windows.MessageBoxImage]::Error
+                ) | Out-Null
+            }
+        }
+    }.GetNewClosure()
+
+    $controls["Cp2kInputManualLink"].Add_RequestNavigate({
+        param($sender, $eventArgs)
+        & $OpenExternalUri ([string]$eventArgs.Uri.AbsoluteUri)
+        $eventArgs.Handled = $true
+    }.GetNewClosure())
+
     $controls["LoadConfigButton"].Add_Click({
         & $InvokeGuiAction -Status (Get-WinQStepText "status.loading_config") -Action {
             $null = & $LoadConfigFields $true
@@ -3414,6 +3444,10 @@ if ($ButtonSmokeTest) {
     $historyOutputPath = Join-Path $historySmokeDir "button_history.out"
     $historyStdoutPath = Join-Path $historySmokeDir "button_history.stdout.log"
     $historyStderrPath = Join-Path $historySmokeDir "button_history.stderr.log"
+    $historyResultsPath = Join-Path $historySmokeDir "button_history.results.txt"
+    if ([System.IO.File]::Exists($historyResultsPath)) {
+        [System.IO.File]::Delete($historyResultsPath)
+    }
     $historyMetadata = [ordered]@{
         status = "succeeded"
         created_at = "2026-06-29T00:00:00Z"
@@ -3586,9 +3620,17 @@ if ($ButtonSmokeTest) {
     $historyItems = @($historyGrid.ItemsSource)
     $selectedHistoryItem = $null
     foreach ($item in $historyItems) {
-        if ([string]$item.project_name -eq "button_history") {
+        if ([string]$item.metadata_path -eq [string]$historyMetadataPath) {
             $selectedHistoryItem = $item
             break
+        }
+    }
+    if ($null -eq $selectedHistoryItem) {
+        foreach ($item in $historyItems) {
+            if ([string]$item.project_name -eq "button_history") {
+                $selectedHistoryItem = $item
+                break
+            }
         }
     }
     try {
@@ -3620,7 +3662,7 @@ if ($ButtonSmokeTest) {
     $artifactResultsTextBeforeClear = [string]$window.FindName("ArtifactText").Text
     & $RecordButtonSmokeClick "SaveResultsButton"
     $artifactSummaryAfterSave = [string]$window.FindName("ArtifactSummaryText").Text
-    $savedResultsPath = Join-Path $historySmokeDir "button_history.results.txt"
+    $savedResultsPath = $historyResultsPath
     $savedResultsText = if ([System.IO.File]::Exists($savedResultsPath)) {
         [System.IO.File]::ReadAllText($savedResultsPath, [System.Text.Encoding]::UTF8)
     }
@@ -3903,6 +3945,7 @@ if ($SmokeTest) {
     )
     $report["config_workspace_encoding_ok"] = $report["config_workspace_resolution_ok"]
     $report["config_validation_text"] = [string]$window.FindName("ConfigValidationText").Text
+    $templateManualLink = $window.FindName("Cp2kInputManualLink")
     $templateComboNames = @(
         "TemplateProjectBox", "TemplateRunTypeBox", "PrintLevelBox", "BasisSetFileBox", "PotentialFileBox",
         "XcFunctionalBox", "XcPbeParametrizationBox", "DispersionTypeBox",
@@ -3933,6 +3976,13 @@ if ($SmokeTest) {
         return ([string]$header).Replace("__", "_")
     }
     $report["template_tab_loaded"] = ($window.FindName("TemplateProjectBox") -is [System.Windows.Controls.ComboBox])
+    $report["template_manual_link_loaded"] = ($templateManualLink -is [System.Windows.Documents.Hyperlink])
+    $report["template_manual_link_uri"] = if ($templateManualLink -is [System.Windows.Documents.Hyperlink]) {
+        [string]$templateManualLink.NavigateUri.AbsoluteUri
+    }
+    else {
+        ""
+    }
     $report["template_section_groups_loaded"] = $templateSectionGroupNames.Where({ $window.FindName($_) -is [System.Windows.Controls.GroupBox] }).Count
     $report["template_section_group_headers"] = @($templateSectionGroupNames | ForEach-Object { & $GetTemplateSectionHeaderText $_ })
     $report["template_section_group_left_margins"] = @($templateSectionGroupNames | ForEach-Object { [int]$window.FindName($_).Margin.Left })

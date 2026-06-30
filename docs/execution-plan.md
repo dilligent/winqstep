@@ -30,8 +30,9 @@ Each round should end with a focused commit.
   support, a thin double-click `WinQStep.exe` launcher, and QuickStep
   `DFT/&XC` PBE parametrization plus DFT-D3 support, and hierarchical Template
   section display with escaped CP2K underscores in GUI headers, and CP2K-tree
-  ordering for Template section groups.
-- Next active round: Round 60, expand QuickStep coverage from the next selected
+  ordering for Template section groups, and a Template tab hyperlink to the
+  CP2K INPUT manual.
+- Next active round: Round 61, expand QuickStep coverage from the next selected
   CP2K feature area.
 - Known local facts:
   - WSL2 is available.
@@ -2048,6 +2049,33 @@ Acceptance:
 Commit boundary:
 
 - One commit for Template section ordering, tests, and docs.
+
+## Round 60: Template Manual Link
+
+Status: implemented.
+
+Goal: give Template users a direct path from the GUI to authoritative CP2K input
+keyword documentation without crowding every field label with links.
+
+Tasks:
+
+- Add a `CP2K INPUT manual` hyperlink at the top of the Template tab.
+- Open the link through the user's default browser with WPF
+  `RequestNavigate` handling.
+- Keep smoke tests deterministic by checking link existence and URI without
+  opening a browser.
+- Document the manual link in GUI and Template editor docs.
+
+Acceptance:
+
+- The Template tab exposes a visible link to
+  `https://manual.cp2k.org/trunk/CP2K_INPUT.html`.
+- Clicking the link opens the default browser during normal GUI use.
+- Smoke tests assert the link target without launching a browser.
+
+Commit boundary:
+
+- One commit for the Template manual hyperlink, event handling, tests, and docs.
 
 ## Working Rules
 

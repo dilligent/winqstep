@@ -216,6 +216,15 @@
       </TabItem>
       <TabItem x:Name="TemplateTab" Header="Template">
         <StackPanel Margin="8">
+          <TextBlock x:Name="TemplateManualText" Margin="2,0,2,6">
+            <Run Text="Manual: "/>
+            <Hyperlink x:Name="Cp2kInputManualLink"
+                       NavigateUri="https://manual.cp2k.org/trunk/CP2K_INPUT.html"
+                       ToolTip="Open CP2K INPUT manual in the default browser">
+              <Run Text="CP2K INPUT manual"/>
+            </Hyperlink>
+          </TextBlock>
+
           <GroupBox x:Name="TemplateGlobalGroup" Header="&amp;GLOBAL" Style="{StaticResource TemplateSectionGroupBoxStyle}">
             <Grid>
               <Grid.ColumnDefinitions>

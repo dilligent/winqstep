@@ -130,6 +130,10 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn('VerticalScrollBarVisibility="Auto"', xaml_text)
         self.assertIn('HorizontalScrollBarVisibility="Disabled"', xaml_text)
         self.assertIn('TabControl x:Name="MainTabs"', xaml_text)
+        self.assertIn('x:Name="Cp2kInputManualLink"', xaml_text)
+        self.assertIn('NavigateUri="https://manual.cp2k.org/trunk/CP2K_INPUT.html"', xaml_text)
+        self.assertIn('Cp2kInputManualLink', script_text)
+        self.assertIn('Add_RequestNavigate', script_text)
         self.assertIn('x:Key="TemplateSectionGroupBoxStyle"', xaml_text)
         self.assertIn('x:Key="TemplateSectionLevel1GroupBoxStyle"', xaml_text)
         self.assertIn('x:Key="TemplateSectionLevel2GroupBoxStyle"', xaml_text)
@@ -426,6 +430,8 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertTrue(str(report["config_workspace_expected_path"]).endswith("outputs"))
         self.assertIn("Config valid", report["config_validation_text"])
         self.assertTrue(report["template_tab_loaded"])
+        self.assertTrue(report["template_manual_link_loaded"])
+        self.assertEqual(report["template_manual_link_uri"], "https://manual.cp2k.org/trunk/CP2K_INPUT.html")
         self.assertEqual(report["template_section_groups_loaded"], 12)
         self.assertEqual(
             report["template_section_group_headers"],
