@@ -1578,6 +1578,39 @@ Commit boundary:
 
 - One commit for edited-preview confirmation, tests, resources, and docs.
 
+## Round 46: Structure 3D Preview Planning
+
+Status: planned.
+
+Goal: add a local design plan for a 3D preview of imported structures without
+committing to a large implementation all at once.
+
+Plan:
+
+- Keep normalized structure JSON as the importer and workflow boundary.
+- Add a dedicated preview data model before touching WPF rendering.
+- Prefer native WPF `Viewport3D` for the first implementation to avoid WebView2,
+  JavaScript, and extra packaging constraints.
+- Preserve the readable Structure text summary and keep the 3D view as display
+  only.
+- Split implementation into preview-model, static-view, and interaction rounds.
+
+Reference:
+
+- See `docs/structure-3d-preview-plan.md`.
+
+Acceptance:
+
+- The 3D preview work is locally documented with scope boundaries, proposed
+  rounds, risks, and open decisions.
+- The plan makes clear that generated inputs and CP2K runs must not depend on
+  editable viewer state.
+
+Commit boundary:
+
+- One commit for the local 3D preview planning document and execution-plan
+  reference.
+
 ## Working Rules
 
 - Keep each round small enough to review.
