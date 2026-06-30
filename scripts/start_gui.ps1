@@ -33,6 +33,8 @@ $Script:EditedPreviewSmokeStartAsyncJob = $null
 $Script:EnvironmentDisplaySmokeFormatter = $null
 $Script:StructurePreviewSmokeApplyInteraction = $null
 $Script:StructurePreviewSmokeGetState = $null
+$Script:StructurePreviewSmokeToggleAtomSelection = $null
+$Script:StructurePreviewSmokeApplyFixedAtoms = $null
 
 . (Join-Path $PSScriptRoot "gui\WinQStep.GuiHost.ps1")
 
@@ -87,7 +89,7 @@ function New-WinQStepWindow {
         "JobDirBox", "ProjectNameBox",
         "ConfigTab", "TemplateTab", "EnvironmentTab", "StructureTab",
         "InputPreviewTab", "JobLogTab", "ArtifactsTab", "HistoryTab",
-        "StructurePreviewStatusText", "StructurePreviewViewport", "StructurePreviewCamera", "StructurePreviewVisual",
+        "StructurePreviewStatusText", "StructureSelectionText", "StructurePreviewViewport", "StructurePreviewCamera", "StructurePreviewVisual",
         "TemplateManualText", "Cp2kInputManualLink",
         "DistroLabel", "Cp2kCommandLabel", "Cp2kDataDirLabel", "MpiCommandLabel",
         "WorkspaceLabel", "WslPreludeLabel", "TimeoutLabel", "UiLanguageLabel",
@@ -139,7 +141,7 @@ function New-WinQStepWindow {
         "ArtifactSummaryText", "ArtifactText", "HistoryGrid", "StatusText", "JobStatusText",
         "LoadConfigButton", "SaveConfigButton", "ApplyLanguageButton", "LoadTemplateButton", "SaveTemplateButton",
         "InspectDataButton", "DetectButton", "ImportButton",
-        "StructureResetViewButton",
+        "StructureResetViewButton", "StructureApplyFixedAtomsButton", "StructureClearSelectionButton",
         "PreviewButton", "RunButton", "CancelJobButton", "HistoryButton", "ClearButton",
         "ViewResultsButton", "SaveResultsButton",
         "ViewInputButton", "ViewOutputButton", "ViewMetadataButton", "ViewStdoutButton", "ViewStderrButton",
@@ -162,6 +164,8 @@ function New-WinQStepWindow {
         DetectButton = "button.detect"
         ImportButton = "button.import"
         StructureResetViewButton = "button.reset_view"
+        StructureApplyFixedAtomsButton = "button.apply_fixed_atoms"
+        StructureClearSelectionButton = "button.clear_selection"
         PreviewButton = "button.preview"
         RunButton = "button.run"
         CancelJobButton = "button.stop"
@@ -276,6 +280,7 @@ function New-WinQStepWindow {
         FallbackCellALabel = "label.fallback_cell_a"
         FallbackCellBLabel = "label.fallback_cell_b"
         FallbackCellCLabel = "label.fallback_cell_c"
+        StructureSelectionText = "structure.fixed_atoms.none"
         StatusText = "status.ready"
         }
         foreach ($entry in $textLocalization.GetEnumerator()) {
@@ -341,6 +346,12 @@ function New-WinQStepWindow {
         IsDragging = $false
         DragMode = ""
         LastPoint = $null
+        DragStartPoint = $null
+        DragMoved = $false
+        PendingSelectionKey = ""
+        AtomModels = @{}
+        AtomModelsByIndex = @{}
+        SelectedAtomIndices = @{}
     }
 
     $actionButtons = @(
@@ -394,6 +405,9 @@ function New-WinQStepWindow {
         $null = Initialize-WinQStepLocalization $language
         & $ApplyLocalizationToControls
         & $SetUiLanguageSelection $language
+        if ($null -ne $UpdateStructureSelectionControls) {
+            & $UpdateStructureSelectionControls
+        }
     }.GetNewClosure()
 
     $TestIsExistingInputMode = {
@@ -1166,7 +1180,142 @@ function New-WinQStepWindow {
         }
         & $UpdateStructurePreviewView
     }.GetNewClosure()
+
+    $GetSortedStructureSelectedAtomIndices = {
+        $selected = $structurePreviewState["SelectedAtomIndices"]
+        if ($selected -isnot [hashtable]) {
+            $selected = @{}
+            $structurePreviewState["SelectedAtomIndices"] = $selected
+        }
+        if ($null -eq $selected) {
+            return @()
+        }
+        $indices = @()
+        foreach ($key in @($selected.Keys)) {
+            try {
+                $indices += [int]$key
+            }
+            catch {
+            }
+        }
+        return @($indices | Sort-Object)
+    }.GetNewClosure()
+
+    $UpdateStructureSelectionControls = {
+        $indices = @(& $GetSortedStructureSelectedAtomIndices)
+        if ($indices.Count -gt 0) {
+            $joined = ($indices -join " ")
+            $controls["StructureSelectionText"].Text = Format-WinQStepText "structure.fixed_atoms.selected" @($joined)
+        }
+        else {
+            $controls["StructureSelectionText"].Text = Get-WinQStepText "structure.fixed_atoms.none"
+        }
+        $hasSelection = ($indices.Count -gt 0)
+        $controls["StructureApplyFixedAtomsButton"].IsEnabled = $hasSelection
+        $controls["StructureClearSelectionButton"].IsEnabled = $hasSelection
+    }.GetNewClosure()
+
+    $SetStructureAtomSelectionState = {
+        param([int]$Index, [bool]$IsSelected)
+        if ($Index -le 0) {
+            return
+        }
+        $indexKey = [string]$Index
+        $atomModelsByIndex = $structurePreviewState["AtomModelsByIndex"]
+        if ($atomModelsByIndex -isnot [hashtable]) {
+            return
+        }
+        if ($null -eq $atomModelsByIndex -or -not $atomModelsByIndex.ContainsKey($indexKey)) {
+            return
+        }
+        $selectedMap = $structurePreviewState["SelectedAtomIndices"]
+        if ($selectedMap -isnot [hashtable]) {
+            $selectedMap = @{}
+            $structurePreviewState["SelectedAtomIndices"] = $selectedMap
+        }
+        if ($IsSelected) {
+            $selectedMap[$indexKey] = $true
+        }
+        else {
+            $selectedMap.Remove($indexKey) | Out-Null
+        }
+
+        $info = $atomModelsByIndex[$indexKey]
+        $model = $info["model"]
+        if ($model -is [System.Windows.Media.Media3D.GeometryModel3D]) {
+            $material = if ($selectedMap.ContainsKey($indexKey)) { $info["selected_material"] } else { $info["material"] }
+            $model.Material = $material
+            $model.BackMaterial = $material
+        }
+        & $UpdateStructureSelectionControls
+    }.GetNewClosure()
+
+    $ToggleStructureAtomSelectionByIndex = {
+        param([int]$Index)
+        if ($Index -le 0) {
+            return
+        }
+        $selectedMap = $structurePreviewState["SelectedAtomIndices"]
+        if ($selectedMap -isnot [hashtable]) {
+            $selectedMap = @{}
+            $structurePreviewState["SelectedAtomIndices"] = $selectedMap
+        }
+        $indexKey = [string]$Index
+        & $SetStructureAtomSelectionState $Index (-not $selectedMap.ContainsKey($indexKey))
+    }.GetNewClosure()
+
+    $ToggleStructureAtomSelectionByModelKey = {
+        param([string]$ModelKey)
+        if ([string]::IsNullOrWhiteSpace($ModelKey)) {
+            return
+        }
+        $atomModels = $structurePreviewState["AtomModels"]
+        if ($null -eq $atomModels -or -not $atomModels.ContainsKey($ModelKey)) {
+            return
+        }
+        $index = [int]$atomModels[$ModelKey]["index"]
+        & $ToggleStructureAtomSelectionByIndex $index
+    }.GetNewClosure()
+
+    $HitTestStructurePreviewAtom = {
+        param([Parameter(Mandatory = $true)][System.Windows.Point]$Point)
+        $hit = [System.Windows.Media.VisualTreeHelper]::HitTest($controls["StructurePreviewViewport"], $Point)
+        if ($hit -isnot [System.Windows.Media.Media3D.RayHitTestResult]) {
+            return ""
+        }
+        $model = $hit.ModelHit
+        if ($null -eq $model) {
+            return ""
+        }
+        $key = [string]$model.GetHashCode()
+        $atomModels = $structurePreviewState["AtomModels"]
+        if ($null -ne $atomModels -and $atomModels.ContainsKey($key)) {
+            return $key
+        }
+        return ""
+    }.GetNewClosure()
+
+    $ApplyStructureSelectionToFixedAtoms = {
+        $indices = @(& $GetSortedStructureSelectedAtomIndices)
+        if ($indices.Count -eq 0) {
+            return ""
+        }
+        $text = ($indices -join " ")
+        $controls["FixedAtomsBox"].Text = $text
+        $controls["StatusText"].Text = Format-WinQStepText "structure.fixed_atoms.applied" @($text)
+        return $text
+    }.GetNewClosure()
+
+    $ClearStructureAtomSelection = {
+        foreach ($index in @(& $GetSortedStructureSelectedAtomIndices)) {
+            & $SetStructureAtomSelectionState ([int]$index) $false
+        }
+        & $UpdateStructureSelectionControls
+    }.GetNewClosure()
+
     $Script:StructurePreviewSmokeApplyInteraction = $ApplyStructurePreviewInteraction
+    $Script:StructurePreviewSmokeToggleAtomSelection = $ToggleStructureAtomSelectionByIndex
+    $Script:StructurePreviewSmokeApplyFixedAtoms = $ApplyStructureSelectionToFixedAtoms
     $Script:StructurePreviewSmokeGetState = {
         $viewportSize = & $GetStructurePreviewViewportSize
         $radius = [double]$structurePreviewState["Radius"]
@@ -1178,14 +1327,22 @@ function New-WinQStepWindow {
             viewport_width = [double]($viewportSize["Width"])
             viewport_height = [double]($viewportSize["Height"])
             field_of_view = [double]$controls["StructurePreviewCamera"].FieldOfView
+            selected_atom_count = @(& $GetSortedStructureSelectedAtomIndices).Count
         }
     }.GetNewClosure()
 
     $ClearStructurePreview = {
         $structurePreviewState["Current"] = $null
+        $structurePreviewState["AtomModels"] = @{}
+        $structurePreviewState["AtomModelsByIndex"] = @{}
+        $structurePreviewState["SelectedAtomIndices"] = @{}
+        $structurePreviewState["PendingSelectionKey"] = ""
+        $structurePreviewState["DragStartPoint"] = $null
+        $structurePreviewState["DragMoved"] = $false
         $controls["StructurePreviewVisual"].Content = [System.Windows.Media.Media3D.Model3DGroup]::new()
         $controls["StructurePreviewStatusText"].Text = Get-WinQStepText "structure.preview.empty"
         $controls["StructureResetViewButton"].IsEnabled = $false
+        & $UpdateStructureSelectionControls
         & $ResetStructurePreviewCamera ([ordered]@{ bounding_radius = 5.0 })
     }.GetNewClosure()
 
@@ -1200,6 +1357,12 @@ function New-WinQStepWindow {
         $radius = & $GetPreviewNumber (& $GetNestedValue $Preview @("bounding_radius")) 5.0
         $atomGeometryRadiusScale = 0.35
         $group = [System.Windows.Media.Media3D.Model3DGroup]::new()
+        $structurePreviewState["AtomModels"] = @{}
+        $structurePreviewState["AtomModelsByIndex"] = @{}
+        $structurePreviewState["SelectedAtomIndices"] = @{}
+        $structurePreviewState["PendingSelectionKey"] = ""
+        $structurePreviewState["DragStartPoint"] = $null
+        $structurePreviewState["DragMoved"] = $false
 
         $previewAtomsValue = & $GetNestedValue $Preview @("atoms")
         $previewAtoms = if ($null -ne $previewAtomsValue) { @($previewAtomsValue) } else { @() }
@@ -1207,13 +1370,27 @@ function New-WinQStepWindow {
             if ($null -eq $atom) {
                 continue
             }
+            $atomIndex = [int](& $GetPreviewNumber (& $GetNestedValue $atom @("index")) 0.0)
+            if ($atomIndex -le 0) {
+                continue
+            }
             $point = & $NewPreviewPoint (& $GetNestedValue $atom @("xyz")) $center
             $displayRadius = [Math]::Max((& $GetPreviewNumber (& $GetNestedValue $atom @("radius")) 0.7) * $atomGeometryRadiusScale, 0.12)
             $mesh = & $NewSphereMesh $point $displayRadius
             $material = & $NewPreviewMaterial (& $GetNestedPath $atom @("color"))
+            $selectedMaterial = & $NewPreviewMaterial "#FACC15"
             $model = [System.Windows.Media.Media3D.GeometryModel3D]::new($mesh, $material)
             $model.BackMaterial = $material
             $group.Children.Add($model)
+            $modelKey = [string]$model.GetHashCode()
+            $info = @{
+                index = $atomIndex
+                model = $model
+                material = $material
+                selected_material = $selectedMaterial
+            }
+            $structurePreviewState["AtomModels"][$modelKey] = $info
+            $structurePreviewState["AtomModelsByIndex"][[string]$atomIndex] = $info
         }
 
         $edgeRadius = [Math]::Max([Math]::Min($radius * 0.004, 0.04), 0.015)
@@ -1243,6 +1420,7 @@ function New-WinQStepWindow {
         $edgeCount = $previewEdges.Count
         $controls["StructurePreviewStatusText"].Text = Format-WinQStepText "structure.preview.loaded" @([int]$displayedAtoms, [int]$totalAtoms, $edgeCount)
         $controls["StructureResetViewButton"].IsEnabled = ($group.Children.Count -gt 0)
+        & $UpdateStructureSelectionControls
     }.GetNewClosure()
 
     & $ClearStructurePreview
@@ -3047,17 +3225,22 @@ function New-WinQStepWindow {
         if ($null -eq $structurePreviewState["Current"]) {
             return
         }
+        $point = $eventArgs.GetPosition($controls["StructurePreviewViewport"])
         if ($eventArgs.ChangedButton -eq [System.Windows.Input.MouseButton]::Left) {
             $structurePreviewState["DragMode"] = "rotate"
+            $structurePreviewState["PendingSelectionKey"] = & $HitTestStructurePreviewAtom $point
         }
         elseif ($eventArgs.ChangedButton -eq [System.Windows.Input.MouseButton]::Right -or $eventArgs.ChangedButton -eq [System.Windows.Input.MouseButton]::Middle) {
             $structurePreviewState["DragMode"] = "pan"
+            $structurePreviewState["PendingSelectionKey"] = ""
         }
         else {
             return
         }
         $structurePreviewState["IsDragging"] = $true
-        $structurePreviewState["LastPoint"] = $eventArgs.GetPosition($controls["StructurePreviewViewport"])
+        $structurePreviewState["LastPoint"] = $point
+        $structurePreviewState["DragStartPoint"] = $point
+        $structurePreviewState["DragMoved"] = $false
         $null = $controls["StructurePreviewViewport"].CaptureMouse()
         $eventArgs.Handled = $true
     }.GetNewClosure())
@@ -3074,6 +3257,19 @@ function New-WinQStepWindow {
         $point = $eventArgs.GetPosition($controls["StructurePreviewViewport"])
         $deltaX = [double]$point.X - [double]$lastPoint.X
         $deltaY = [double]$point.Y - [double]$lastPoint.Y
+        $startPoint = $structurePreviewState["DragStartPoint"]
+        if ($null -ne $startPoint) {
+            $totalDeltaX = [double]$point.X - [double]$startPoint.X
+            $totalDeltaY = [double]$point.Y - [double]$startPoint.Y
+            if ([Math]::Sqrt(($totalDeltaX * $totalDeltaX) + ($totalDeltaY * $totalDeltaY)) -gt 3.0) {
+                $structurePreviewState["DragMoved"] = $true
+            }
+        }
+        if (-not [bool]$structurePreviewState["DragMoved"] -and -not [string]::IsNullOrWhiteSpace([string]$structurePreviewState["PendingSelectionKey"])) {
+            $structurePreviewState["LastPoint"] = $point
+            $eventArgs.Handled = $true
+            return
+        }
         if ([Math]::Abs($deltaX) -gt 0.0 -or [Math]::Abs($deltaY) -gt 0.0) {
             & $ApplyStructurePreviewInteraction ([string]$structurePreviewState["DragMode"]) $deltaX $deltaY 0
         }
@@ -3086,10 +3282,19 @@ function New-WinQStepWindow {
         if (-not [bool]$structurePreviewState["IsDragging"]) {
             return
         }
+        $dragMode = [string]$structurePreviewState["DragMode"]
+        $pendingSelectionKey = [string]$structurePreviewState["PendingSelectionKey"]
+        $wasClick = -not [bool]$structurePreviewState["DragMoved"]
         $structurePreviewState["IsDragging"] = $false
         $structurePreviewState["DragMode"] = ""
         $structurePreviewState["LastPoint"] = $null
+        $structurePreviewState["DragStartPoint"] = $null
+        $structurePreviewState["DragMoved"] = $false
+        $structurePreviewState["PendingSelectionKey"] = ""
         $controls["StructurePreviewViewport"].ReleaseMouseCapture()
+        if ($dragMode -eq "rotate" -and $wasClick -and -not [string]::IsNullOrWhiteSpace($pendingSelectionKey)) {
+            & $ToggleStructureAtomSelectionByModelKey $pendingSelectionKey
+        }
         $eventArgs.Handled = $true
     }.GetNewClosure())
 
@@ -3098,6 +3303,9 @@ function New-WinQStepWindow {
             $structurePreviewState["IsDragging"] = $false
             $structurePreviewState["DragMode"] = ""
             $structurePreviewState["LastPoint"] = $null
+            $structurePreviewState["DragStartPoint"] = $null
+            $structurePreviewState["DragMoved"] = $false
+            $structurePreviewState["PendingSelectionKey"] = ""
         }
     }.GetNewClosure())
 
@@ -3114,6 +3322,14 @@ function New-WinQStepWindow {
         if ($null -ne $structurePreviewState["Current"]) {
             & $ResetStructurePreviewCamera $structurePreviewState["Current"]
         }
+    }.GetNewClosure())
+
+    $controls["StructureApplyFixedAtomsButton"].Add_Click({
+        $null = & $ApplyStructureSelectionToFixedAtoms
+    }.GetNewClosure())
+
+    $controls["StructureClearSelectionButton"].Add_Click({
+        & $ClearStructureAtomSelection
     }.GetNewClosure())
 
     $controls["ClearButton"].Add_Click({
@@ -3668,6 +3884,22 @@ if ($ButtonSmokeTest) {
     }
     $structurePreviewStatus = [string]$window.FindName("StructurePreviewStatusText").Text
     $structureResetEnabledAfterImport = [bool]$window.FindName("StructureResetViewButton").IsEnabled
+    $structureSelectionHookLoaded = ($null -ne $Script:StructurePreviewSmokeToggleAtomSelection)
+    if ($structureSelectionHookLoaded) {
+        & $Script:StructurePreviewSmokeToggleAtomSelection 1
+        & $Script:StructurePreviewSmokeToggleAtomSelection 3
+        [System.Windows.Forms.Application]::DoEvents()
+    }
+    $structureSelectionTextAfterToggle = [string]$window.FindName("StructureSelectionText").Text
+    $structureApplySelectionEnabled = [bool]$window.FindName("StructureApplyFixedAtomsButton").IsEnabled
+    $structureClearSelectionEnabled = [bool]$window.FindName("StructureClearSelectionButton").IsEnabled
+    $appliedFixedAtoms = ""
+    if ($null -ne $Script:StructurePreviewSmokeApplyFixedAtoms) {
+        $appliedFixedAtoms = [string](& $Script:StructurePreviewSmokeApplyFixedAtoms)
+        [System.Windows.Forms.Application]::DoEvents()
+    }
+    $fixedAtomsAfterStructureSelection = [string]$window.FindName("FixedAtomsBox").Text
+    $window.FindName("TemplateRunTypeBox").Text = "GEO_OPT"
     $structurePreviewCamera = $window.FindName("StructurePreviewCamera")
     $structurePreviewInitialDistance = [double]$structurePreviewCamera.Position.Z
     $structurePreviewInitialPanX = [double]$structurePreviewCamera.Position.X
@@ -3826,6 +4058,12 @@ if ($ButtonSmokeTest) {
     $report["structure_preview_geometry_count"] = $structurePreviewGeometryCount
     $report["structure_preview_status_has_atoms"] = $structurePreviewStatus.Contains("3/3")
     $report["structure_preview_reset_enabled_after_import"] = $structureResetEnabledAfterImport
+    $report["structure_selection_hook_loaded"] = $structureSelectionHookLoaded
+    $report["structure_selection_text_after_toggle"] = $structureSelectionTextAfterToggle
+    $report["structure_apply_selection_enabled"] = $structureApplySelectionEnabled
+    $report["structure_clear_selection_enabled"] = $structureClearSelectionEnabled
+    $report["structure_applied_fixed_atoms"] = $appliedFixedAtoms
+    $report["fixed_atoms_after_structure_selection"] = $fixedAtomsAfterStructureSelection
     $report["structure_preview_initial_distance_fits_viewport"] = $structurePreviewInitialFitsViewport
     $report["structure_preview_interaction_hook_loaded"] = ($null -ne $structurePreviewInteractionHook)
     $report["structure_preview_rotate_changed_transform"] = ($structurePreviewRotatedTransform -ne $structurePreviewInitialTransform)
@@ -3875,6 +4113,10 @@ if ($ButtonSmokeTest) {
         $report["structure_preview_geometry_count"] -ge 3 -and
         $report["structure_preview_status_has_atoms"] -and
         $report["structure_preview_reset_enabled_after_import"] -and
+        $report["structure_selection_hook_loaded"] -and
+        $report["structure_apply_selection_enabled"] -and
+        $report["structure_clear_selection_enabled"] -and
+        ($report["fixed_atoms_after_structure_selection"] -eq "1 3") -and
         $report["structure_preview_initial_distance_fits_viewport"] -and
         $report["structure_preview_interaction_hook_loaded"] -and
         $report["structure_preview_rotate_changed_transform"] -and
@@ -4023,6 +4265,9 @@ if ($SmokeTest) {
     $report["structure_preview_camera_loaded"] = ($window.FindName("StructurePreviewCamera") -is [System.Windows.Media.Media3D.PerspectiveCamera])
     $report["structure_preview_status_initial"] = [string]$window.FindName("StructurePreviewStatusText").Text
     $report["structure_reset_button_initially_disabled"] = (-not [bool]$window.FindName("StructureResetViewButton").IsEnabled)
+    $report["structure_selection_text_initial"] = [string]$window.FindName("StructureSelectionText").Text
+    $report["structure_apply_fixed_atoms_initially_disabled"] = (-not [bool]$window.FindName("StructureApplyFixedAtomsButton").IsEnabled)
+    $report["structure_clear_selection_initially_disabled"] = (-not [bool]$window.FindName("StructureClearSelectionButton").IsEnabled)
     $report["artifact_summary_loaded"] = ($window.FindName("ArtifactSummaryText") -is [System.Windows.Controls.TextBox])
     $report["artifact_text_loaded"] = ($window.FindName("ArtifactText") -is [System.Windows.Controls.TextBox])
     $report["artifact_result_buttons_loaded"] = @(

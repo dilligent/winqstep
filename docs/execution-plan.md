@@ -37,9 +37,10 @@ Each round should end with a focused commit.
   `DFT/&PRINT` Mulliken/Lowdin population-analysis controls, and explicit
   QuickStep wavefunction restart controls, and QuickStep
   `MOTION/&CONSTRAINT/&FIXED_ATOMS` controls, and QuickStep
-  `DFT/&PRINT/&PDOS` with generated PDOS artifact discovery.
-- Next active round: Round 67, choose between 3D-assisted fixed-atom selection
-  and the next conservative QuickStep expansion slice.
+  `DFT/&PRINT/&PDOS` with generated PDOS artifact discovery, and 3D-assisted
+  fixed-atom selection in the GUI Structure tab.
+- Next active round: Round 68, choose the next conservative QuickStep expansion
+  slice.
 - Known local facts:
   - WSL2 is available.
   - Default distro is `Ubuntu`.
@@ -2325,21 +2326,60 @@ Commit boundary:
 - One commit for PDOS model fields, generated artifact discovery, GUI summaries,
   tests, and docs.
 
+## Round 67: 3D-Assisted Fixed Atom Selection
+
+Status: implemented.
+
+Goal: connect the native Structure 3D preview to the existing
+`motion.fixed_atoms` Template field without turning the Structure tab into a
+general structure editor.
+
+Rationale:
+
+- Users can already render atom/cell geometry and can already type fixed atom
+  indices, but typing 1-based indices from a coordinate table is error-prone.
+- The existing fixed-atom model remains the source of truth; the 3D preview only
+  helps populate that field.
+- Requiring an explicit `Apply Fixed Atoms` action avoids silent Template edits
+  from accidental preview clicks.
+
+Tasks:
+
+- Track WPF atom geometry back to preview-model atom indices.
+- Treat a no-drag left click on an atom as a selection toggle and highlight the
+  selected atom.
+- Add `Apply Fixed Atoms`, `Clear Selection`, and selected-index status text to
+  the Structure tab.
+- Copy sorted selected atom indices to `FixedAtomsBox` only when Apply is
+  pressed.
+- Add GUI static and smoke tests for the new controls and for selecting atoms
+  1 and 3 into the Template field.
+
+Acceptance:
+
+- Existing rotate, pan, zoom, and reset interactions still work.
+- The initial Structure tab has no selected fixed atoms and disabled apply/clear
+  selection buttons.
+- Selecting atoms in the preview enables apply/clear and applying writes
+  `1 3` in the smoke workflow.
+- Fast checks pass.
+
+Commit boundary:
+
+- One commit for GUI selection plumbing, tests, and docs.
+
 ## QuickStep Feature Backlog
 
-Status: planned queue after Round 66.
+Status: planned queue after Round 67.
 
 Priority order:
 
-1. 3D-assisted atom selection for fixed atoms. Connect the existing structure
-   preview to the new `motion.fixed_atoms` model so users can pick indices
-   visually instead of typing them manually.
-2. Extend `DFT/&PRINT` output controls beyond PDOS. Add file-generating print
+1. Extend `DFT/&PRINT` output controls beyond PDOS. Add file-generating print
    keys only together with artifact discovery and clear GUI presentation.
-3. `RUN_TYPE MD` with `MOTION/&MD`. Treat this as a larger milestone because it
+2. `RUN_TYPE MD` with `MOTION/&MD`. Treat this as a larger milestone because it
    changes run duration, log expectations, trajectory artifacts, and Template
    defaults.
-4. Extended XC/dispersion coverage. Add only conservative, well-tested
+3. Extended XC/dispersion coverage. Add only conservative, well-tested
    functionals or dispersion paths at first; hybrid-functional support should
    wait until ADMM/HF/screening choices can be modeled coherently.
 

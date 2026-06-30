@@ -96,7 +96,10 @@ DFT PRINT fields expose Mulliken, Lowdin, and PDOS checkboxes; leaving them
 unchecked omits `DFT/&PRINT` entirely.
 Fixed-atom constraint fields expose a space- or comma-separated list of
 1-based atom indices and a `COMPONENTS_TO_FIX` selector. They only save a
-`motion` template object when the atom list is non-empty.
+`motion` template object when the atom list is non-empty. The Structure tab's
+3D preview can help populate the atom-index field: clicking atoms toggles a
+visual selection, and `Apply Fixed Atoms` copies the selected indices into this
+Template field.
 The controls remain editable, so values not listed in the drop-down can still
 be typed directly and saved through the same template writer.
 The candidate lists are intentionally conservative and are based on the CP2K

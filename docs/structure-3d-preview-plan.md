@@ -27,13 +27,15 @@ becomes too limiting for large systems or richer interaction.
 
 ## Boundaries
 
-The first preview should not affect generated CP2K input, template fields,
-fallback-cell behavior, or run validation. It should not infer bonds or
-chemistry settings for calculations.
+The first preview should not affect generated CP2K input, fallback-cell
+behavior, or run validation. It can assist fixed-atom selection only through an
+explicit `Apply Fixed Atoms` action that writes selected atom indices to the
+existing Template field. It should not infer bonds or chemistry settings for
+calculations.
 
 The first preview should not try to implement:
 
-- advanced atom selection and editing;
+- advanced atom editing;
 - bond-length or angle measurement;
 - supercell expansion;
 - density, orbital, trajectory, or force-vector rendering;
@@ -149,6 +151,30 @@ Implementation so far:
   default camera state.
 - GUI smoke coverage verifies that rotate, pan, zoom, and reset change and
   restore the expected camera or transform state.
+
+### Round D: Fixed-Atom Selection Assist
+
+Status: implemented.
+
+Goal: let the existing 3D preview help fill `motion.fixed_atoms` without making
+the Structure tab an editor for chemistry or coordinates.
+
+Tasks:
+
+- Track atom geometry to 1-based atom indices in the WPF preview.
+- Treat a click without drag as an atom-selection toggle and highlight selected
+  atoms.
+- Add `Apply Fixed Atoms` and `Clear Selection` controls near the preview.
+- Copy selected indices to the Template fixed-atom field only when the user
+  explicitly applies the selection.
+- Add GUI smoke/static coverage for selecting atoms 1 and 3 and applying them
+  to the Template field.
+
+Acceptance:
+
+- Rotation, pan, zoom, and reset still work.
+- Selecting preview atoms does not modify Template fields until Apply is used.
+- Applying selected atoms writes sorted 1-based indices into `FixedAtomsBox`.
 
 Deferred:
 

@@ -157,8 +157,11 @@ renders atoms as colored spheres, periodic cell edges as a frame when available,
 supports mouse drag rotation, wheel zoom, right/middle-button pan, and
 `Reset View`. The initial and reset camera positions fit the full preview model
 using the imported bounding radius, camera field of view, and viewport aspect
-ratio. The preview is display-only and does not feed back into template fields,
-generated input, or CP2K runs.
+ratio. Clicking an atom in the preview toggles a fixed-atom selection highlight;
+`Apply Fixed Atoms` copies the selected 1-based atom indices into the Template
+tab's fixed-atom field, while `Clear Selection` clears only the visual
+selection. The preview does not otherwise mutate template fields, generated
+input, or CP2K runs.
 Existing-input mode skips template handling but still validates that the input
 file exists and warns in the preview/log panes when referenced basis or
 potential files are obviously missing from the cached CP2K data inspection.
@@ -216,6 +219,8 @@ file-generating print control; completed runs list generated `.pdos` and
 Fixed atom controls include a 1-based atom-index list and coordinate components
 to fix. They default to an empty list and render
 `MOTION/&CONSTRAINT/&FIXED_ATOMS` only for optimization run types.
+The Structure tab can fill the atom-index list from the 3D preview selection,
+but the user must explicitly press `Apply Fixed Atoms`.
 CELL_OPT controls include direct optimization type, optimizer, max iterations,
 pressure tolerance, keep-angles, and keep-symmetry. They validate through the
 same template writer and reject nonperiodic structures before CP2K is started.

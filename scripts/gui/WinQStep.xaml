@@ -185,8 +185,13 @@
             <RowDefinition Height="*"/>
           </Grid.RowDefinitions>
           <DockPanel Grid.Row="0" LastChildFill="True" Margin="0,0,0,4">
-            <Button x:Name="StructureResetViewButton" DockPanel.Dock="Right" Content="Reset View" MinWidth="92"/>
-            <TextBlock x:Name="StructurePreviewStatusText" Text="No structure preview loaded."/>
+            <Button x:Name="StructureResetViewButton" DockPanel.Dock="Right" Content="Reset View" MinWidth="92" Margin="6,0,0,0"/>
+            <Button x:Name="StructureClearSelectionButton" DockPanel.Dock="Right" Content="Clear Selection" MinWidth="104" Margin="6,0,0,0"/>
+            <Button x:Name="StructureApplyFixedAtomsButton" DockPanel.Dock="Right" Content="Apply Fixed Atoms" MinWidth="120" Margin="6,0,0,0"/>
+            <StackPanel Orientation="Vertical">
+              <TextBlock x:Name="StructurePreviewStatusText" Text="No structure preview loaded."/>
+              <TextBlock x:Name="StructureSelectionText" Text="Selected fixed atoms: none" FontSize="11" Foreground="#475569"/>
+            </StackPanel>
           </DockPanel>
           <Border Grid.Row="1" BorderBrush="#C7D2DE" BorderThickness="1" Background="#111827">
             <Viewport3D x:Name="StructurePreviewViewport" ClipToBounds="True">
