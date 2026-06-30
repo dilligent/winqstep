@@ -135,6 +135,9 @@ template fields before rendering input. They then preflight the saved template
 against the selected structure and the latest CP2K data cache. Missing KIND
 coverage and basis/potential label warnings are shown in the `Template` and
 `Structure` tabs, so they can be fixed without reading Python exceptions.
+After `Import`, the `Structure` tab displays a readable imported-structure
+summary with source details, cell vectors, element counts, and a cartesian
+coordinate table instead of the raw normalized JSON emitted by the CLI importer.
 Existing-input mode skips template handling but still validates that the input
 file exists and warns in the preview/log panes when referenced basis or
 potential files are obviously missing from the cached CP2K data inspection.

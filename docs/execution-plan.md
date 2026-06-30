@@ -24,8 +24,9 @@ Each round should end with a focused commit.
   CP2K-section grouping in the Template tab, optional QuickStep
   `GLOBAL/PRINT_LEVEL`, immediate GUI language apply, GUI workflow tab
   ordering, full CP2K input-section labels in the Template tab, and UTF-8
-  hardening for live GUI job logs.
-- Next active round: Round 43, expand QuickStep coverage from the next selected
+  hardening for live GUI job logs, and readable imported-structure display in
+  the GUI Structure tab.
+- Next active round: Round 44, expand QuickStep coverage from the next selected
   CP2K feature area.
 - Known local facts:
   - WSL2 is available.
@@ -1489,6 +1490,33 @@ Acceptance:
 Commit boundary:
 
 - One commit for GUI host encoding, smoke tests, and docs.
+
+## Round 43: Readable Structure Import Display
+
+Status: implemented.
+
+Goal: keep the normalized structure JSON as the internal interchange format but
+show imported structures in a more readable GUI form.
+
+Tasks:
+
+- Parse successful `import_structure.py` output in the GUI Import handler.
+- Display source metadata, atom count, element counts, cell vectors,
+  periodicity, and cartesian coordinates in the `Structure` tab.
+- Keep raw command output visible when structure import fails or returns
+  unparsable output.
+- Update button smoke coverage to assert the readable import summary.
+
+Acceptance:
+
+- Importing `water.xyz` shows `Imported structure`, `Atoms: 3`,
+  `Elements: H=2, O=1`, and a coordinate table in the `Structure` tab.
+- Preview/Run continue to validate from the structure file path rather than
+  depending on editable Structure-tab text.
+
+Commit boundary:
+
+- One commit for Structure tab display formatting, smoke tests, and docs.
 
 ## Working Rules
 

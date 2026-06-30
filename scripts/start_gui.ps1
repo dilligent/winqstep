@@ -705,6 +705,110 @@ function New-WinQStepWindow {
         return $text
     }.GetNewClosure()
 
+    $FormatStructureScalar = {
+        param($Value, [string]$Default = "")
+        if ($null -eq $Value) {
+            return $Default
+        }
+        try {
+            return [System.Convert]::ToString([double]$Value, [System.Globalization.CultureInfo]::InvariantCulture)
+        }
+        catch {
+            $text = [string]$Value
+            if ([string]::IsNullOrWhiteSpace($text)) {
+                return $Default
+            }
+            return $text
+        }
+    }.GetNewClosure()
+
+    $FormatStructureVector = {
+        param($Value)
+        if ($null -eq $Value) {
+            return ""
+        }
+        $items = @($Value)
+        if ($items.Count -eq 0) {
+            return ""
+        }
+        return (($items | ForEach-Object { & $FormatStructureScalar $_ }) -join " ")
+    }.GetNewClosure()
+
+    $FormatStructureBoolList = {
+        param($Value)
+        if ($null -eq $Value) {
+            return ""
+        }
+        $items = @($Value)
+        if ($items.Count -eq 0) {
+            return ""
+        }
+        return (($items | ForEach-Object { ([string]$_).ToLowerInvariant() }) -join " ")
+    }.GetNewClosure()
+
+    $FormatStructureImportDisplay = {
+        param([Parameter(Mandatory = $true)]$Payload, [int]$AtomLimit = 200)
+
+        $source = & $GetNestedValue $Payload @("source")
+        $cell = & $GetNestedValue $Payload @("cell")
+        $atomsValue = & $GetNestedValue $Payload @("atoms")
+        $atoms = if ($null -ne $atomsValue) { @($atomsValue) } else { @() }
+
+        $elementCounts = @{}
+        foreach ($atom in $atoms) {
+            $element = (& $GetNestedPath $atom @("element")).Trim()
+            if ([string]::IsNullOrWhiteSpace($element)) {
+                $element = "?"
+            }
+            if ($elementCounts.ContainsKey($element)) {
+                $elementCounts[$element] = [int]$elementCounts[$element] + 1
+            }
+            else {
+                $elementCounts[$element] = 1
+            }
+        }
+        $elementSummary = if ($elementCounts.Count -gt 0) {
+            (($elementCounts.Keys | Sort-Object | ForEach-Object { "$_=$($elementCounts[$_])" }) -join ", ")
+        }
+        else {
+            "not_available"
+        }
+
+        $lines = @(
+            "Imported structure",
+            "Source: $(& $GetJsonProperty $source "path")",
+            "Format: $(& $GetJsonProperty $source "format")",
+            "Reader: $(& $GetJsonProperty $source "reader")",
+            "Atoms: $($atoms.Count)",
+            "Elements: $elementSummary",
+            "",
+            "Cell",
+            "Periodic: $(& $GetJsonProperty $cell "periodic")",
+            "PBC: $(& $FormatStructureBoolList (& $GetNestedValue $cell @("pbc")))",
+            "A: $(& $FormatStructureVector (& $GetNestedValue $cell @("a")))",
+            "B: $(& $FormatStructureVector (& $GetNestedValue $cell @("b")))",
+            "C: $(& $FormatStructureVector (& $GetNestedValue $cell @("c")))",
+            "",
+            "Atoms (cartesian coordinates, Angstrom)"
+        )
+
+        if ($atoms.Count -gt $AtomLimit) {
+            $lines += "Showing first $AtomLimit of $($atoms.Count) atoms."
+        }
+        $lines += ("{0,6} {1,-8} {2,14} {3,14} {4,14}" -f "#", "Element", "X", "Y", "Z")
+        $index = 0
+        foreach ($atom in @($atoms | Select-Object -First $AtomLimit)) {
+            $index += 1
+            $element = (& $GetNestedPath $atom @("element")).Trim()
+            $xyz = @(& $GetNestedValue $atom @("xyz"))
+            $x = if ($xyz.Count -gt 0) { & $FormatStructureScalar $xyz[0] } else { "" }
+            $y = if ($xyz.Count -gt 1) { & $FormatStructureScalar $xyz[1] } else { "" }
+            $z = if ($xyz.Count -gt 2) { & $FormatStructureScalar $xyz[2] } else { "" }
+            $lines += ("{0,6} {1,-8} {2,14} {3,14} {4,14}" -f $index, $element, $x, $y, $z)
+        }
+        return ($lines -join "`r`n")
+    }.GetNewClosure()
+
     $BuildArtifactSummary = {
         param([Parameter(Mandatory = $true)][hashtable]$Artifacts)
         $lines = @(
@@ -2063,7 +2167,20 @@ function New-WinQStepWindow {
     $controls["ImportButton"].Add_Click({
         & $InvokeGuiAction -Status (Get-WinQStepText "status.importing_structure") -Action {
             $result = Invoke-WinQStepPython @("scripts\import_structure.py", "--input", $controls["StructurePathBox"].Text)
-            $controls["StructureText"].Text = $result.Output
+            $structureText = $result.Output
+            if ($result.ExitCode -eq 0) {
+                try {
+                    $structurePayload = $result.Output | ConvertFrom-Json
+                    $structureText = & $FormatStructureImportDisplay $structurePayload
+                }
+                catch {
+                    $structureText = $result.Output
+                }
+            }
+            elseif (-not [string]::IsNullOrWhiteSpace([string]$result.Error)) {
+                $structureText = (($result.Output, $result.Error) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }) -join "`r`n"
+            }
+            $controls["StructureText"].Text = $structureText
             & $AppendLog "import_structure.py exited with code $($result.ExitCode)"
         }
     }.GetNewClosure())
@@ -2623,6 +2740,7 @@ if ($ButtonSmokeTest) {
     foreach ($buttonName in $buttonNames) {
         & $RecordButtonSmokeClick $buttonName
     }
+    $importStructureText = [string]$window.FindName("StructureText").Text
 
     & $RecordButtonSmokeClick "PreviewButton" "PreviewWorkflowButton"
     $workflowPreviewText = [string]$window.FindName("PreviewText").Text
@@ -2692,7 +2810,6 @@ if ($ButtonSmokeTest) {
     $languageAfterApply = Get-WinQStepLanguage
     $previewButtonTextAfterLanguageApply = [string]$window.FindName("PreviewButton").Content
 
-    $importTextHasAtomsBeforeClear = ([string]$window.FindName("StructureText").Text).Contains("atoms")
     $artifactSummaryBeforeClear = [string]$window.FindName("ArtifactSummaryText").Text
     $artifactTextBeforeClear = [string]$window.FindName("ArtifactText").Text
     $previewTextBeforeClear = [string]$window.FindName("PreviewText").Text
@@ -2714,7 +2831,14 @@ if ($ButtonSmokeTest) {
     $report["scratch_template_path"] = $smokeTemplatePath
     $report["scratch_config_exists"] = [System.IO.File]::Exists($smokeConfigPath)
     $report["scratch_template_exists"] = [System.IO.File]::Exists($smokeTemplatePath)
-    $report["import_text_has_atoms"] = $importTextHasAtomsBeforeClear
+    $report["import_text_has_summary"] = $importStructureText.Contains("Imported structure")
+    $report["import_text_has_atom_count"] = $importStructureText.Contains("Atoms: 3")
+    $report["import_text_has_elements"] = $importStructureText.Contains("Elements: H=2, O=1")
+    $report["import_text_has_coordinate_table"] = (
+        $importStructureText.Contains("Atoms (cartesian coordinates, Angstrom)") -and
+        $importStructureText.Contains("     1 O") -and
+        $importStructureText.Contains("     2 H")
+    )
     $report["history_grid_count"] = $historyItems.Count
     $report["history_selected_project"] = if ($null -ne $selectedHistoryItem) { [string]$selectedHistoryItem.project_name } else { "" }
     $report["history_log_has_jobs"] = $historyLogText.Contains("History jobs:")
@@ -2741,7 +2865,10 @@ if ($ButtonSmokeTest) {
     $stateChecksOk = (
         $report["scratch_config_exists"] -and
         $report["scratch_template_exists"] -and
-        $report["import_text_has_atoms"] -and
+        $report["import_text_has_summary"] -and
+        $report["import_text_has_atom_count"] -and
+        $report["import_text_has_elements"] -and
+        $report["import_text_has_coordinate_table"] -and
         $report["history_grid_count"] -gt 0 -and
         $report["history_selected_project"] -eq "button_history" -and
         $report["history_log_has_jobs"] -and
