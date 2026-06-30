@@ -3852,13 +3852,20 @@ if ($SmokeTest) {
     $report["config_ui_language"] = [string]$window.FindName("UiLanguageBox").SelectedItem.Tag
     $report["config_ui_language_text"] = [string]$window.FindName("UiLanguageBox").SelectedItem.Content
     $report["config_workspace_path"] = $configWorkspace
-    $report["config_workspace_resolved_path"] = if ([System.IO.Path]::IsPathRooted($configWorkspace)) {
+    $configWorkspaceResolvedPath = if ([System.IO.Path]::IsPathRooted($configWorkspace)) {
         [System.IO.Path]::GetFullPath($configWorkspace)
     }
     else {
         Resolve-WinQStepPath $configWorkspace
     }
-    $report["config_workspace_encoding_ok"] = $report["config_workspace_resolved_path"].Contains($chineseFolderName)
+    $expectedWorkspacePath = Resolve-WinQStepPath "outputs"
+    $report["config_workspace_resolved_path"] = $configWorkspaceResolvedPath
+    $report["config_workspace_expected_path"] = $expectedWorkspacePath
+    $report["config_workspace_resolution_ok"] = (
+        [string]$configWorkspace -eq "outputs" -and
+        [string]$configWorkspaceResolvedPath -eq [string]$expectedWorkspacePath
+    )
+    $report["config_workspace_encoding_ok"] = $report["config_workspace_resolution_ok"]
     $report["config_validation_text"] = [string]$window.FindName("ConfigValidationText").Text
     $templateComboNames = @(
         "TemplateProjectBox", "TemplateRunTypeBox", "PrintLevelBox", "BasisSetFileBox", "PotentialFileBox",

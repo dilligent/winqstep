@@ -54,10 +54,11 @@ python .\scripts\manage_config.py --config .\examples\winqstep.config.json --wri
 ## Keys
 
 - `distro`: WSL distro name, such as `Ubuntu`.
-- `cp2k_command`: CP2K command inside WSL. Use an absolute path when the command
-  is only available after interactive shell initialization.
-- `mpirun_command`: optional MPI launcher. Use an empty string when direct
-  `cp2k.ssmp` execution is preferred.
+- `cp2k_command`: CP2K executable path or command name inside WSL. Use an
+  absolute path when the command is only available after interactive shell
+  initialization.
+- `mpirun_command`: optional MPI launcher executable path or command name. Use
+  an empty string when direct `cp2k.ssmp` execution is preferred.
 - `cp2k_data_dir`: CP2K data directory inside WSL.
 - `default_windows_workspace`: default Windows folder for future job outputs.
   A relative value such as `outputs` is resolved from the WinQStep folder by the
@@ -72,3 +73,6 @@ python .\scripts\manage_config.py --config .\examples\winqstep.config.json --wri
 For execution, `cp2k_command` and `cp2k_data_dir` must be present. CP2K command,
 MPI command, and CP2K data directory values are WSL-side values; Windows paths
 such as `D:\...` are rejected for those fields.
+`cp2k_command` and `mpirun_command` are currently treated as single shell
+tokens. Do not include extra command-line arguments in these fields, for example
+use `mpirun` rather than `mpirun --bind-to none`.

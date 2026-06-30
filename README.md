@@ -52,16 +52,18 @@ WinQStep currently expects these components on the user's Windows computer:
   ```
 
 - WSL2 with the configured Linux distro available through `wsl.exe`.
-- A CP2K QuickStep executable inside WSL, for example
+- A CP2K QuickStep executable path or command name inside WSL, for example
   `/home/user/cp2k/exe/local/cp2k.ssmp`.
 - A matching CP2K data directory inside WSL, for example `/home/user/cp2k/data`.
-- Optional: an MPI launcher such as `mpirun` when using an MPI-enabled CP2K
-  build.
+- Optional: an MPI launcher executable path or command name such as `mpirun`
+  when using an MPI-enabled CP2K build.
 
 The GUI `Config` tab stores the machine-specific WSL distro, CP2K command,
 CP2K data directory, optional MPI command, shell prelude, and Windows job
 workspace. The sample config uses direct `cp2k.ssmp` execution and a shell
 prelude that deactivates conda before each WSL-side command.
+`cp2k_command` and `mpirun_command` are treated as single executable tokens;
+do not put extra arguments such as `--bind-to none` in those fields.
 
 CP2K binaries, CP2K source trees, CP2K data files, WSL distros, Python, and
 virtual environments are external dependencies and are intentionally not copied

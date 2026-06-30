@@ -128,13 +128,13 @@
           <TextBlock x:Name="DistroLabel" Grid.Row="0" Grid.Column="0" Text="Distro"/>
           <TextBox x:Name="DistroBox" Grid.Row="0" Grid.Column="1"/>
 
-          <TextBlock x:Name="Cp2kCommandLabel" Grid.Row="1" Grid.Column="0" Text="CP2K Command"/>
+          <TextBlock x:Name="Cp2kCommandLabel" Grid.Row="1" Grid.Column="0" Text="CP2K Executable"/>
           <TextBox x:Name="Cp2kCommandBox" Grid.Row="1" Grid.Column="1"/>
 
           <TextBlock x:Name="Cp2kDataDirLabel" Grid.Row="2" Grid.Column="0" Text="CP2K Data Dir"/>
           <TextBox x:Name="Cp2kDataDirBox" Grid.Row="2" Grid.Column="1"/>
 
-          <TextBlock x:Name="MpiCommandLabel" Grid.Row="3" Grid.Column="0" Text="MPI Command"/>
+          <TextBlock x:Name="MpiCommandLabel" Grid.Row="3" Grid.Column="0" Text="MPI Launcher"/>
           <TextBox x:Name="MpirunCommandBox" Grid.Row="3" Grid.Column="1"/>
 
           <TextBlock x:Name="WorkspaceLabel" Grid.Row="4" Grid.Column="0" Text="Workspace"/>

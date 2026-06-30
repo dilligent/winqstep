@@ -1810,6 +1810,45 @@ Commit boundary:
 
 - One commit for WPF runtime diagnostics, tests, and docs.
 
+## Round 53: External Review Baseline Fixes
+
+Status: implemented.
+
+Goal: address actionable issues from an external 0.2 review before adding more
+features.
+
+Context:
+
+- A reviewer reported that `run_checks.py --profile fast` failed in a clean
+  clone whose path did not contain Chinese characters.
+- The same review found that WSL CP2K data inspection accepted `limit_files`
+  but did not apply it to the generated `find` command.
+- The review also noted that `cp2k_command` and `mpirun_command` are treated as
+  single shell tokens, not command strings with extra arguments.
+
+Tasks:
+
+- Make GUI smoke workspace checks verify portable `outputs` resolution instead
+  of assuming the repository path contains a Chinese folder name.
+- Keep the explicit non-ASCII subprocess/path probes for encoding coverage.
+- Apply `limit_files` in the WSL CP2K data dump command before reading files.
+- Test the WSL data command's file limit and invalid-limit behavior.
+- Clarify command-field semantics in README, configuration docs, and English GUI
+  labels.
+
+Acceptance:
+
+- Fast checks no longer depend on the user's clone path containing non-ASCII
+  characters.
+- WSL data inspection cannot dump an unbounded number of CP2K data files when a
+  caller provides `limit_files`.
+- Users are told that CP2K and MPI fields are executable paths or command names,
+  not argument-bearing command lines.
+
+Commit boundary:
+
+- One commit for external review fixes, tests, and docs.
+
 ## Working Rules
 
 - Keep each round small enough to review.

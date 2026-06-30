@@ -123,7 +123,13 @@ def build_wsl_data_dump_command(
     limit_files: int = 50,
 ) -> str:
     """Build a read-only WSL shell command that dumps selected CP2K data files."""
-    # Avoid shell variables here: wsl.exe + bash -lc handling differs across Windows hosts.
+    try:
+        normalized_limit = int(limit_files)
+    except (TypeError, ValueError) as exc:
+        raise Cp2kDataError("limit_files must be a positive integer") from exc
+    if normalized_limit < 1:
+        raise Cp2kDataError("limit_files must be a positive integer")
+
     lines: list[str] = []
     if wsl_shell_prelude and wsl_shell_prelude.strip():
         lines.append(wsl_shell_prelude.strip())
@@ -135,9 +141,13 @@ def build_wsl_data_dump_command(
             (
                 f"find {quoted_dir} -maxdepth 1 -type f "
                 "\\( -name '*BASIS*' -o -name '*POTENTIAL*' \\) "
-                f"-printf '{DATA_FILE_START}%f\\n' "
-                "-exec cat {} \\; "
-                f"-printf '\\n{DATA_FILE_END}%f\\n'"
+                f"-print0 | sort -z | head -z -n {normalized_limit} | "
+                "while IFS= read -r -d '' file_path; do "
+                "file_name=${file_path##*/}; "
+                f"printf '{DATA_FILE_START}%s\\n' \"$file_name\"; "
+                "cat -- \"$file_path\"; "
+                f"printf '\\n{DATA_FILE_END}%s\\n' \"$file_name\"; "
+                "done"
             ),
         ]
     )
