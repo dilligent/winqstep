@@ -72,6 +72,9 @@ class DftSettings:
     rel_cutoff: int = 40
     eps_scf: str = "1.0E-6"
     max_scf: int = 50
+    outer_scf_enabled: bool = False
+    outer_scf_eps_scf: str = "1.0E-6"
+    outer_scf_max_scf: int = 20
     scf_method: str = "DEFAULT"
     added_mos: int = 0
     ot_minimizer: str = "CG"
@@ -218,6 +221,9 @@ def _parse_dft(data: dict[str, Any]) -> DftSettings:
         rel_cutoff=_int_value(data, "rel_cutoff", 40),
         eps_scf=_optional_string(data, "eps_scf", "1.0E-6"),
         max_scf=_int_value(data, "max_scf", 50),
+        outer_scf_enabled=_bool_value(data, "outer_scf_enabled", False),
+        outer_scf_eps_scf=_optional_string(data, "outer_scf_eps_scf", "1.0E-6"),
+        outer_scf_max_scf=_int_value(data, "outer_scf_max_scf", 20),
         scf_method=_optional_string(data, "scf_method", "DEFAULT").upper(),
         added_mos=_int_value(data, "added_mos", 0),
         ot_minimizer=_optional_string(data, "ot_minimizer", "CG").upper(),
@@ -315,6 +321,12 @@ def validate_quickstep_input(model: QuickStepInput) -> None:
         raise QuickStepInputError("cutoff and rel_cutoff must be positive")
     if model.dft.max_scf <= 0:
         raise QuickStepInputError("max_scf must be positive")
+    if model.dft.outer_scf_max_scf <= 0:
+        raise QuickStepInputError("dft.outer_scf_max_scf must be positive")
+    eps_scf = _positive_float(model.dft.eps_scf, "dft.eps_scf")
+    outer_scf_eps_scf = _positive_float(model.dft.outer_scf_eps_scf, "dft.outer_scf_eps_scf")
+    if model.dft.outer_scf_enabled and outer_scf_eps_scf > eps_scf:
+        raise QuickStepInputError("dft.outer_scf_eps_scf must be less than or equal to dft.eps_scf")
     if model.dft.scf_method not in SCF_METHODS:
         raise QuickStepInputError("dft.scf_method has an unsupported value")
     if model.dft.added_mos < -1:
@@ -515,6 +527,15 @@ def _render_scf_extras(dft: DftSettings) -> list[str]:
                     "      &END SMEAR",
                 ]
             )
+    if dft.outer_scf_enabled:
+        lines.extend(
+            [
+                "      &OUTER_SCF",
+                f"        EPS_SCF {dft.outer_scf_eps_scf}",
+                f"        MAX_SCF {dft.outer_scf_max_scf}",
+                "      &END OUTER_SCF",
+            ]
+        )
     return lines
 
 

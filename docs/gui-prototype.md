@@ -165,6 +165,7 @@ users can select common values from the list or type a custom value directly.
 The tab visually groups related controls by the CP2K input section they render,
 including `&GLOBAL`, `&FORCE_EVAL / &DFT`,
 `&FORCE_EVAL / &DFT / &SCF`,
+`&FORCE_EVAL / &DFT / &SCF / &OUTER_SCF`,
 `&FORCE_EVAL / &DFT / &SCF / &MIXING`,
 `&FORCE_EVAL / &DFT / &SCF / &SMEAR`, `&MOTION / &GEO_OPT`,
 `&MOTION / &CELL_OPT`, `&FORCE_EVAL / &SUBSYS / &CELL`,
@@ -173,9 +174,9 @@ including `&GLOBAL`, `&FORCE_EVAL / &DFT`,
 The `&GLOBAL` group includes the optional CP2K `PRINT_LEVEL`; leaving it blank
 keeps CP2K's default implicit, while selecting a level renders it explicitly.
 SCF controls include method selection, ADDED_MOS, OT minimizer/preconditioner,
-diagonalization algorithm, optional mixing, and optional smearing. Mixing and
-smearing remain disabled by default and validate through the same template
-writer before preview or run.
+diagonalization algorithm, optional OUTER_SCF, optional mixing, and optional
+smearing. OUTER_SCF, mixing, and smearing remain disabled by default and
+validate through the same template writer before preview or run.
 KPOINTS controls include scheme, grid, full-grid, symmetry, and wavefunction
 selection. They default to `NONE` and validate through the same template writer
 and QuickStep renderer before preview or run.

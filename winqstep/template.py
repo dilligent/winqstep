@@ -47,6 +47,9 @@ DFT_KEY_ORDER = (
     "rel_cutoff",
     "eps_scf",
     "max_scf",
+    "outer_scf_enabled",
+    "outer_scf_eps_scf",
+    "outer_scf_max_scf",
     "scf_method",
     "added_mos",
     "ot_minimizer",
@@ -294,6 +297,17 @@ def _normalize_dft(data: dict[str, Any], errors: list[str]) -> dict[str, Any]:
         ),
         "eps_scf": _eps_value(data.get("eps_scf", defaults.eps_scf), errors),
         "max_scf": _positive_int_value(data.get("max_scf", defaults.max_scf), "dft.max_scf", errors),
+        "outer_scf_enabled": _bool_value(data.get("outer_scf_enabled", defaults.outer_scf_enabled)),
+        "outer_scf_eps_scf": _positive_float_string(
+            data.get("outer_scf_eps_scf", defaults.outer_scf_eps_scf),
+            "dft.outer_scf_eps_scf",
+            errors,
+        ),
+        "outer_scf_max_scf": _positive_int_value(
+            data.get("outer_scf_max_scf", defaults.outer_scf_max_scf),
+            "dft.outer_scf_max_scf",
+            errors,
+        ),
         "scf_method": _choice_value(
             data.get("scf_method", defaults.scf_method),
             "dft.scf_method",
@@ -366,6 +380,15 @@ def _normalize_dft(data: dict[str, Any], errors: list[str]) -> dict[str, Any]:
         errors.append("dft.smearing_enabled requires dft.scf_method DIAGONALIZATION")
     if dft["smearing_enabled"] and dft["added_mos"] == 0:
         errors.append("dft.smearing_enabled requires dft.added_mos to add unoccupied orbitals")
+    eps_scf = _float_string_or_none(dft["eps_scf"])
+    outer_scf_eps_scf = _float_string_or_none(dft["outer_scf_eps_scf"])
+    if (
+        dft["outer_scf_enabled"]
+        and eps_scf is not None
+        and outer_scf_eps_scf is not None
+        and outer_scf_eps_scf > eps_scf
+    ):
+        errors.append("dft.outer_scf_eps_scf must be less than or equal to dft.eps_scf")
     if dft["kpoints_scheme"] == "NONE" and (
         dft["kpoints_full_grid"] or dft["kpoints_symmetry"] or dft["kpoints_wavefunctions"] != "COMPLEX"
     ):
@@ -598,6 +621,15 @@ def _positive_float_string(value: Any, key: str, errors: list[str]) -> str:
     if parsed <= 0:
         errors.append(f"{key} must be positive")
     return text
+
+
+def _float_string_or_none(value: Any) -> float | None:
+    if not isinstance(value, str):
+        return None
+    try:
+        return float(value.replace("D", "E"))
+    except ValueError:
+        return None
 
 
 def _vector_value(value: Any, key: str, errors: list[str]) -> list[float]:

@@ -26,8 +26,8 @@ Each round should end with a focused commit.
   ordering, full CP2K input-section labels in the Template tab, and UTF-8
   hardening for live GUI job logs, and readable imported-structure display in
   the GUI Structure tab, and readable environment probe display in the GUI
-  Environment tab.
-- Next active round: Round 45, expand QuickStep coverage from the next selected
+  Environment tab, and QuickStep `SCF/&OUTER_SCF` support.
+- Next active round: Round 55, expand QuickStep coverage from the next selected
   CP2K feature area.
 - Known local facts:
   - WSL2 is available.
@@ -1848,6 +1848,38 @@ Acceptance:
 Commit boundary:
 
 - One commit for external review fixes, tests, and docs.
+
+## Round 54: QuickStep OUTER_SCF Support
+
+Status: implemented.
+
+Goal: add a conservative, optional `FORCE_EVAL/DFT/SCF/OUTER_SCF` block for
+QuickStep templates and generated inputs.
+
+Tasks:
+
+- Add typed DFT fields for `outer_scf_enabled`, `outer_scf_eps_scf`, and
+  `outer_scf_max_scf`.
+- Render `SCF/&OUTER_SCF` only when explicitly enabled, preserving existing
+  snapshots by default.
+- Validate positive OUTER_SCF values and reject enabled outer thresholds looser
+  than the inner `EPS_SCF`.
+- Expose OUTER_SCF controls in the Template tab as a CP2K-section group with
+  editable drop-downs.
+- Wire the new fields through `manage_template.py`, GUI load/save paths, smoke
+  reports, docs, and tests.
+
+Acceptance:
+
+- Existing generated ENERGY, ENERGY_FORCE, GEO_OPT, and CELL_OPT snapshots stay
+  unchanged unless OUTER_SCF is enabled.
+- Enabling OUTER_SCF renders `&OUTER_SCF` with `EPS_SCF` and `MAX_SCF`.
+- Template validation and GUI smoke coverage include the OUTER_SCF controls.
+
+Commit boundary:
+
+- One commit for OUTER_SCF model, renderer, template/GUI controls, tests, and
+  docs.
 
 ## Working Rules
 

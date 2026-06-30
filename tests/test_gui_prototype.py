@@ -62,6 +62,9 @@ class GuiPrototypeTests(unittest.TestCase):
             "template_cutoff": str(dft.get("cutoff", "")),
             "template_scf_method": str(dft.get("scf_method", "")),
             "template_added_mos": str(dft.get("added_mos", "")),
+            "template_outer_scf_enabled": bool(dft.get("outer_scf_enabled", False)),
+            "template_outer_scf_eps_scf": str(dft.get("outer_scf_eps_scf", "")),
+            "template_outer_scf_max_scf": str(dft.get("outer_scf_max_scf", "")),
             "template_mixing_enabled": bool(dft.get("mixing_enabled", False)),
             "template_smearing_enabled": bool(dft.get("smearing_enabled", False)),
             "template_cell_opt_type": str(cell_opt.get("type", "")),
@@ -124,6 +127,7 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn('x:Name="TemplateGlobalGroup" Header="&amp;GLOBAL"', xaml_text)
         self.assertIn('x:Name="TemplateDftGroup" Header="&amp;FORCE_EVAL / &amp;DFT"', xaml_text)
         self.assertIn('x:Name="TemplateScfGroup" Header="&amp;FORCE_EVAL / &amp;DFT / &amp;SCF"', xaml_text)
+        self.assertIn('x:Name="TemplateOuterScfGroup" Header="&amp;FORCE_EVAL / &amp;DFT / &amp;SCF / &amp;OUTER_SCF"', xaml_text)
         self.assertIn('x:Name="TemplateMixingGroup" Header="&amp;FORCE_EVAL / &amp;DFT / &amp;SCF / &amp;MIXING"', xaml_text)
         self.assertIn('x:Name="TemplateSmearingGroup" Header="&amp;FORCE_EVAL / &amp;DFT / &amp;SCF / &amp;SMEAR"', xaml_text)
         self.assertIn('x:Name="TemplateGeoOptGroup" Header="&amp;MOTION / &amp;GEO_OPT"', xaml_text)
@@ -173,6 +177,9 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn('x:Name="DiagonalizationAlgorithmBox" Grid.Row="2" Grid.Column="1" IsEditable="True"', xaml_text)
         self.assertIn('x:Name="OtMinimizerBox" Grid.Row="2" Grid.Column="3" IsEditable="True"', xaml_text)
         self.assertIn('x:Name="OtPreconditionerBox" Grid.Row="3" Grid.Column="1" IsEditable="True"', xaml_text)
+        self.assertIn('x:Name="OuterScfEnabledBox"', xaml_text)
+        self.assertIn('x:Name="OuterScfEpsScfBox" Grid.Row="0" Grid.Column="3" IsEditable="True"', xaml_text)
+        self.assertIn('x:Name="OuterScfMaxScfBox" Grid.Row="1" Grid.Column="1" IsEditable="True"', xaml_text)
         self.assertIn('x:Name="MixingEnabledBox"', xaml_text)
         self.assertIn('x:Name="SmearingEnabledBox"', xaml_text)
         self.assertIn('x:Name="KpointsSchemeBox" Grid.Row="0" Grid.Column="1" IsEditable="True"', xaml_text)
@@ -197,6 +204,7 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn('"button.preview": "Preview"', english_text)
         self.assertIn('"button.apply": "Apply"', english_text)
         self.assertIn('"label.print_level": "Print Level"', english_text)
+        self.assertIn('"label.outer_scf_enabled": "Outer SCF"', english_text)
         self.assertIn('"button.preview": "预览"', chinese_text)
         self.assertIn("[System.Windows.Threading.DispatcherTimer]::new()", script_text)
         self.assertIn("Start-WinQStepPythonProcess", helper_text)
@@ -223,6 +231,7 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn('"button.results": "结果"', chinese_text)
         self.assertIn("scripts\\validate_job_inputs.py", script_text)
         self.assertIn("template_section_groups_loaded", script_text)
+        self.assertIn("template_outer_scf_enabled", script_text)
         self.assertIn("language_apply_switched_to_zh", script_text)
         self.assertIn("scripts\\check_startup.py", helper_text)
         self.assertIn("scripts\\build_release.py", helper_text)
@@ -378,13 +387,14 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertTrue(str(report["config_workspace_expected_path"]).endswith("outputs"))
         self.assertIn("Config valid", report["config_validation_text"])
         self.assertTrue(report["template_tab_loaded"])
-        self.assertEqual(report["template_section_groups_loaded"], 10)
+        self.assertEqual(report["template_section_groups_loaded"], 11)
         self.assertEqual(
             report["template_section_group_headers"],
             [
                 "&GLOBAL",
                 "&FORCE_EVAL / &DFT",
                 "&FORCE_EVAL / &DFT / &SCF",
+                "&FORCE_EVAL / &DFT / &SCF / &OUTER_SCF",
                 "&FORCE_EVAL / &DFT / &SCF / &MIXING",
                 "&FORCE_EVAL / &DFT / &SCF / &SMEAR",
                 "&MOTION / &GEO_OPT",
@@ -394,8 +404,8 @@ class GuiPrototypeTests(unittest.TestCase):
                 "&FORCE_EVAL / &SUBSYS / &KIND",
             ],
         )
-        self.assertEqual(report["template_combo_fields_loaded"], 35)
-        self.assertEqual(report["template_combo_fields_editable"], 35)
+        self.assertEqual(report["template_combo_fields_loaded"], 37)
+        self.assertEqual(report["template_combo_fields_editable"], 37)
         self.assertEqual(report["template_run_type_options"], ["ENERGY", "ENERGY_FORCE", "GEO_OPT", "CELL_OPT"])
         self.assertEqual(report["template_print_level_options"], ["", "SILENT", "LOW", "MEDIUM", "HIGH", "DEBUG"])
         self.assertEqual(report["template_optimizer_options"], ["BFGS", "LBFGS", "CG"])

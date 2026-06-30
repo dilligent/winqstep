@@ -73,7 +73,9 @@ function New-WinQStepWindow {
         "CellOptTypeLabel", "CellOptOptimizerLabel", "CellOptMaxIterLabel",
         "CellOptPressureToleranceLabel",
         "ScfMethodLabel", "AddedMosLabel", "DiagonalizationAlgorithmLabel",
-        "OtMinimizerLabel", "OtPreconditionerLabel", "MixingMethodLabel",
+        "OtMinimizerLabel", "OtPreconditionerLabel",
+        "OuterScfEpsScfLabel", "OuterScfMaxScfLabel",
+        "MixingMethodLabel",
         "MixingAlphaLabel", "MixingBetaLabel", "SmearingMethodLabel",
         "ElectronicTemperatureLabel", "KpointsSchemeLabel", "KpointsGridLabel",
         "KpointsWavefunctionsLabel",
@@ -84,10 +86,12 @@ function New-WinQStepWindow {
         "CellOptTypeBox", "CellOptOptimizerBox", "CellOptMaxIterBox",
         "CellOptPressureToleranceBox",
         "ScfMethodBox", "AddedMosBox", "DiagonalizationAlgorithmBox",
-        "OtMinimizerBox", "OtPreconditionerBox", "MixingMethodBox",
+        "OtMinimizerBox", "OtPreconditionerBox",
+        "OuterScfEpsScfBox", "OuterScfMaxScfBox",
+        "MixingMethodBox",
         "MixingAlphaBox", "MixingBetaBox", "SmearingMethodBox",
         "ElectronicTemperatureBox", "KpointsSchemeBox", "KpointsGridBox",
-        "KpointsWavefunctionsBox", "MixingEnabledBox", "SmearingEnabledBox",
+        "KpointsWavefunctionsBox", "OuterScfEnabledBox", "MixingEnabledBox", "SmearingEnabledBox",
         "CellOptKeepAnglesBox", "CellOptKeepSymmetryBox",
         "KpointsFullGridBox", "KpointsSymmetryBox",
         "FallbackPeriodicBox", "FallbackCellABox", "FallbackCellBBox", "FallbackCellCBox",
@@ -143,6 +147,7 @@ function New-WinQStepWindow {
         SmearingEnabledBox = "label.smearing_enabled"
         CellOptKeepAnglesBox = "label.cell_opt_keep_angles"
         CellOptKeepSymmetryBox = "label.cell_opt_keep_symmetry"
+        OuterScfEnabledBox = "label.outer_scf_enabled"
         KpointsFullGridBox = "label.kpoints_full_grid"
         KpointsSymmetryBox = "label.kpoints_symmetry"
         CenterAtomsBox = "label.center_atoms"
@@ -199,6 +204,8 @@ function New-WinQStepWindow {
         DiagonalizationAlgorithmLabel = "label.diagonalization_algorithm"
         OtMinimizerLabel = "label.ot_minimizer"
         OtPreconditionerLabel = "label.ot_preconditioner"
+        OuterScfEpsScfLabel = "label.outer_scf_eps_scf"
+        OuterScfMaxScfLabel = "label.outer_scf_max_scf"
         MixingMethodLabel = "label.mixing_method"
         MixingAlphaLabel = "label.mixing_alpha"
         MixingBetaLabel = "label.mixing_beta"
@@ -1990,6 +1997,9 @@ function New-WinQStepWindow {
         $controls["RelCutoffBox"].Text = & $GetJsonProperty $dft "rel_cutoff"
         $controls["EpsScfBox"].Text = & $GetJsonProperty $dft "eps_scf"
         $controls["MaxScfBox"].Text = & $GetJsonProperty $dft "max_scf"
+        $controls["OuterScfEnabledBox"].IsChecked = @("1", "true", "yes", "on").Contains((& $GetJsonProperty $dft "outer_scf_enabled" "False").ToLowerInvariant())
+        $controls["OuterScfEpsScfBox"].Text = & $GetJsonProperty $dft "outer_scf_eps_scf"
+        $controls["OuterScfMaxScfBox"].Text = & $GetJsonProperty $dft "outer_scf_max_scf"
         $controls["ScfMethodBox"].Text = & $GetJsonProperty $dft "scf_method"
         $controls["AddedMosBox"].Text = & $GetJsonProperty $dft "added_mos"
         $controls["DiagonalizationAlgorithmBox"].Text = & $GetJsonProperty $dft "diagonalization_algorithm"
@@ -2065,6 +2075,9 @@ function New-WinQStepWindow {
             rel_cutoff = $controls["RelCutoffBox"].Text
             eps_scf = $controls["EpsScfBox"].Text
             max_scf = $controls["MaxScfBox"].Text
+            outer_scf_enabled = [bool]$controls["OuterScfEnabledBox"].IsChecked
+            outer_scf_eps_scf = $controls["OuterScfEpsScfBox"].Text
+            outer_scf_max_scf = $controls["OuterScfMaxScfBox"].Text
             scf_method = $controls["ScfMethodBox"].Text
             added_mos = $controls["AddedMosBox"].Text
             ot_minimizer = $controls["OtMinimizerBox"].Text
@@ -3874,15 +3887,16 @@ if ($SmokeTest) {
         "CellOptTypeBox", "CellOptOptimizerBox", "CellOptMaxIterBox",
         "CellOptPressureToleranceBox",
         "ScfMethodBox", "AddedMosBox", "DiagonalizationAlgorithmBox",
-        "OtMinimizerBox", "OtPreconditionerBox", "MixingMethodBox",
+        "OtMinimizerBox", "OtPreconditionerBox",
+        "OuterScfEpsScfBox", "OuterScfMaxScfBox", "MixingMethodBox",
         "MixingAlphaBox", "MixingBetaBox", "SmearingMethodBox",
         "ElectronicTemperatureBox", "KpointsSchemeBox", "KpointsGridBox",
         "KpointsWavefunctionsBox",
         "FallbackPeriodicBox", "FallbackCellABox", "FallbackCellBBox", "FallbackCellCBox"
     )
     $templateSectionGroupNames = @(
-        "TemplateGlobalGroup", "TemplateDftGroup", "TemplateScfGroup", "TemplateMixingGroup",
-        "TemplateSmearingGroup", "TemplateGeoOptGroup", "TemplateCellOptGroup",
+        "TemplateGlobalGroup", "TemplateDftGroup", "TemplateScfGroup", "TemplateOuterScfGroup",
+        "TemplateMixingGroup", "TemplateSmearingGroup", "TemplateGeoOptGroup", "TemplateCellOptGroup",
         "TemplateCellGroup", "TemplateKpointsGroup", "TemplateKindGroup"
     )
     $report["template_tab_loaded"] = ($window.FindName("TemplateProjectBox") -is [System.Windows.Controls.ComboBox])
@@ -3900,6 +3914,9 @@ if ($SmokeTest) {
     $report["template_cutoff"] = [string]$window.FindName("CutoffBox").Text
     $report["template_scf_method"] = [string]$window.FindName("ScfMethodBox").Text
     $report["template_added_mos"] = [string]$window.FindName("AddedMosBox").Text
+    $report["template_outer_scf_enabled"] = [bool]$window.FindName("OuterScfEnabledBox").IsChecked
+    $report["template_outer_scf_eps_scf"] = [string]$window.FindName("OuterScfEpsScfBox").Text
+    $report["template_outer_scf_max_scf"] = [string]$window.FindName("OuterScfMaxScfBox").Text
     $report["template_mixing_enabled"] = [bool]$window.FindName("MixingEnabledBox").IsChecked
     $report["template_smearing_enabled"] = [bool]$window.FindName("SmearingEnabledBox").IsChecked
     $report["template_cell_opt_type"] = [string]$window.FindName("CellOptTypeBox").Text

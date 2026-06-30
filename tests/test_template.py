@@ -96,6 +96,9 @@ class TemplateTests(unittest.TestCase):
             {
                 "scf_method": "diagonalization",
                 "added_mos": "8",
+                "outer_scf_enabled": True,
+                "outer_scf_eps_scf": "1.0E-7",
+                "outer_scf_max_scf": "30",
                 "diagonalization_algorithm": "davidson",
                 "mixing_enabled": True,
                 "mixing_method": "pulay_mixing",
@@ -112,6 +115,9 @@ class TemplateTests(unittest.TestCase):
         dft = validation["template"]["dft"]
         self.assertEqual(dft["scf_method"], "DIAGONALIZATION")
         self.assertEqual(dft["added_mos"], 8)
+        self.assertTrue(dft["outer_scf_enabled"])
+        self.assertEqual(dft["outer_scf_eps_scf"], "1.0E-7")
+        self.assertEqual(dft["outer_scf_max_scf"], 30)
         self.assertEqual(dft["diagonalization_algorithm"], "DAVIDSON")
         self.assertTrue(dft["mixing_enabled"])
         self.assertEqual(dft["mixing_method"], "PULAY_MIXING")
@@ -185,6 +191,21 @@ class TemplateTests(unittest.TestCase):
 
         self.assertFalse(validation["valid"])
         self.assertIn("dft.smearing_enabled requires dft.added_mos", "\n".join(validation["errors"]))
+
+    def test_validate_rejects_outer_scf_threshold_looser_than_inner_scf(self) -> None:
+        template = load_template(ENERGY_TEMPLATE)
+        merged = merge_template_fields(
+            template,
+            {
+                "eps_scf": "1.0E-6",
+                "outer_scf_enabled": True,
+                "outer_scf_eps_scf": "1.0E-5",
+            },
+        )
+        validation = validate_template(merged)
+
+        self.assertFalse(validation["valid"])
+        self.assertIn("dft.outer_scf_eps_scf", "\n".join(validation["errors"]))
 
     def test_validate_rejects_kpoints_options_without_scheme(self) -> None:
         template = load_template(ENERGY_TEMPLATE)
@@ -279,6 +300,9 @@ class TemplateTests(unittest.TestCase):
                 "rel_cutoff",
                 "eps_scf",
                 "max_scf",
+                "outer_scf_enabled",
+                "outer_scf_eps_scf",
+                "outer_scf_max_scf",
                 "scf_method",
                 "added_mos",
                 "ot_minimizer",

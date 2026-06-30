@@ -33,6 +33,9 @@ FIELD_ARGS = {
     "rel_cutoff": "rel_cutoff",
     "eps_scf": "eps_scf",
     "max_scf": "max_scf",
+    "outer_scf_enabled": "outer_scf_enabled",
+    "outer_scf_eps_scf": "outer_scf_eps_scf",
+    "outer_scf_max_scf": "outer_scf_max_scf",
     "scf_method": "scf_method",
     "added_mos": "added_mos",
     "ot_minimizer": "ot_minimizer",
@@ -86,6 +89,9 @@ def main() -> int:
     parser.add_argument("--rel-cutoff")
     parser.add_argument("--eps-scf")
     parser.add_argument("--max-scf")
+    parser.add_argument("--outer-scf-enabled")
+    parser.add_argument("--outer-scf-eps-scf")
+    parser.add_argument("--outer-scf-max-scf")
     parser.add_argument("--scf-method")
     parser.add_argument("--added-mos")
     parser.add_argument("--ot-minimizer")

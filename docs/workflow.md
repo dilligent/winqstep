@@ -73,6 +73,11 @@ subdivision counts. Optional `kpoints_full_grid`, `kpoints_symmetry`, and
 `kpoints_wavefunctions` fields map to the corresponding CP2K KPOINTS keywords.
 KPOINTS are rejected for `PERIODIC NONE` inputs.
 
+Templates can also optionally enable `DFT/&SCF/&OUTER_SCF` with
+`outer_scf_enabled`, `outer_scf_eps_scf`, and `outer_scf_max_scf`. The section
+is omitted unless enabled, and the outer convergence threshold must be no looser
+than the inner `eps_scf`.
+
 The workflow selects only KIND entries needed by the imported elements. Missing
 KIND definitions fail before CP2K is started. The GUI runs the same preflight
 check before `Preview` and `Run` so those errors appear in the `Template` and
@@ -88,7 +93,7 @@ python .\scripts\manage_template.py --template .\examples\templates\energy_pbe.j
 ```
 
 The GUI `Template` tab uses the same command. It exposes project name, run type,
-DFT settings, SCF solver controls, KPOINTS controls, GEO_OPT settings,
+DFT settings, SCF solver and OUTER_SCF controls, KPOINTS controls, GEO_OPT settings,
 CELL_OPT settings, fallback cell/periodicity settings, centering, and KIND
 basis/potential entries. Supported QuickStep run types are `ENERGY`,
 `ENERGY_FORCE`, `GEO_OPT`, and `CELL_OPT`. Workflow preview and run actions

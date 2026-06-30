@@ -34,6 +34,7 @@ The first generator should target:
 - `&SCF`
 - `SCF/&OT`
 - `SCF/&DIAGONALIZATION`
+- `SCF/&OUTER_SCF`
 - `SCF/&MIXING`
 - `SCF/&SMEAR`
 - `FORCE_EVAL/&PRINT/&FORCES` for `ENERGY_FORCE`
@@ -88,6 +89,12 @@ baseline, smearing uses `TELEC [K]` for electronic temperature. Mixing and
 smearing are rejected unless diagonalization is selected; smearing also requires
 added unoccupied orbitals through `ADDED_MOS`.
 
+`SCF/&OUTER_SCF` is also opt-in. When `dft.outer_scf_enabled` is true, the
+renderer writes `EPS_SCF` and `MAX_SCF` inside `&OUTER_SCF`; when false, the
+section is omitted. The outer threshold must be at least as tight as the inner
+`dft.eps_scf`, matching the CP2K expectation that outer SCF convergence is not
+looser than the inner SCF loop.
+
 KPOINTS controls are opt-in. `dft.kpoints_scheme` defaults to `NONE`, so
 existing templates do not render `DFT/&KPOINTS`. The supported schemes are
 `GAMMA` and `MONKHORST-PACK`; Monkhorst-Pack templates also set
@@ -114,6 +121,7 @@ QuickStep subset with tests.
 - Optional `print_level` renders only as `GLOBAL/PRINT_LEVEL` when explicitly
   set.
 - CELL and POISSON periodicity must stay synchronized.
+- OUTER_SCF is generated only when explicitly enabled.
 - Mixing and smearing are only generated with the diagonalization SCF path.
 - KPOINTS are only generated for explicitly selected periodic calculations.
 - The renderer should produce stable output order for readable diffs.

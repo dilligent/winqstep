@@ -396,6 +396,37 @@
             </Grid>
           </GroupBox>
 
+          <GroupBox x:Name="TemplateOuterScfGroup" Header="&amp;FORCE_EVAL / &amp;DFT / &amp;SCF / &amp;OUTER_SCF" Style="{StaticResource TemplateSectionGroupBoxStyle}">
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="150"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="150"/>
+                <ColumnDefinition Width="*"/>
+              </Grid.ColumnDefinitions>
+              <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+              </Grid.RowDefinitions>
+
+              <CheckBox x:Name="OuterScfEnabledBox" Grid.Row="0" Grid.Column="0" Content="Outer SCF" Margin="6,4" VerticalAlignment="Center"/>
+              <TextBlock x:Name="OuterScfEpsScfLabel" Grid.Row="0" Grid.Column="2" Text="Outer EPS SCF"/>
+              <ComboBox x:Name="OuterScfEpsScfBox" Grid.Row="0" Grid.Column="3" IsEditable="True">
+                <ComboBoxItem Content="1.0E-5"/>
+                <ComboBoxItem Content="1.0E-6"/>
+                <ComboBoxItem Content="1.0E-7"/>
+                <ComboBoxItem Content="1.0E-8"/>
+              </ComboBox>
+              <TextBlock x:Name="OuterScfMaxScfLabel" Grid.Row="1" Grid.Column="0" Text="Outer Max SCF"/>
+              <ComboBox x:Name="OuterScfMaxScfBox" Grid.Row="1" Grid.Column="1" IsEditable="True">
+                <ComboBoxItem Content="10"/>
+                <ComboBoxItem Content="20"/>
+                <ComboBoxItem Content="50"/>
+                <ComboBoxItem Content="100"/>
+              </ComboBox>
+            </Grid>
+          </GroupBox>
+
           <GroupBox x:Name="TemplateMixingGroup" Header="&amp;FORCE_EVAL / &amp;DFT / &amp;SCF / &amp;MIXING" Style="{StaticResource TemplateSectionGroupBoxStyle}">
             <Grid>
               <Grid.ColumnDefinitions>

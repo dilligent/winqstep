@@ -96,6 +96,26 @@ class QuickStepTests(unittest.TestCase):
         self.assertIn("      &OT\n        MINIMIZER DIIS\n        PRECONDITIONER FULL_KINETIC\n      &END OT\n", rendered)
         self.assertNotIn("&DIAGONALIZATION", rendered)
 
+    def test_renders_outer_scf_section_when_enabled(self) -> None:
+        data = json.loads((ROOT / "examples" / "quickstep_energy.json").read_text(encoding="utf-8"))
+        data["dft"].update(
+            {
+                "outer_scf_enabled": True,
+                "outer_scf_eps_scf": "1.0E-7",
+                "outer_scf_max_scf": 20,
+            }
+        )
+
+        rendered = render_quickstep_input(quickstep_input_from_dict(data))
+
+        self.assertIn(
+            "      &OUTER_SCF\n"
+            "        EPS_SCF 1.0E-7\n"
+            "        MAX_SCF 20\n"
+            "      &END OUTER_SCF\n",
+            rendered,
+        )
+
     def test_renders_diagonalization_mixing_and_smearing(self) -> None:
         data = json.loads((ROOT / "examples" / "quickstep_energy.json").read_text(encoding="utf-8"))
         data["dft"].update(
@@ -178,6 +198,19 @@ class QuickStepTests(unittest.TestCase):
         data["dft"]["mixing_enabled"] = True
 
         with self.assertRaisesRegex(QuickStepInputError, "mixing requires"):
+            quickstep_input_from_dict(data)
+
+    def test_rejects_outer_scf_threshold_looser_than_inner_scf(self) -> None:
+        data = json.loads((ROOT / "examples" / "quickstep_energy.json").read_text(encoding="utf-8"))
+        data["dft"].update(
+            {
+                "eps_scf": "1.0E-6",
+                "outer_scf_enabled": True,
+                "outer_scf_eps_scf": "1.0E-5",
+            }
+        )
+
+        with self.assertRaisesRegex(QuickStepInputError, "outer_scf_eps_scf"):
             quickstep_input_from_dict(data)
 
     def test_cli_writes_output_file(self) -> None:

@@ -25,8 +25,9 @@ Editable fields include:
   `SILENT`, `LOW`, `MEDIUM`, `HIGH`, and `DEBUG`
 - DFT fields: basis file, potential file, XC functional, charge,
   multiplicity, cutoff, relative cutoff, EPS_SCF, MAX_SCF, SCF method,
-  ADDED_MOS, OT settings, diagonalization settings, mixing settings, and
-  electronic-temperature smearing settings, plus KPOINTS scheme/grid,
+  optional OUTER_SCF settings, ADDED_MOS, OT settings, diagonalization
+  settings, mixing settings, and electronic-temperature smearing settings,
+  plus KPOINTS scheme/grid,
   full-grid, symmetry, and wavefunction controls
 - GEO_OPT fields: optimizer and max iterations
 - CELL_OPT fields: optimizer, max iterations, optimization type, pressure
@@ -44,6 +45,7 @@ The PowerShell WPF prototype has a `Template` tab plus `Load Template` and
 by the renderer and workflow layer. Related controls are grouped by their CP2K
 input-section path, so `&GLOBAL`, `&FORCE_EVAL / &DFT`,
 `&FORCE_EVAL / &DFT / &SCF`, nested blocks such as
+`&FORCE_EVAL / &DFT / &SCF / &OUTER_SCF`,
 `&FORCE_EVAL / &DFT / &SCF / &MIXING`,
 `&FORCE_EVAL / &DFT / &SCF / &SMEAR`,
 `&FORCE_EVAL / &DFT / &KPOINTS`, `&MOTION / &CELL_OPT`,
@@ -59,6 +61,8 @@ shortcuts, typical SCF/MGRID numeric values, SCF methods such as `DEFAULT`,
 `DIAGONALIZATION`, and `OT`, and `BFGS`, `LBFGS`, or `CG` for GEO_OPT and
 CELL_OPT optimizers. Fallback cell fields expose the supported CP2K periodicity labels
 and common cubic-cell vectors while still accepting direct typed values.
+OUTER_SCF fields expose common outer-loop thresholds and iteration counts while
+remaining editable.
 KPOINTS fields expose `NONE`, `GAMMA`, and `MONKHORST-PACK`, common
 Monkhorst-Pack grids, `FULL_GRID`, `SYMMETRY`, and `WAVEFUNCTIONS` choices.
 The controls remain editable, so values not listed in the drop-down can still
@@ -70,9 +74,10 @@ manual pages for `GLOBAL/RUN_TYPE`, `GLOBAL/PRINT_LEVEL`,
 `FORCE_EVAL/DFT/MGRID`, `FORCE_EVAL/DFT/SCF`, and `MOTION/GEO_OPT`, plus
 `FORCE_EVAL/SUBSYS/CELL`, `FORCE_EVAL/DFT/POISSON`,
 `FORCE_EVAL/DFT/SCF/OT`, `FORCE_EVAL/DFT/SCF/DIAGONALIZATION`,
-`FORCE_EVAL/DFT/SCF/MIXING`, `FORCE_EVAL/DFT/SCF/SMEAR`, and
-`FORCE_EVAL/DFT/KPOINTS` for periodicity, SCF solver, and k-point controls,
-plus `MOTION/CELL_OPT` for direct cell optimization controls.
+`FORCE_EVAL/DFT/SCF/OUTER_SCF`, `FORCE_EVAL/DFT/SCF/MIXING`,
+`FORCE_EVAL/DFT/SCF/SMEAR`, and `FORCE_EVAL/DFT/KPOINTS` for periodicity,
+SCF solver, and k-point controls, plus `MOTION/CELL_OPT` for direct cell
+optimization controls.
 
 KIND entries are shown in an editable `Element`, `Basis Set`, `Potential` table
 instead of a raw text box. The GUI still serializes that table through
@@ -85,10 +90,11 @@ template editor.
 The template editor validates field shape, numeric ranges, run type, SCF method
 choices, duplicate KIND entries, and required basis/potential names. It rejects
 mixing or smearing unless the SCF method is `DIAGONALIZATION`; smearing also
-requires `ADDED_MOS` to add unoccupied orbitals. KPOINTS options are rejected
-unless a KPOINTS scheme is selected, and rendered workflow inputs reject
-KPOINTS for nonperiodic cells. CELL_OPT inputs reject nonperiodic cells and
-currently support the `DIRECT_CELL_OPT` path. When a CP2K data inspection cache
-is available, the GUI preflight step also compares template data-file names and
-KIND basis/potential labels against the cached CP2K data labels before
-`Preview` or `Run`.
+requires `ADDED_MOS` to add unoccupied orbitals. Enabled OUTER_SCF settings
+must use a positive max iteration count and an outer `EPS_SCF` no looser than
+the inner SCF threshold. KPOINTS options are rejected unless a KPOINTS scheme
+is selected, and rendered workflow inputs reject KPOINTS for nonperiodic cells.
+CELL_OPT inputs reject nonperiodic cells and currently support the
+`DIRECT_CELL_OPT` path. When a CP2K data inspection cache is available, the GUI
+preflight step also compares template data-file names and KIND basis/potential
+labels against the cached CP2K data labels before `Preview` or `Run`.
