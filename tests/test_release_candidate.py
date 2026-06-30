@@ -2,6 +2,7 @@ import json
 import subprocess
 import sys
 import tempfile
+import tomllib
 import unittest
 from pathlib import Path
 
@@ -15,9 +16,19 @@ class ReleaseCandidateWalkthroughTests(unittest.TestCase):
         handoff = (ROOT / "docs" / "release-candidate-handoff.md").read_text(encoding="utf-8")
 
         self.assertIn("docs/release-candidate-handoff.md", readme)
+        self.assertIn("docs/release-notes.md", readme)
         self.assertIn("## Required Handoff Commands", handoff)
         self.assertIn("python .\\scripts\\run_checks.py --profile all --compact", handoff)
         self.assertIn("## Known Limitations", handoff)
+
+    def test_handoff_doc_tracks_project_version(self) -> None:
+        pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+        version = pyproject["project"]["version"]
+        handoff = (ROOT / "docs" / "release-candidate-handoff.md").read_text(encoding="utf-8")
+
+        self.assertIn(f"Current package version: `{version}`.", handoff)
+        self.assertIn(f"dist/winqstep-{version}.zip", handoff)
+        self.assertIn(f"dist/winqstep-{version}.manifest.json", handoff)
 
     def test_cli_runs_offline_walkthrough(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:

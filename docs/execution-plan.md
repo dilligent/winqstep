@@ -1735,6 +1735,46 @@ Commit boundary:
 
 - One commit for initial 3D preview framing, smoke tests, and docs.
 
+## Round 51: 0.2.0 Release Candidate Preparation
+
+Status: implemented.
+
+Goal: prepare the next source-release candidate after the post-`0.1.0`
+QuickStep, GUI workflow, structure preview, and documentation updates.
+
+Tasks:
+
+- Bump the project version from `0.1.0` to `0.2.0`.
+- Update release handoff commands, artifact names, and candidate scope.
+- Add release notes summarizing user-visible changes since `0.1.0`.
+- Make release smoke coverage treat release notes as a required handoff file.
+- Run offline release verification and build/smoke-test the candidate archive.
+
+Local verification:
+
+- `python -m pytest tests\test_release.py tests\test_release_candidate.py -q`:
+  8 tests passed.
+- `python .\scripts\build_release.py --dry-run --compact`: valid plan for
+  `winqstep-0.2.0`, including 106 source files.
+- `python .\scripts\run_checks.py --profile all --compact`: 9/9 checks passed,
+  including 141 unit tests, GUI smoke, release smoke, and RC walkthrough.
+- `python .\scripts\build_release.py --compact`: wrote
+  `dist/winqstep-0.2.0.zip` and `dist/winqstep-0.2.0.manifest.json`.
+- `python .\scripts\smoke_release_install.py --archive .\dist\winqstep-0.2.0.zip --compact`:
+  valid unpacked diagnostics.
+
+Acceptance:
+
+- `build_release.py --dry-run` plans `winqstep-0.2.0` artifacts and includes
+  the release notes.
+- Release candidate tests confirm handoff docs track the project version.
+- The candidate archive can be built and unpacked through release smoke.
+- Final GitHub tag/release creation remains a separate explicit step.
+
+Commit boundary:
+
+- One commit for `0.2.0` release-prep metadata, tests, and docs.
+
 ## Working Rules
 
 - Keep each round small enough to review.

@@ -6,7 +6,7 @@ mechanics in more detail.
 
 ## Candidate Scope
 
-Current package version: `0.1.0`.
+Current package version: `0.2.0`.
 
 This is a local Windows prototype, not an installer or PyPI release. The
 candidate supports:
@@ -18,6 +18,10 @@ candidate supports:
 - Existing CP2K `.inp` execution without regenerating the input.
 - Config and template editing, CP2K data inspection, preflight validation, job
   history, artifact inspection, and structured result summary export.
+- GUI conveniences added after `0.1.0`: responsive tab order, editable generated
+  input confirmation, readable Environment and Structure summaries, native 3D
+  structure preview with rotate/zoom/pan/reset, localized UI improvements,
+  UTF-8 live job-log tails, and clearer first-run requirements.
 - Source-release zip packaging and unpacked release smoke testing.
 
 ## Required Handoff Commands
@@ -29,7 +33,7 @@ git status --short
 python .\scripts\run_checks.py --profile all --compact
 python .\scripts\release_candidate_walkthrough.py --compact
 python .\scripts\build_release.py --compact
-python .\scripts\smoke_release_install.py --archive .\dist\winqstep-0.1.0.zip --compact
+python .\scripts\smoke_release_install.py --archive .\dist\winqstep-0.2.0.zip --compact
 ```
 
 Expected minimum result:
@@ -38,8 +42,8 @@ Expected minimum result:
 - `run_checks.py --profile all` reports `valid: true`.
 - `release_candidate_walkthrough.py` reports `valid: true` with 9 offline
   steps passed.
-- `build_release.py` writes `dist/winqstep-0.1.0.zip` and
-  `dist/winqstep-0.1.0.manifest.json`.
+- `build_release.py` writes `dist/winqstep-0.2.0.zip` and
+  `dist/winqstep-0.2.0.manifest.json`.
 - `smoke_release_install.py --archive ...` reports `valid: true`.
 
 When WSL2 and the configured CP2K installation are available, also run:
@@ -56,10 +60,10 @@ The live walkthrough must complete a real `ENERGY_FORCE` CP2K run and parse
 
 For a source-release handoff, provide:
 
-- `dist/winqstep-0.1.0.zip`
-- `dist/winqstep-0.1.0.manifest.json`
+- `dist/winqstep-0.2.0.zip`
+- `dist/winqstep-0.2.0.manifest.json`
 - the SHA-256 value from the manifest or `build_release.py` output
-- this handoff note and `docs/release.md`
+- this handoff note, `docs/release.md`, and `docs/release-notes.md`
 
 Do not hand off `outputs/`, `build/`, local `dist/` work folders other than the
 release zip and manifest, CP2K snapshots, virtual environments, caches, or
@@ -96,19 +100,35 @@ full `-Diagnostics` only when WSL2 and CP2K are expected to be available.
 
 ## Current Verification Baseline
 
-Round 32 produced and verified the current `0.1.0` source-release candidate:
+Round 51 prepares the `0.2.0` source-release candidate after the post-`0.1.0`
+GUI, QuickStep, preview, and documentation updates:
 
-- `python .\scripts\run_checks.py --profile all --compact`: 9/9 checks.
-- `python .\scripts\release_candidate_walkthrough.py --compact`: 9/9 steps.
+- `python .\scripts\run_checks.py --profile all --compact`: 9/9 checks passed,
+  including 141 unit tests.
+- `python .\scripts\release_candidate_walkthrough.py --compact`: passed as
+  part of the `rc` profile in `run_checks.py --profile all`, with 9 offline
+  steps passed.
+- `python .\scripts\build_release.py --compact`: wrote
+  `dist/winqstep-0.2.0.zip` and `dist/winqstep-0.2.0.manifest.json`, with 106
+  planned source files plus archive `RELEASE-MANIFEST.json`.
+- `python .\scripts\smoke_release_install.py --archive .\dist\winqstep-0.2.0.zip --compact`:
+  valid unpacked diagnostics.
+- The authoritative archive SHA-256 is the value in
+  `dist/winqstep-0.2.0.manifest.json`; do not duplicate it in packaged docs,
+  because this handoff note is itself included in the archive.
+
+The previous `0.1.0` release baseline was:
+
+- `python .\scripts\run_checks.py --profile all --compact`: 9/9 checks passed.
+- `python .\scripts\release_candidate_walkthrough.py --compact`: 9/9 steps
+  passed.
 - `python .\scripts\build_release.py --compact`: valid archive with 99 source
   files plus archive `RELEASE-MANIFEST.json`.
 - `python .\scripts\smoke_release_install.py --archive .\dist\winqstep-0.1.0.zip --compact`:
   valid unpacked diagnostics.
-- The authoritative archive SHA-256 is the value in
-  `dist/winqstep-0.1.0.manifest.json`; do not duplicate it in packaged docs,
-  because this handoff note is itself included in the archive.
 
-The optional live checks also passed on the local WSL2/CP2K setup:
+The previous `0.1.0` optional live checks also passed on the local WSL2/CP2K
+setup:
 
 - `python .\scripts\release_candidate_walkthrough.py --include-live --keep-workspace --compact`:
   10/10 steps, including a real `ENERGY_FORCE` CP2K run.

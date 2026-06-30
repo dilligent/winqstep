@@ -97,6 +97,8 @@ python .\scripts\run_checks.py --profile all
 Use `docs/release-candidate-handoff.md` as the final handoff checklist. It
 lists the required commands, expected artifacts, first-run tester path, and
 current known limitations.
+Use `docs/release-notes.md` to summarize user-visible changes for the candidate
+being handed off.
 
 The `all` profile includes the release-candidate walkthrough:
 
