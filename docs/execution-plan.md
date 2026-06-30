@@ -2692,6 +2692,34 @@ Commit boundary:
 
 - One commit for batch resume, queue controls, tests, and docs.
 
+## Round 77 - Template Section Navigation
+
+Status: completed.
+
+Scope:
+
+- Split the growing Template page into internal `Core`, `DFT`, `Subsystem`, and
+  `Motion` tabs while keeping the existing CP2K section group boxes and field
+  names unchanged.
+- Keep the CP2K manual link and template validation output visible outside the
+  internal section tabs.
+- Localize the new internal tab headers in the existing English and Chinese UI
+  resources.
+- Extend GUI static and smoke tests to verify the internal section tabs load
+  and preserve the existing Template group coverage.
+
+Acceptance:
+
+- The Template page no longer presents all QuickStep form groups as one long
+  stacked page.
+- Existing Template field bindings, generated input behavior, and validation
+  output are unchanged.
+- GUI and fast check profiles pass.
+
+Commit boundary:
+
+- One commit for Template section navigation, localization, tests, and docs.
+
 ## QuickStep Feature Backlog
 
 Status: planned queue after Round 76.

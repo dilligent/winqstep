@@ -5299,6 +5299,9 @@ if ($SmokeTest) {
         "TemplateMixingGroup", "TemplateSmearingGroup", "TemplateKpointsGroup", "TemplateDftPrintGroup", "TemplateCellGroup",
         "TemplateKindGroup", "TemplateFixedAtomsGroup", "TemplateGeoOptGroup", "TemplateCellOptGroup"
     )
+    $templateSectionTabNames = @(
+        "TemplateCoreTab", "TemplateDftTab", "TemplateSubsystemTab", "TemplateMotionTab"
+    )
     $GetTemplateSectionHeaderText = {
         param([Parameter(Mandatory = $true)][string]$Name)
         $header = $window.FindName($Name).Header
@@ -5315,6 +5318,8 @@ if ($SmokeTest) {
     else {
         ""
     }
+    $report["template_section_tabs_loaded"] = $templateSectionTabNames.Where({ $window.FindName($_) -is [System.Windows.Controls.TabItem] }).Count
+    $report["template_section_tab_headers"] = @($templateSectionTabNames | ForEach-Object { & $GetTemplateSectionHeaderText $_ })
     $report["template_section_groups_loaded"] = $templateSectionGroupNames.Where({ $window.FindName($_) -is [System.Windows.Controls.GroupBox] }).Count
     $report["template_section_group_headers"] = @($templateSectionGroupNames | ForEach-Object { & $GetTemplateSectionHeaderText $_ })
     $report["template_section_group_left_margins"] = @($templateSectionGroupNames | ForEach-Object { [int]$window.FindName($_).Margin.Left })

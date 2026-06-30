@@ -11,6 +11,7 @@ function Get-WinQStepGuiControlNames {
         "InputPreviewTab", "JobLogTab", "ArtifactsTab", "HistoryTab",
         "StructurePreviewStatusText", "StructureSelectionText", "StructurePreviewViewport", "StructurePreviewCamera", "StructurePreviewVisual",
         "TemplateManualText", "Cp2kInputManualLink",
+        "TemplateSectionsTabs", "TemplateCoreTab", "TemplateDftTab", "TemplateSubsystemTab", "TemplateMotionTab",
         "DistroLabel", "Cp2kCommandLabel", "Cp2kDataDirLabel", "MpiCommandLabel",
         "WorkspaceLabel", "WslPreludeLabel", "TimeoutLabel", "UiLanguageLabel",
         "DistroBox", "Cp2kCommandBox", "Cp2kDataDirBox", "MpirunCommandBox",
@@ -146,6 +147,10 @@ function Set-WinQStepLocalizedControls {
     JobLogTab = "tab.job_log"
     ArtifactsTab = "tab.artifacts"
     HistoryTab = "tab.history"
+    TemplateCoreTab = "tab.template_core"
+    TemplateDftTab = "tab.template_dft"
+    TemplateSubsystemTab = "tab.template_subsystem"
+    TemplateMotionTab = "tab.template_motion"
     }
     foreach ($entry in $headerLocalization.GetEnumerator()) {
         Set-WinQStepHeader $Controls[$entry.Key] $entry.Value

@@ -156,6 +156,19 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn('NavigateUri="https://manual.cp2k.org/trunk/CP2K_INPUT.html"', xaml_text)
         self.assertIn('Cp2kInputManualLink', script_text)
         self.assertIn('Add_RequestNavigate', script_text)
+        self.assertIn('TabControl x:Name="TemplateSectionsTabs"', xaml_text)
+        self.assertIn('x:Name="TemplateCoreTab" Header="Core"', xaml_text)
+        self.assertIn('x:Name="TemplateDftTab" Header="DFT"', xaml_text)
+        self.assertIn('x:Name="TemplateSubsystemTab" Header="Subsystem"', xaml_text)
+        self.assertIn('x:Name="TemplateMotionTab" Header="Motion"', xaml_text)
+        self.assertIn('TemplateCoreTab = "tab.template_core"', controls_text)
+        self.assertIn('TemplateDftTab = "tab.template_dft"', controls_text)
+        self.assertIn('TemplateSubsystemTab = "tab.template_subsystem"', controls_text)
+        self.assertIn('TemplateMotionTab = "tab.template_motion"', controls_text)
+        self.assertIn('"tab.template_core": "Core"', english_text)
+        self.assertIn('"tab.template_subsystem": "Subsystem"', english_text)
+        self.assertIn('"tab.template_core": "核心"', chinese_text)
+        self.assertIn('"tab.template_subsystem": "子系统"', chinese_text)
         self.assertIn('x:Key="TemplateSectionGroupBoxStyle"', xaml_text)
         self.assertIn('x:Key="TemplateSectionLevel1GroupBoxStyle"', xaml_text)
         self.assertIn('x:Key="TemplateSectionLevel2GroupBoxStyle"', xaml_text)
@@ -211,7 +224,7 @@ class GuiPrototypeTests(unittest.TestCase):
             xaml_text.index('x:Name="StructurePreviewPanel" Grid.Column="2"'),
         )
         self.assertEqual(
-            re.findall(r'<TabItem x:Name="([^"]+)"', xaml_text),
+            re.findall(r'^\s{6}<TabItem x:Name="([^"]+)"', xaml_text, re.MULTILINE),
             [
                 "ConfigTab",
                 "EnvironmentTab",
@@ -551,6 +564,8 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertTrue(report["template_tab_loaded"])
         self.assertTrue(report["template_manual_link_loaded"])
         self.assertEqual(report["template_manual_link_uri"], "https://manual.cp2k.org/trunk/CP2K_INPUT.html")
+        self.assertEqual(report["template_section_tabs_loaded"], 4)
+        self.assertEqual(report["template_section_tab_headers"], ["Core", "DFT", "Subsystem", "Motion"])
         self.assertEqual(report["template_section_groups_loaded"], 15)
         self.assertEqual(
             report["template_section_group_headers"],
