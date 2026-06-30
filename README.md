@@ -13,12 +13,14 @@ WinQStep is not affiliated with the CP2K project.
 This repository is a local Windows prototype. It has a PowerShell-hosted WPF GUI
 over tested Python commands for QuickStep input generation, existing-input runs,
 job history, config/template editing, CP2K data inspection, startup diagnostics,
-and source-release packaging.
+source-release packaging, and a buildable thin `WinQStep.exe` launcher.
 
 The current distribution is a source-release zip, not a Windows installer or a
-single-file application. It does not bundle Python, WSL, CP2K, CP2K data files,
-or Python package dependencies. Users should expect to unpack the zip on a
-Windows machine that already has, or can install, the runtime environment below.
+single-file application. A prepared zip may include `WinQStep.exe`, but that
+file is only a thin launcher for the existing PowerShell/WPF GUI. It does not
+bundle Python, PowerShell, WSL, CP2K, CP2K data files, or Python package
+dependencies. Users should expect to unpack the zip on a Windows machine that
+already has, or can install, the runtime environment below.
 
 The local execution plan is tracked in `docs/execution-plan.md`.
 
@@ -34,6 +36,8 @@ The current usable path is:
 - keep inputs, outputs, stdout/stderr logs, metadata, and history in a Windows
   workspace folder;
 - package and smoke-test a source release that can be unpacked on Windows.
+- optionally build a double-click `WinQStep.exe` launcher that starts the same
+  GUI without opening a terminal command first.
 
 ## Requirements
 
@@ -42,7 +46,9 @@ WinQStep currently expects these components on the user's Windows computer:
 - Windows desktop session with Windows PowerShell 5.1 and WPF desktop
   assemblies available. If the GUI reports missing .NET/WPF components, install
   or enable the .NET desktop runtime / .NET Framework WPF support and launch
-  with `powershell.exe`, not `pwsh`.
+  with `powershell.exe`, not `pwsh`. The optional `WinQStep.exe` launcher uses
+  the same Windows desktop/.NET Framework foundation to start PowerShell and
+  show startup errors.
 - Python 3.11 or newer available as `python` on `PATH`.
 - Python package dependency `ase>=3.23` for structure import. From the unpacked
   WinQStep folder, install it with:
@@ -84,7 +90,19 @@ If the local WSL2/CP2K environment is available, run the full probe:
 .\WinQStep.ps1 -Diagnostics
 ```
 
-Open the GUI with:
+Build or refresh the optional double-click launcher:
+
+```powershell
+python .\scripts\build_launcher.py
+```
+
+Open the GUI by double-clicking `WinQStep.exe`, or from PowerShell with:
+
+```powershell
+.\WinQStep.exe
+```
+
+If `WinQStep.exe` is not present, open the same GUI with:
 
 ```powershell
 .\WinQStep.ps1
@@ -178,7 +196,8 @@ python .\scripts\run_workflow.py --config .\examples\winqstep.config.json --temp
 To open the Windows GUI prototype:
 
 ```powershell
-.\WinQStep.ps1
+python .\scripts\build_launcher.py
+.\WinQStep.exe
 ```
 
 To run startup diagnostics without opening the GUI:

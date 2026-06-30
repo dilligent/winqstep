@@ -1,6 +1,7 @@
 codex-thread.json
 /cp2k-*/
 *.winqstep-cache.json
+/WinQStep.exe
 
 __pycache__/
 *.py[cod]

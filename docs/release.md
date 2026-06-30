@@ -8,6 +8,7 @@ zip packaging step, not a PyPI or installer release.
 Run from the repository root:
 
 ```powershell
+python .\scripts\build_launcher.py
 python .\scripts\build_release.py
 ```
 
@@ -29,7 +30,10 @@ the archive size, SHA-256, archive root, and included file list.
 
 The release zip includes the Windows launchers, Python package, scripts,
 resources, examples, tests, and documentation needed to run and verify the
-prototype from an unpacked folder.
+prototype from an unpacked folder. If `WinQStep.exe` exists in the repository
+root when the release is built, it is included as an optional double-click
+launcher. The EXE is only a thin wrapper around `WinQStep.ps1`; it does not
+bundle Python, PowerShell, WSL, CP2K, or CP2K data files.
 
 The sample config uses a relative `outputs` workspace so an unpacked release
 writes local job artifacts under that release folder by default. Users can save
@@ -87,6 +91,11 @@ Then run the full diagnostics when WSL2 and CP2K are available:
 ```powershell
 .\WinQStep.ps1 -Diagnostics
 ```
+
+If `WinQStep.exe` is present in the unpacked folder, users can then double-click
+it to start the same GUI without opening a terminal first. If it is absent, run
+`python .\scripts\build_launcher.py` from the unpacked folder or use
+`.\WinQStep.ps1`.
 
 Before handing off a release candidate from a development checkout, run:
 

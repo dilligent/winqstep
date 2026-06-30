@@ -50,7 +50,18 @@ persists `ui_language` as `en-US`, `zh-CN`, or an empty system-default value.
 The launcher `-Language` option remains a temporary override and does not write
 the config.
 
+Round 56 adds an optional thin `WinQStep.exe` launcher. It starts the existing
+PowerShell-hosted WPF GUI from a double-click without bundling Python,
+PowerShell, WSL, CP2K, or CP2K data files.
+
 ## Start
+
+```powershell
+python .\scripts\build_launcher.py
+.\WinQStep.exe
+```
+
+The script launcher remains available:
 
 ```powershell
 .\WinQStep.ps1

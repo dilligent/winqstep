@@ -98,6 +98,13 @@ def build_check_plan(
             checks.extend(
                 [
                     python_check(
+                        "launcher-plan",
+                        profile,
+                        python,
+                        ["scripts/build_launcher.py", "--dry-run", "--compact"],
+                        timeout=60,
+                    ),
+                    python_check(
                         "release-plan",
                         profile,
                         python,

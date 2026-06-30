@@ -20,6 +20,8 @@ from winqstep.config import ConfigError, load_config, validate_config
 REQUIRED_FILES = (
     "WinQStep.cmd",
     "WinQStep.ps1",
+    "launcher/WinQStep.Launcher.cs",
+    "scripts/build_launcher.py",
     "scripts/check_startup.py",
     "scripts/build_release.py",
     "scripts/smoke_release_install.py",
@@ -49,6 +51,7 @@ REQUIRED_FILES = (
 RELEASE_EXCLUSION_PATTERNS = (
     "codex-thread.json",
     "/outputs/",
+    "/WinQStep.exe",
     "/build/",
     "/dist/",
     "/cp2k-*/",

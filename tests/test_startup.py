@@ -41,6 +41,8 @@ class StartupDiagnosticsTests(unittest.TestCase):
         self.assertIn("System.Windows.Forms", payload["checks"]["wpf_desktop"]["assemblies"])
         self.assertTrue(required["WinQStep.cmd"])
         self.assertTrue(required["WinQStep.ps1"])
+        self.assertTrue(required["launcher/WinQStep.Launcher.cs"])
+        self.assertTrue(required["scripts/build_launcher.py"])
         self.assertTrue(required["scripts/start_gui.ps1"])
         self.assertTrue(required["scripts/check_startup.py"])
         self.assertTrue(required["scripts/build_release.py"])
@@ -53,6 +55,7 @@ class StartupDiagnosticsTests(unittest.TestCase):
         self.assertTrue(required["resources/i18n/zh-CN.json"])
         exclusions = {item["pattern"]: item["present"] for item in payload["checks"]["release_exclusions"]}
         self.assertTrue(exclusions["/outputs/"])
+        self.assertTrue(exclusions["/WinQStep.exe"])
         self.assertTrue(exclusions["*.winqstep-cache.json"])
         self.assertTrue(exclusions["/cp2k-*/"])
 

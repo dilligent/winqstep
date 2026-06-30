@@ -37,6 +37,7 @@ class RunChecksTests(unittest.TestCase):
         names = [check["name"] for check in plan]
 
         self.assertIn("gui-button-smoke-offline", names)
+        self.assertIn("launcher-plan", names)
         self.assertIn("release-install-smoke", names)
         self.assertIn("release-candidate-walkthrough", names)
         self.assertNotIn("startup-diagnostics-live", names)
@@ -92,8 +93,8 @@ class RunChecksTests(unittest.TestCase):
         self.assertEqual(payload["mode"], "run_checks")
         self.assertEqual(payload["profiles"], ["release"])
         self.assertTrue(payload["valid"])
-        self.assertEqual(payload["summary"]["planned"], 2)
-        self.assertEqual([check["status"] for check in payload["checks"]], ["planned", "planned"])
+        self.assertEqual(payload["summary"]["planned"], 3)
+        self.assertEqual([check["status"] for check in payload["checks"]], ["planned", "planned", "planned"])
 
 
 if __name__ == "__main__":

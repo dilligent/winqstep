@@ -155,6 +155,8 @@ function Test-WinQStepGuiPrerequisites {
     $requiredFiles = @(
         "WinQStep.cmd",
         "WinQStep.ps1",
+        "launcher\WinQStep.Launcher.cs",
+        "scripts\build_launcher.py",
         "scripts\check_startup.py",
         "scripts\build_release.py",
         "scripts\smoke_release_install.py",

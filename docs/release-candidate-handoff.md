@@ -21,7 +21,8 @@ candidate supports:
 - GUI conveniences added after `0.1.0`: responsive tab order, editable generated
   input confirmation, readable Environment and Structure summaries, native 3D
   structure preview with rotate/zoom/pan/reset, localized UI improvements,
-  UTF-8 live job-log tails, and clearer first-run requirements.
+  UTF-8 live job-log tails, a thin double-click `WinQStep.exe` launcher, and
+  clearer first-run requirements.
 - Source-release zip packaging and unpacked release smoke testing.
 
 ## Required Handoff Commands
@@ -32,6 +33,7 @@ Run from the repository root before handing off a candidate:
 git status --short
 python .\scripts\run_checks.py --profile all --compact
 python .\scripts\release_candidate_walkthrough.py --compact
+python .\scripts\build_launcher.py --compact
 python .\scripts\build_release.py --compact
 python .\scripts\smoke_release_install.py --archive .\dist\winqstep-0.2.0.zip --compact
 ```
@@ -42,6 +44,7 @@ Expected minimum result:
 - `run_checks.py --profile all` reports `valid: true`.
 - `release_candidate_walkthrough.py` reports `valid: true` with 9 offline
   steps passed.
+- `build_launcher.py` writes `WinQStep.exe`.
 - `build_release.py` writes `dist/winqstep-0.2.0.zip` and
   `dist/winqstep-0.2.0.manifest.json`.
 - `smoke_release_install.py --archive ...` reports `valid: true`.
@@ -76,12 +79,14 @@ After unpacking the zip on Windows:
 ```powershell
 .\WinQStep.ps1 -Diagnostics -SkipLiveProbes
 .\WinQStep.ps1 -Diagnostics
-.\WinQStep.ps1
+.\WinQStep.exe
 ```
 
 Use `-Diagnostics -SkipLiveProbes` first to verify Python, PowerShell,
 repository files, config shape, and release hygiene without touching WSL. Use
 full `-Diagnostics` only when WSL2 and CP2K are expected to be available.
+If `WinQStep.exe` is not present in a source-only handoff, run
+`python .\scripts\build_launcher.py` or start the GUI with `.\WinQStep.ps1`.
 
 ## Known Limitations
 
@@ -99,6 +104,15 @@ full `-Diagnostics` only when WSL2 and CP2K are expected to be available.
   of truth for scientific interpretation.
 
 ## Current Verification Baseline
+
+Round 56 adds the optional thin EXE launcher. The local launcher/release checks
+for this round were:
+
+- `python .\scripts\build_launcher.py --compact`: wrote `WinQStep.exe`.
+- `python .\scripts\run_checks.py --profile fast --compact`: 2/2 checks
+  passed, including 150 unit tests.
+- `python .\scripts\run_checks.py --profile release --compact`: 3/3 checks
+  passed. With the optional EXE present, release planning listed 110 files.
 
 Round 51 prepares the `0.2.0` source-release candidate after the post-`0.1.0`
 GUI, QuickStep, preview, and documentation updates:

@@ -26,9 +26,9 @@ Each round should end with a focused commit.
   ordering, full CP2K input-section labels in the Template tab, and UTF-8
   hardening for live GUI job logs, and readable imported-structure display in
   the GUI Structure tab, and readable environment probe display in the GUI
-  Environment tab, QuickStep `SCF/&OUTER_SCF` support, and QuickStep `DFT/UKS`
-  support.
-- Next active round: Round 56, expand QuickStep coverage from the next selected
+  Environment tab, QuickStep `SCF/&OUTER_SCF` support, QuickStep `DFT/UKS`
+  support, and a thin double-click `WinQStep.exe` launcher.
+- Next active round: Round 57, expand QuickStep coverage from the next selected
   CP2K feature area.
 - Known local facts:
   - WSL2 is available.
@@ -1913,6 +1913,40 @@ Acceptance:
 Commit boundary:
 
 - One commit for UKS model, renderer, template/GUI controls, tests, and docs.
+
+## Round 56: Thin Windows EXE Launcher
+
+Status: implemented.
+
+Goal: let normal Windows users start the GUI by double-clicking an `.exe`
+without turning WinQStep into a bundled interpreter package.
+
+Tasks:
+
+- Add a small C# WinForms-compatible launcher that locates sibling
+  `WinQStep.ps1` and starts Windows PowerShell with the existing startup
+  arguments.
+- Keep the launcher as a thin wrapper only: no Python, PowerShell, WSL, CP2K,
+  CP2K data files, or package dependencies are bundled into it.
+- Add `scripts/build_launcher.py` to compile `WinQStep.exe` with the local
+  .NET Framework C# compiler when available.
+- Keep generated `WinQStep.exe` out of git, but include it in release zips when
+  it exists at release-build time.
+- Wire the launcher source and build script into startup diagnostics, release
+  planning, release smoke checks, tests, and user docs.
+
+Acceptance:
+
+- `python .\scripts\build_launcher.py` creates `WinQStep.exe` in the repository
+  root on a machine with `csc.exe`.
+- Double-clicking `WinQStep.exe` starts the same PowerShell-hosted WPF GUI as
+  `WinQStep.ps1`.
+- Source-only checkouts can still use `WinQStep.ps1` and can build the EXE
+  locally without committing a binary.
+
+Commit boundary:
+
+- One commit for the thin launcher, builder, release wiring, tests, and docs.
 
 ## Working Rules
 

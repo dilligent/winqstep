@@ -25,7 +25,8 @@ python .\scripts\run_checks.py --profile all
 - `fast`: unit tests plus `check_startup.py --skip-live-probes`.
 - `gui`: non-interactive WPF smoke tests, button smoke, lifecycle smoke, and
   Python stderr-separation smoke. These checks do not call WSL or CP2K.
-- `release`: release file planning plus unpacked release install smoke.
+- `release`: launcher build planning, release file planning, and unpacked
+  release install smoke.
 - `rc`: release-candidate user-path walkthrough. It runs offline startup and
   config/template validation, prepares an `ENERGY_FORCE` workflow job, prepares
   an existing-input job, scans history, and checks the release file plan.

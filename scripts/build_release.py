@@ -23,7 +23,11 @@ RELEASE_ROOT_FILES = (
     "WinQStep.ps1",
     "WinQStep.cmd",
 )
+OPTIONAL_RELEASE_ROOT_FILES = (
+    "WinQStep.exe",
+)
 RELEASE_DIRS = (
+    "launcher",
     "winqstep",
     "scripts",
     "resources",
@@ -90,6 +94,11 @@ def iter_release_files(repo_root: Path) -> list[Path]:
         if path.is_file() and not should_exclude(Path(relative)):
             files.append(Path(relative))
 
+    for relative in OPTIONAL_RELEASE_ROOT_FILES:
+        path = repo_root / relative
+        if path.is_file() and not should_exclude(Path(relative)):
+            files.append(Path(relative))
+
     for relative_dir in RELEASE_DIRS:
         directory = repo_root / relative_dir
         if not directory.is_dir():
@@ -137,6 +146,7 @@ def build_release_plan(repo_root: Path, output_dir: Path | None = None) -> dict[
             "patterns": list(EXCLUDED_PATTERNS),
             "cp2k_snapshots": "top-level cp2k-* directories",
         },
+        "optional_root_files": list(OPTIONAL_RELEASE_ROOT_FILES),
     }
 
 

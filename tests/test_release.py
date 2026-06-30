@@ -30,6 +30,8 @@ class ReleaseBuildTests(unittest.TestCase):
         self.assertIn(".gitignore", plan["files"])
         self.assertIn("WinQStep.ps1", plan["files"])
         self.assertIn("WinQStep.cmd", plan["files"])
+        self.assertIn("launcher/WinQStep.Launcher.cs", plan["files"])
+        self.assertIn("scripts/build_launcher.py", plan["files"])
         self.assertIn("scripts/build_release.py", plan["files"])
         self.assertIn("scripts/smoke_release_install.py", plan["files"])
         self.assertIn("scripts/run_checks.py", plan["files"])
@@ -91,6 +93,8 @@ class ReleaseBuildTests(unittest.TestCase):
             root = payload["archive_root"]
             self.assertIn(f"{root}/.gitignore", names)
             self.assertIn(f"{root}/WinQStep.ps1", names)
+            self.assertIn(f"{root}/launcher/WinQStep.Launcher.cs", names)
+            self.assertIn(f"{root}/scripts/build_launcher.py", names)
             self.assertIn(f"{root}/scripts/smoke_release_install.py", names)
             self.assertIn(f"{root}/scripts/run_checks.py", names)
             self.assertIn(f"{root}/scripts/release_candidate_walkthrough.py", names)
