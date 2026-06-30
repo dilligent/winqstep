@@ -31,6 +31,7 @@ $EditedPreviewSmokeState = @{
 $Script:SuppressGuiMessageBoxes = $SuppressGuiMessageBoxes
 $Script:EditedPreviewSmokeStartAsyncJob = $null
 $Script:EnvironmentDisplaySmokeFormatter = $null
+$Script:StructurePreviewSmokeApplyInteraction = $null
 
 . (Join-Path $PSScriptRoot "gui\WinQStep.GuiHost.ps1")
 function New-WinQStepWindow {
@@ -268,7 +269,19 @@ function New-WinQStepWindow {
     )
     $artifactState = @{ Current = $null }
     $previewState = @{ Current = $null }
-    $structurePreviewState = @{ Current = $null }
+    $structurePreviewState = @{
+        Current = $null
+        Radius = 5.0
+        DefaultDistance = 5.0
+        Distance = 5.0
+        Yaw = 0.0
+        Pitch = 0.0
+        PanX = 0.0
+        PanY = 0.0
+        IsDragging = $false
+        DragMode = ""
+        LastPoint = $null
+    }
 
     $actionButtons = @(
         $controls["LoadConfigButton"], $controls["SaveConfigButton"],
@@ -969,17 +982,83 @@ function New-WinQStepWindow {
         return $mesh
     }.GetNewClosure()
 
-    $ResetStructurePreviewCamera = {
-        param($Preview)
-        $radius = & $GetPreviewNumber (& $GetNestedValue $Preview @("bounding_radius")) 5.0
-        $distance = [Math]::Max($radius * 2.8, 5.0)
+    $UpdateStructurePreviewView = {
         $camera = $controls["StructurePreviewCamera"]
-        $camera.Position = [System.Windows.Media.Media3D.Point3D]::new(0.0, 0.0, $distance)
+        $distance = [Math]::Max([double]$structurePreviewState["Distance"], 0.1)
+        $radius = [Math]::Max([double]$structurePreviewState["Radius"], 1.0)
+        $panX = [double]$structurePreviewState["PanX"]
+        $panY = [double]$structurePreviewState["PanY"]
+
+        $camera.Position = [System.Windows.Media.Media3D.Point3D]::new($panX, $panY, $distance)
         $camera.LookDirection = [System.Windows.Media.Media3D.Vector3D]::new(0.0, 0.0, -$distance)
         $camera.UpDirection = [System.Windows.Media.Media3D.Vector3D]::new(0.0, 1.0, 0.0)
         $camera.NearPlaneDistance = 0.01
         $camera.FarPlaneDistance = [Math]::Max(100.0, $distance + ($radius * 6.0))
+
+        $content = $controls["StructurePreviewVisual"].Content
+        if ($null -ne $content) {
+            $transform = [System.Windows.Media.Media3D.Transform3DGroup]::new()
+            $pitchRotation = [System.Windows.Media.Media3D.AxisAngleRotation3D]::new(
+                [System.Windows.Media.Media3D.Vector3D]::new(1.0, 0.0, 0.0),
+                [double]$structurePreviewState["Pitch"]
+            )
+            $yawRotation = [System.Windows.Media.Media3D.AxisAngleRotation3D]::new(
+                [System.Windows.Media.Media3D.Vector3D]::new(0.0, 1.0, 0.0),
+                [double]$structurePreviewState["Yaw"]
+            )
+            $transform.Children.Add([System.Windows.Media.Media3D.RotateTransform3D]::new($pitchRotation))
+            $transform.Children.Add([System.Windows.Media.Media3D.RotateTransform3D]::new($yawRotation))
+            $content.Transform = $transform
+        }
     }.GetNewClosure()
+
+    $ResetStructurePreviewCamera = {
+        param($Preview)
+        $radius = & $GetPreviewNumber (& $GetNestedValue $Preview @("bounding_radius")) 5.0
+        $distance = [Math]::Max($radius * 2.8, 5.0)
+        $structurePreviewState["Radius"] = $radius
+        $structurePreviewState["DefaultDistance"] = $distance
+        $structurePreviewState["Distance"] = $distance
+        $structurePreviewState["Yaw"] = 0.0
+        $structurePreviewState["Pitch"] = 0.0
+        $structurePreviewState["PanX"] = 0.0
+        $structurePreviewState["PanY"] = 0.0
+        & $UpdateStructurePreviewView
+    }.GetNewClosure()
+
+    $ApplyStructurePreviewInteraction = {
+        param(
+            [Parameter(Mandatory = $true)][string]$Mode,
+            [double]$DeltaX = 0.0,
+            [double]$DeltaY = 0.0,
+            [int]$WheelDelta = 0
+        )
+        if ($null -eq $structurePreviewState["Current"]) {
+            return
+        }
+
+        switch ($Mode.ToLowerInvariant()) {
+            "rotate" {
+                $structurePreviewState["Yaw"] = [double]$structurePreviewState["Yaw"] + ($DeltaX * 0.45)
+                $structurePreviewState["Pitch"] = [double]$structurePreviewState["Pitch"] + ($DeltaY * 0.45)
+            }
+            "pan" {
+                $scale = [Math]::Max(([double]$structurePreviewState["Distance"]) * 0.002, 0.005)
+                $structurePreviewState["PanX"] = [double]$structurePreviewState["PanX"] - ($DeltaX * $scale)
+                $structurePreviewState["PanY"] = [double]$structurePreviewState["PanY"] + ($DeltaY * $scale)
+            }
+            "zoom" {
+                $factor = if ($WheelDelta -gt 0) { 0.9 } else { 1.1 }
+                $radius = [Math]::Max([double]$structurePreviewState["Radius"], 1.0)
+                $minDistance = [Math]::Max($radius * 0.35, 0.5)
+                $maxDistance = [Math]::Max($radius * 25.0, 25.0)
+                $nextDistance = [double]$structurePreviewState["Distance"] * $factor
+                $structurePreviewState["Distance"] = [Math]::Min([Math]::Max($nextDistance, $minDistance), $maxDistance)
+            }
+        }
+        & $UpdateStructurePreviewView
+    }.GetNewClosure()
+    $Script:StructurePreviewSmokeApplyInteraction = $ApplyStructurePreviewInteraction
 
     $ClearStructurePreview = {
         $structurePreviewState["Current"] = $null
@@ -2728,6 +2807,74 @@ function New-WinQStepWindow {
         & $ApplySelectedDataLabel
     }.GetNewClosure())
 
+    $controls["StructurePreviewViewport"].Add_MouseDown({
+        param($sender, $eventArgs)
+        if ($null -eq $structurePreviewState["Current"]) {
+            return
+        }
+        if ($eventArgs.ChangedButton -eq [System.Windows.Input.MouseButton]::Left) {
+            $structurePreviewState["DragMode"] = "rotate"
+        }
+        elseif ($eventArgs.ChangedButton -eq [System.Windows.Input.MouseButton]::Right -or $eventArgs.ChangedButton -eq [System.Windows.Input.MouseButton]::Middle) {
+            $structurePreviewState["DragMode"] = "pan"
+        }
+        else {
+            return
+        }
+        $structurePreviewState["IsDragging"] = $true
+        $structurePreviewState["LastPoint"] = $eventArgs.GetPosition($controls["StructurePreviewViewport"])
+        $null = $controls["StructurePreviewViewport"].CaptureMouse()
+        $eventArgs.Handled = $true
+    }.GetNewClosure())
+
+    $controls["StructurePreviewViewport"].Add_MouseMove({
+        param($sender, $eventArgs)
+        if (-not [bool]$structurePreviewState["IsDragging"]) {
+            return
+        }
+        $lastPoint = $structurePreviewState["LastPoint"]
+        if ($null -eq $lastPoint) {
+            return
+        }
+        $point = $eventArgs.GetPosition($controls["StructurePreviewViewport"])
+        $deltaX = [double]$point.X - [double]$lastPoint.X
+        $deltaY = [double]$point.Y - [double]$lastPoint.Y
+        if ([Math]::Abs($deltaX) -gt 0.0 -or [Math]::Abs($deltaY) -gt 0.0) {
+            & $ApplyStructurePreviewInteraction ([string]$structurePreviewState["DragMode"]) $deltaX $deltaY 0
+        }
+        $structurePreviewState["LastPoint"] = $point
+        $eventArgs.Handled = $true
+    }.GetNewClosure())
+
+    $controls["StructurePreviewViewport"].Add_MouseUp({
+        param($sender, $eventArgs)
+        if (-not [bool]$structurePreviewState["IsDragging"]) {
+            return
+        }
+        $structurePreviewState["IsDragging"] = $false
+        $structurePreviewState["DragMode"] = ""
+        $structurePreviewState["LastPoint"] = $null
+        $controls["StructurePreviewViewport"].ReleaseMouseCapture()
+        $eventArgs.Handled = $true
+    }.GetNewClosure())
+
+    $controls["StructurePreviewViewport"].Add_MouseLeave({
+        if ([bool]$structurePreviewState["IsDragging"] -and -not [bool]$controls["StructurePreviewViewport"].IsMouseCaptured) {
+            $structurePreviewState["IsDragging"] = $false
+            $structurePreviewState["DragMode"] = ""
+            $structurePreviewState["LastPoint"] = $null
+        }
+    }.GetNewClosure())
+
+    $controls["StructurePreviewViewport"].Add_MouseWheel({
+        param($sender, $eventArgs)
+        if ($null -eq $structurePreviewState["Current"]) {
+            return
+        }
+        & $ApplyStructurePreviewInteraction "zoom" 0.0 0.0 ([int]$eventArgs.Delta)
+        $eventArgs.Handled = $true
+    }.GetNewClosure())
+
     $controls["StructureResetViewButton"].Add_Click({
         if ($null -ne $structurePreviewState["Current"]) {
             & $ResetStructurePreviewCamera $structurePreviewState["Current"]
@@ -3282,7 +3429,31 @@ if ($ButtonSmokeTest) {
     }
     $structurePreviewStatus = [string]$window.FindName("StructurePreviewStatusText").Text
     $structureResetEnabledAfterImport = [bool]$window.FindName("StructureResetViewButton").IsEnabled
+    $structurePreviewCamera = $window.FindName("StructurePreviewCamera")
+    $structurePreviewInitialDistance = [double]$structurePreviewCamera.Position.Z
+    $structurePreviewInitialPanX = [double]$structurePreviewCamera.Position.X
+    $structurePreviewInitialPanY = [double]$structurePreviewCamera.Position.Y
+    $structurePreviewInitialTransform = [string]$window.FindName("StructurePreviewVisual").Content.Transform.Value
+    $structurePreviewRotatedTransform = $structurePreviewInitialTransform
+    $structurePreviewPannedPosition = $structurePreviewCamera.Position
+    $structurePreviewDistanceBeforeZoom = [double]$structurePreviewCamera.Position.Z
+    $structurePreviewZoomedDistance = $structurePreviewDistanceBeforeZoom
+    $structurePreviewInteractionHook = $Script:StructurePreviewSmokeApplyInteraction
+    if ($null -ne $structurePreviewInteractionHook) {
+        & $structurePreviewInteractionHook "rotate" 40.0 20.0 0
+        [System.Windows.Forms.Application]::DoEvents()
+        $structurePreviewRotatedTransform = [string]$window.FindName("StructurePreviewVisual").Content.Transform.Value
+        & $structurePreviewInteractionHook "pan" 30.0 -15.0 0
+        [System.Windows.Forms.Application]::DoEvents()
+        $structurePreviewPannedPosition = $structurePreviewCamera.Position
+        $structurePreviewDistanceBeforeZoom = [double]$structurePreviewCamera.Position.Z
+        & $structurePreviewInteractionHook "zoom" 0.0 0.0 120
+        [System.Windows.Forms.Application]::DoEvents()
+        $structurePreviewZoomedDistance = [double]$structurePreviewCamera.Position.Z
+    }
     & $RecordButtonSmokeClick "StructureResetViewButton"
+    $structurePreviewResetPosition = $structurePreviewCamera.Position
+    $structurePreviewResetTransform = [string]$window.FindName("StructurePreviewVisual").Content.Transform.Value
 
     & $RecordButtonSmokeClick "PreviewButton" "PreviewWorkflowButton"
     $workflowPreviewText = [string]$window.FindName("PreviewText").Text
@@ -3391,6 +3562,19 @@ if ($ButtonSmokeTest) {
     $report["structure_preview_geometry_count"] = $structurePreviewGeometryCount
     $report["structure_preview_status_has_atoms"] = $structurePreviewStatus.Contains("3/3")
     $report["structure_preview_reset_enabled_after_import"] = $structureResetEnabledAfterImport
+    $report["structure_preview_interaction_hook_loaded"] = ($null -ne $structurePreviewInteractionHook)
+    $report["structure_preview_rotate_changed_transform"] = ($structurePreviewRotatedTransform -ne $structurePreviewInitialTransform)
+    $report["structure_preview_pan_changed_camera"] = (
+        [Math]::Abs([double]$structurePreviewPannedPosition.X - $structurePreviewInitialPanX) -gt 0.001 -or
+        [Math]::Abs([double]$structurePreviewPannedPosition.Y - $structurePreviewInitialPanY) -gt 0.001
+    )
+    $report["structure_preview_zoom_changed_distance"] = ([Math]::Abs($structurePreviewZoomedDistance - $structurePreviewDistanceBeforeZoom) -gt 0.001)
+    $report["structure_preview_reset_restored_camera"] = (
+        [Math]::Abs([double]$structurePreviewResetPosition.X - $structurePreviewInitialPanX) -lt 0.001 -and
+        [Math]::Abs([double]$structurePreviewResetPosition.Y - $structurePreviewInitialPanY) -lt 0.001 -and
+        [Math]::Abs([double]$structurePreviewResetPosition.Z - $structurePreviewInitialDistance) -lt 0.001
+    )
+    $report["structure_preview_reset_restored_transform"] = ($structurePreviewResetTransform -eq $structurePreviewInitialTransform)
     $report["history_grid_count"] = $historyItems.Count
     $report["history_selected_project"] = if ($null -ne $selectedHistoryItem) { [string]$selectedHistoryItem.project_name } else { "" }
     $report["history_log_has_jobs"] = $historyLogText.Contains("History jobs:")
@@ -3426,6 +3610,12 @@ if ($ButtonSmokeTest) {
         $report["structure_preview_geometry_count"] -ge 3 -and
         $report["structure_preview_status_has_atoms"] -and
         $report["structure_preview_reset_enabled_after_import"] -and
+        $report["structure_preview_interaction_hook_loaded"] -and
+        $report["structure_preview_rotate_changed_transform"] -and
+        $report["structure_preview_pan_changed_camera"] -and
+        $report["structure_preview_zoom_changed_distance"] -and
+        $report["structure_preview_reset_restored_camera"] -and
+        $report["structure_preview_reset_restored_transform"] -and
         $report["history_grid_count"] -gt 0 -and
         $report["history_selected_project"] -eq "button_history" -and
         $report["history_log_has_jobs"] -and

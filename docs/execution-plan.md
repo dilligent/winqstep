@@ -1677,6 +1677,35 @@ Commit boundary:
 
 - One commit for static WPF 3D preview rendering, tests, localization, and docs.
 
+## Round 49: Structure 3D Preview Interaction
+
+Status: implemented.
+
+Goal: make the native WPF structure preview inspectable with basic camera/model
+interaction while keeping the viewer display-only.
+
+Tasks:
+
+- Track preview yaw, pitch, pan, distance, default distance, and drag state.
+- Rotate the model on left-button drag.
+- Pan the camera on right-button or middle-button drag.
+- Zoom the camera with the mouse wheel.
+- Make `Reset View` restore yaw, pitch, pan, and distance.
+- Add GUI smoke coverage that verifies rotation changes the model transform,
+  pan changes camera X/Y, zoom changes camera distance, and reset restores the
+  initial view.
+
+Acceptance:
+
+- Imported structures can be rotated, zoomed, panned, and reset without changing
+  the structure model used by Preview or Run.
+- Clear still removes stale 3D geometry and disables reset.
+- No visual bond inference is added in this round.
+
+Commit boundary:
+
+- One commit for 3D preview interaction plumbing, smoke tests, and docs.
+
 ## Working Rules
 
 - Keep each round small enough to review.

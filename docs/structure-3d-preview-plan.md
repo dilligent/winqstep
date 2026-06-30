@@ -117,7 +117,7 @@ Implementation:
 
 ### Round C: Interaction and Polish
 
-Status: next.
+Status: partially implemented.
 
 Goal: make the preview useful for inspection rather than just a static picture.
 
@@ -136,6 +136,23 @@ Acceptance:
   the calculation input.
 - Interaction remains responsive for small and medium structures.
 - Large structures fail gracefully or render in a simplified mode.
+
+Implementation so far:
+
+- Mouse left-drag rotates the preview by updating the model transform.
+- Mouse wheel zooms by changing the preview camera distance.
+- Mouse right-drag or middle-drag pans by changing the preview camera X/Y
+  offset.
+- `Reset View` restores yaw, pitch, pan, and distance to the imported preview's
+  default camera state.
+- GUI smoke coverage verifies that rotate, pan, zoom, and reset change and
+  restore the expected camera or transform state.
+
+Deferred:
+
+- Display toggles for cell frame and optional visual-only bonds.
+- Large-structure simplified rendering controls beyond the model-level atom
+  display cap and warnings.
 
 ## Main Risks
 
