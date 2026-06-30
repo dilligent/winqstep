@@ -101,12 +101,84 @@ def check_python(errors: list[str]) -> dict[str, Any]:
 
 
 def check_powershell(warnings: list[str]) -> dict[str, Any]:
-    path = shutil.which("powershell") or shutil.which("pwsh")
+    windows_powershell = shutil.which("powershell")
+    pwsh = shutil.which("pwsh")
+    path = windows_powershell or pwsh
     if not path:
-        warnings.append("PowerShell was not found on PATH; the GUI launcher cannot start.")
+        warnings.append("Windows PowerShell was not found on PATH; the GUI launcher cannot start.")
+    elif not windows_powershell:
+        warnings.append("Windows PowerShell 5.1 was not found; the GUI launcher expects powershell.exe, not only pwsh.")
     return {
         "executable": path,
         "available": bool(path),
+        "windows_powershell": windows_powershell,
+        "pwsh": pwsh,
+    }
+
+
+def check_wpf_desktop(errors: list[str]) -> dict[str, Any]:
+    powershell = shutil.which("powershell")
+    assemblies = ("PresentationFramework", "PresentationCore", "WindowsBase", "System.Windows.Forms")
+    if not powershell:
+        return {
+            "ok": None,
+            "skipped": True,
+            "reason": "Windows PowerShell was not found on PATH",
+            "assemblies": list(assemblies),
+        }
+
+    command_text = (
+        "$ErrorActionPreference='Stop'; "
+        + "; ".join(f"Add-Type -AssemblyName {assembly}" for assembly in assemblies)
+        + "; Write-Output 'ok'"
+    )
+    command = [
+        powershell,
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-Command",
+        command_text,
+    ]
+    try:
+        completed = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=20,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        errors.append(f"WPF/.NET desktop assembly check could not run: {exc}")
+        return {
+            "ok": False,
+            "skipped": False,
+            "command": command,
+            "returncode": None,
+            "stdout": "",
+            "stderr": "",
+            "error": str(exc),
+            "assemblies": list(assemblies),
+        }
+
+    ok = completed.returncode == 0
+    if not ok:
+        errors.append(
+            "WPF/.NET desktop assemblies are not available; install or enable the "
+            ".NET desktop runtime / .NET Framework WPF support and run WinQStep "
+            "with Windows PowerShell 5.1."
+        )
+    return {
+        "ok": ok,
+        "skipped": False,
+        "command": command,
+        "returncode": completed.returncode,
+        "stdout": completed.stdout,
+        "stderr": completed.stderr,
+        "error": None,
+        "assemblies": list(assemblies),
     }
 
 
@@ -199,6 +271,7 @@ def build_report(args: argparse.Namespace) -> dict[str, Any]:
         },
         "python": check_python(errors),
         "powershell": check_powershell(warnings),
+        "wpf_desktop": check_wpf_desktop(errors),
         "required_files": check_required_files(repo_root, errors),
         "config": check_config(config_path, errors, warnings),
         "release_exclusions": check_release_exclusions(repo_root, warnings),

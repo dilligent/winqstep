@@ -1775,6 +1775,41 @@ Commit boundary:
 
 - One commit for `0.2.0` release-prep metadata, tests, and docs.
 
+## Round 52: WPF Runtime Startup Diagnostics
+
+Status: implemented.
+
+Goal: make missing .NET/WPF desktop runtime problems visible before users try to
+open the GUI.
+
+Context:
+
+- A tester reported that the GUI failed with a missing .NET runtime error.
+- Installing the .NET runtime resolved the issue, confirming that the
+  PowerShell-hosted WPF GUI depends on desktop WPF assemblies being available.
+
+Tasks:
+
+- Extend startup diagnostics to load `PresentationFramework`,
+  `PresentationCore`, `WindowsBase`, and `System.Windows.Forms` through
+  `powershell.exe`.
+- Report the WPF/.NET desktop assembly check under `checks.wpf_desktop`.
+- Document that users should install or enable .NET desktop runtime /
+  .NET Framework WPF support and launch with Windows PowerShell 5.1 rather than
+  `pwsh`.
+- Add startup tests for the new diagnostics field.
+
+Acceptance:
+
+- `check_startup.py --skip-live-probes` fails with a direct WPF/.NET desktop
+  message when the assemblies cannot be loaded.
+- Existing startup diagnostics still pass on a correctly configured Windows
+  desktop.
+
+Commit boundary:
+
+- One commit for WPF runtime diagnostics, tests, and docs.
+
 ## Working Rules
 
 - Keep each round small enough to review.

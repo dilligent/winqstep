@@ -40,7 +40,9 @@ The current usable path is:
 WinQStep currently expects these components on the user's Windows computer:
 
 - Windows desktop session with Windows PowerShell 5.1 and WPF desktop
-  assemblies available.
+  assemblies available. If the GUI reports missing .NET/WPF components, install
+  or enable the .NET desktop runtime / .NET Framework WPF support and launch
+  with `powershell.exe`, not `pwsh`.
 - Python 3.11 or newer available as `python` on `PATH`.
 - Python package dependency `ase>=3.23` for structure import. From the unpacked
   WinQStep folder, install it with:
@@ -90,9 +92,10 @@ The sample config in `examples/winqstep.config.json` defaults job output to the
 relative `outputs` folder inside the current WinQStep directory. Edit it from
 the GUI `Config` tab or with `scripts/manage_config.py` for your own CP2K paths.
 
-If startup diagnostics report that `python`, `powershell`, `wsl.exe`, the CP2K
-command, or the CP2K data directory cannot be found, fix the Windows/WSL
-environment or the `Config` tab values before running jobs.
+If startup diagnostics report that `python`, `powershell`, WPF/.NET desktop
+assemblies, `wsl.exe`, the CP2K command, or the CP2K data directory cannot be
+found, fix the Windows/WSL environment or the `Config` tab values before running
+jobs.
 
 ## Development
 

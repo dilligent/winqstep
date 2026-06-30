@@ -48,7 +48,8 @@ For deterministic checks that do not probe WSL or CP2K:
 The diagnostics path calls `scripts/check_startup.py` and returns JSON covering:
 
 - required repository scripts, launchers, examples, and fixtures;
-- Python version and PowerShell availability;
+- Python version, Windows PowerShell availability, and WPF/.NET desktop
+  assembly loading;
 - active config validation with execution fields required;
 - release hygiene checks for generated outputs and local caches;
 - optional live WSL/CP2K probing through `scripts/detect_environment.py`.
@@ -63,7 +64,10 @@ See `docs/testing.md` for GUI, release, and live profiles.
 
 ## Prerequisites
 
-- Windows with Windows PowerShell 5.1 and WPF desktop assemblies.
+- Windows with Windows PowerShell 5.1 and WPF desktop assemblies. If the GUI
+  reports missing .NET/WPF components, install or enable the .NET desktop
+  runtime / .NET Framework WPF support and launch with `powershell.exe`, not
+  `pwsh`.
 - Python 3.11 or newer on `PATH`.
 - Python dependency `ase` installed for structure import.
 - WSL2 with the configured distro available.

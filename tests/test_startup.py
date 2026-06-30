@@ -36,6 +36,9 @@ class StartupDiagnosticsTests(unittest.TestCase):
         self.assertTrue(payload["valid"], payload["errors"])
         self.assertTrue(payload["checks"]["live_probes"]["skipped"])
         required = {item["path"]: item["exists"] for item in payload["checks"]["required_files"]}
+        self.assertIn("wpf_desktop", payload["checks"])
+        self.assertIn("PresentationFramework", payload["checks"]["wpf_desktop"]["assemblies"])
+        self.assertIn("System.Windows.Forms", payload["checks"]["wpf_desktop"]["assemblies"])
         self.assertTrue(required["WinQStep.cmd"])
         self.assertTrue(required["WinQStep.ps1"])
         self.assertTrue(required["scripts/start_gui.ps1"])
