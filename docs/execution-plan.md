@@ -20,8 +20,8 @@ Each round should end with a focused commit.
   artifact build, release install smoke, live CP2K release validation, and user
   guide polish, GUI async run completion hardening, and window-level GUI
   overflow scrolling, QuickStep CELL/PERIODIC template support, QuickStep SCF
-  control expansion, and QuickStep KPOINTS support.
-- Next active round: Round 38, expand QuickStep coverage from the next selected
+  control expansion, QuickStep KPOINTS support, and QuickStep CELL_OPT support.
+- Next active round: Round 39, expand QuickStep coverage from the next selected
   CP2K feature area.
 - Known local facts:
   - WSL2 is available.
@@ -1320,6 +1320,41 @@ Commit boundary:
 
 - One commit for KPOINTS model, renderer, template/GUI controls, tests, docs,
   and local CP2K validation.
+
+## Round 38: QuickStep CELL_OPT Support
+
+Status: implemented.
+
+Goal: add a conservative direct cell-optimization path for periodic QuickStep
+workflows.
+
+Tasks:
+
+- Add `CELL_OPT` as a supported generated run type.
+- Add typed `cell_opt` fields for optimizer, max iterations,
+  `DIRECT_CELL_OPT`, pressure tolerance, `KEEP_ANGLES`, and `KEEP_SYMMETRY`.
+- Render `FORCE_EVAL/STRESS_TENSOR ANALYTICAL` and `MOTION/&CELL_OPT` only for
+  `RUN_TYPE CELL_OPT`.
+- Reject `CELL_OPT` for nonperiodic systems before CP2K is started.
+- Add `examples/quickstep_cell_opt.json` and
+  `examples/templates/cell_opt_pbe.json`.
+- Expose the new fields in `scripts/manage_template.py` and the GUI Template
+  tab with editable drop-downs and checkboxes.
+- Add renderer, template, workflow, GUI, fast-profile, and local CP2K live
+  validation.
+
+Acceptance:
+
+- Existing ENERGY, ENERGY_FORCE, and GEO_OPT snapshots remain stable.
+- CELL_OPT inputs render `RUN_TYPE CELL_OPT` and `MOTION/&CELL_OPT`.
+- The first CELL_OPT path uses `TYPE DIRECT_CELL_OPT`; MD-driven cell
+  optimization and space-group controls remain out of scope.
+- Workflow templates can carry `cell_opt` settings through preview and run.
+
+Commit boundary:
+
+- One commit for CELL_OPT model, renderer, template/GUI controls, examples,
+  tests, docs, and local CP2K validation.
 
 ## Working Rules
 

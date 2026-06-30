@@ -182,6 +182,9 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="90"/>
@@ -191,14 +194,17 @@
           <ComboBox x:Name="TemplateProjectBox" Grid.Row="0" Grid.Column="1" IsEditable="True">
             <ComboBoxItem Content="workflow_energy"/>
             <ComboBoxItem Content="workflow_geo_opt"/>
+            <ComboBoxItem Content="workflow_cell_opt"/>
             <ComboBoxItem Content="quickstep_energy"/>
             <ComboBoxItem Content="quickstep_geo_opt"/>
+            <ComboBoxItem Content="quickstep_cell_opt"/>
           </ComboBox>
           <TextBlock x:Name="RunTypeLabel" Grid.Row="0" Grid.Column="2" Text="Run Type"/>
           <ComboBox x:Name="TemplateRunTypeBox" Grid.Row="0" Grid.Column="3" IsEditable="True">
             <ComboBoxItem Content="ENERGY"/>
             <ComboBoxItem Content="ENERGY_FORCE"/>
             <ComboBoxItem Content="GEO_OPT"/>
+            <ComboBoxItem Content="CELL_OPT"/>
           </ComboBox>
 
           <TextBlock x:Name="BasisFileLabel" Grid.Row="1" Grid.Column="0" Text="Basis File"/>
@@ -371,8 +377,39 @@
             <ComboBoxItem Content="200"/>
           </ComboBox>
 
-          <TextBlock x:Name="FallbackPeriodicLabel" Grid.Row="13" Grid.Column="0" Text="Fallback Periodic"/>
-          <ComboBox x:Name="FallbackPeriodicBox" Grid.Row="13" Grid.Column="1" IsEditable="True">
+          <TextBlock x:Name="CellOptTypeLabel" Grid.Row="13" Grid.Column="0" Text="CELL_OPT Type"/>
+          <ComboBox x:Name="CellOptTypeBox" Grid.Row="13" Grid.Column="1" IsEditable="True">
+            <ComboBoxItem Content="DIRECT_CELL_OPT"/>
+          </ComboBox>
+          <TextBlock x:Name="CellOptMaxIterLabel" Grid.Row="13" Grid.Column="2" Text="CELL Max Iter"/>
+          <ComboBox x:Name="CellOptMaxIterBox" Grid.Row="13" Grid.Column="3" IsEditable="True">
+            <ComboBoxItem Content="20"/>
+            <ComboBoxItem Content="50"/>
+            <ComboBoxItem Content="100"/>
+            <ComboBoxItem Content="200"/>
+          </ComboBox>
+
+          <TextBlock x:Name="CellOptOptimizerLabel" Grid.Row="14" Grid.Column="0" Text="CELL Optimizer"/>
+          <ComboBox x:Name="CellOptOptimizerBox" Grid.Row="14" Grid.Column="1" IsEditable="True">
+            <ComboBoxItem Content="BFGS"/>
+            <ComboBoxItem Content="LBFGS"/>
+            <ComboBoxItem Content="CG"/>
+          </ComboBox>
+          <TextBlock x:Name="CellOptPressureToleranceLabel" Grid.Row="14" Grid.Column="2" Text="Pressure Tol"/>
+          <ComboBox x:Name="CellOptPressureToleranceBox" Grid.Row="14" Grid.Column="3" IsEditable="True">
+            <ComboBoxItem Content="50"/>
+            <ComboBoxItem Content="100"/>
+            <ComboBoxItem Content="200"/>
+            <ComboBoxItem Content="500"/>
+          </ComboBox>
+
+          <CheckBox x:Name="CellOptKeepAnglesBox" Grid.Row="15" Grid.Column="0"
+                    Content="Keep Angles" Margin="6,4" VerticalAlignment="Center"/>
+          <CheckBox x:Name="CellOptKeepSymmetryBox" Grid.Row="15" Grid.Column="1"
+                    Content="Keep Symmetry" Margin="6,4" VerticalAlignment="Center"/>
+
+          <TextBlock x:Name="FallbackPeriodicLabel" Grid.Row="16" Grid.Column="0" Text="Fallback Periodic"/>
+          <ComboBox x:Name="FallbackPeriodicBox" Grid.Row="16" Grid.Column="1" IsEditable="True">
             <ComboBoxItem Content="XYZ"/>
             <ComboBoxItem Content="NONE"/>
             <ComboBoxItem Content="X"/>
@@ -382,8 +419,8 @@
             <ComboBoxItem Content="XZ"/>
             <ComboBoxItem Content="YZ"/>
           </ComboBox>
-          <TextBlock x:Name="FallbackCellALabel" Grid.Row="13" Grid.Column="2" Text="Fallback Cell A"/>
-          <ComboBox x:Name="FallbackCellABox" Grid.Row="13" Grid.Column="3" IsEditable="True">
+          <TextBlock x:Name="FallbackCellALabel" Grid.Row="16" Grid.Column="2" Text="Fallback Cell A"/>
+          <ComboBox x:Name="FallbackCellABox" Grid.Row="16" Grid.Column="3" IsEditable="True">
             <ComboBoxItem Content="10 0 0"/>
             <ComboBoxItem Content="12 0 0"/>
             <ComboBoxItem Content="15 0 0"/>
@@ -391,30 +428,30 @@
             <ComboBoxItem Content="5.43 0 0"/>
           </ComboBox>
 
-          <TextBlock x:Name="FallbackCellBLabel" Grid.Row="14" Grid.Column="0" Text="Fallback Cell B"/>
-          <ComboBox x:Name="FallbackCellBBox" Grid.Row="14" Grid.Column="1" IsEditable="True">
+          <TextBlock x:Name="FallbackCellBLabel" Grid.Row="17" Grid.Column="0" Text="Fallback Cell B"/>
+          <ComboBox x:Name="FallbackCellBBox" Grid.Row="17" Grid.Column="1" IsEditable="True">
             <ComboBoxItem Content="0 10 0"/>
             <ComboBoxItem Content="0 12 0"/>
             <ComboBoxItem Content="0 15 0"/>
             <ComboBoxItem Content="0 20 0"/>
             <ComboBoxItem Content="0 5.43 0"/>
           </ComboBox>
-          <TextBlock x:Name="FallbackCellCLabel" Grid.Row="14" Grid.Column="2" Text="Fallback Cell C"/>
-          <ComboBox x:Name="FallbackCellCBox" Grid.Row="14" Grid.Column="3" IsEditable="True">
+          <TextBlock x:Name="FallbackCellCLabel" Grid.Row="17" Grid.Column="2" Text="Fallback Cell C"/>
+          <ComboBox x:Name="FallbackCellCBox" Grid.Row="17" Grid.Column="3" IsEditable="True">
             <ComboBoxItem Content="0 0 10"/>
             <ComboBoxItem Content="0 0 12"/>
             <ComboBoxItem Content="0 0 15"/>
             <ComboBoxItem Content="0 0 20"/>
             <ComboBoxItem Content="0 0 5.43"/>
           </ComboBox>
-          <TextBlock x:Name="KpointsSchemeLabel" Grid.Row="15" Grid.Column="0" Text="KPOINTS Scheme"/>
-          <ComboBox x:Name="KpointsSchemeBox" Grid.Row="15" Grid.Column="1" IsEditable="True">
+          <TextBlock x:Name="KpointsSchemeLabel" Grid.Row="18" Grid.Column="0" Text="KPOINTS Scheme"/>
+          <ComboBox x:Name="KpointsSchemeBox" Grid.Row="18" Grid.Column="1" IsEditable="True">
             <ComboBoxItem Content="NONE"/>
             <ComboBoxItem Content="GAMMA"/>
             <ComboBoxItem Content="MONKHORST-PACK"/>
           </ComboBox>
-          <TextBlock x:Name="KpointsGridLabel" Grid.Row="15" Grid.Column="2" Text="KPOINTS Grid"/>
-          <ComboBox x:Name="KpointsGridBox" Grid.Row="15" Grid.Column="3" IsEditable="True">
+          <TextBlock x:Name="KpointsGridLabel" Grid.Row="18" Grid.Column="2" Text="KPOINTS Grid"/>
+          <ComboBox x:Name="KpointsGridBox" Grid.Row="18" Grid.Column="3" IsEditable="True">
             <ComboBoxItem Content="1 1 1"/>
             <ComboBoxItem Content="2 2 2"/>
             <ComboBoxItem Content="3 3 3"/>
@@ -422,20 +459,20 @@
             <ComboBoxItem Content="6 6 6"/>
           </ComboBox>
 
-          <CheckBox x:Name="KpointsFullGridBox" Grid.Row="16" Grid.Column="0"
+          <CheckBox x:Name="KpointsFullGridBox" Grid.Row="19" Grid.Column="0"
                     Content="Full K Grid" Margin="6,4" VerticalAlignment="Center"/>
-          <CheckBox x:Name="KpointsSymmetryBox" Grid.Row="16" Grid.Column="1"
+          <CheckBox x:Name="KpointsSymmetryBox" Grid.Row="19" Grid.Column="1"
                     Content="KPOINTS Symmetry" Margin="6,4" VerticalAlignment="Center"/>
-          <TextBlock x:Name="KpointsWavefunctionsLabel" Grid.Row="16" Grid.Column="2" Text="Wavefunctions"/>
-          <ComboBox x:Name="KpointsWavefunctionsBox" Grid.Row="16" Grid.Column="3" IsEditable="True">
+          <TextBlock x:Name="KpointsWavefunctionsLabel" Grid.Row="19" Grid.Column="2" Text="Wavefunctions"/>
+          <ComboBox x:Name="KpointsWavefunctionsBox" Grid.Row="19" Grid.Column="3" IsEditable="True">
             <ComboBoxItem Content="COMPLEX"/>
             <ComboBoxItem Content="REAL"/>
           </ComboBox>
 
-          <CheckBox x:Name="CenterAtomsBox" Grid.Row="17" Grid.Column="0" Grid.ColumnSpan="2"
+          <CheckBox x:Name="CenterAtomsBox" Grid.Row="20" Grid.Column="0" Grid.ColumnSpan="2"
                     Content="Center Atoms" Margin="6,4" VerticalAlignment="Center"/>
 
-          <DataGrid x:Name="KindEntriesGrid" Grid.Row="18" Grid.Column="0" Grid.ColumnSpan="4"
+          <DataGrid x:Name="KindEntriesGrid" Grid.Row="21" Grid.Column="0" Grid.ColumnSpan="4"
                     AutoGenerateColumns="False" CanUserAddRows="True" CanUserDeleteRows="True"
                     SelectionMode="Single" HeadersVisibility="Column" GridLinesVisibility="Horizontal" FontSize="12">
             <DataGrid.Columns>
@@ -444,12 +481,12 @@
               <DataGridTextColumn Header="Potential" Binding="{Binding potential, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="*"/>
             </DataGrid.Columns>
           </DataGrid>
-          <TextBox x:Name="KindsText" Grid.Row="18" Grid.Column="0" Grid.ColumnSpan="4" Visibility="Collapsed"
+          <TextBox x:Name="KindsText" Grid.Row="21" Grid.Column="0" Grid.ColumnSpan="4" Visibility="Collapsed"
                    FontFamily="Cascadia Mono, Consolas, Microsoft YaHei UI, Microsoft YaHei, SimSun"
                    FontSize="12" AcceptsReturn="True" AcceptsTab="True" TextWrapping="NoWrap"
                    HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"/>
 
-          <DataGrid x:Name="DataLabelsGrid" Grid.Row="19" Grid.Column="0" Grid.ColumnSpan="4"
+          <DataGrid x:Name="DataLabelsGrid" Grid.Row="22" Grid.Column="0" Grid.ColumnSpan="4"
                     Height="130" Visibility="Collapsed"
                     AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single"
                     HeadersVisibility="Column" GridLinesVisibility="Horizontal" FontSize="12">
@@ -460,7 +497,7 @@
             </DataGrid.Columns>
           </DataGrid>
 
-          <TextBox x:Name="TemplateValidationText" Grid.Row="20" Grid.Column="0" Grid.ColumnSpan="4"
+          <TextBox x:Name="TemplateValidationText" Grid.Row="23" Grid.Column="0" Grid.ColumnSpan="4"
                    FontFamily="Cascadia Mono, Consolas, Microsoft YaHei UI, Microsoft YaHei, SimSun"
                    FontSize="12" AcceptsReturn="True" TextWrapping="Wrap"
                    HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"

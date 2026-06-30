@@ -22,7 +22,8 @@ The local execution plan is tracked in `docs/execution-plan.md`.
 The current usable path is:
 
 - configure a WSL2 distro, CP2K command, and CP2K data directory;
-- generate conservative QuickStep `ENERGY`, `ENERGY_FORCE`, or `GEO_OPT`
+- generate conservative QuickStep `ENERGY`, `ENERGY_FORCE`, `GEO_OPT`, or
+  `CELL_OPT`
   inputs from structures and templates;
 - run either generated inputs or existing `.inp` files through `wsl.exe`;
 - keep inputs, outputs, stdout/stderr logs, metadata, and history in a Windows

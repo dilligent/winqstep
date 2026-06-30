@@ -37,13 +37,14 @@ The first generator should target:
 - `SCF/&MIXING`
 - `SCF/&SMEAR`
 - `FORCE_EVAL/&PRINT/&FORCES` for `ENERGY_FORCE`
-- `&MOTION` for `GEO_OPT`
+- `&MOTION` for `GEO_OPT` and `CELL_OPT`
 
 The first calculation types should be:
 
 - `ENERGY`
 - `ENERGY_FORCE`
 - `GEO_OPT`
+- `CELL_OPT`
 
 The first chemistry defaults should be conservative:
 
@@ -61,10 +62,12 @@ and renders CP2K input through `scripts/render_quickstep_input.py`.
 Top-level fields:
 
 - `project_name`
-- `run_type`: `ENERGY`, `ENERGY_FORCE`, or `GEO_OPT`
+- `run_type`: `ENERGY`, `ENERGY_FORCE`, `GEO_OPT`, or `CELL_OPT`
 - `dft`: basis/potential file names, PBE-style functional, charge,
   multiplicity, MGRID cutoff, SCF controls, and optional KPOINTS controls
 - `geo_opt`: optimizer and max iteration settings for `GEO_OPT`
+- `cell_opt`: optimizer, max iteration, type, pressure tolerance, and simple
+  cell-shape constraints for `CELL_OPT`
 - `structure`: periodic cell, atoms, and per-element `KIND` definitions
 
 For `ENERGY_FORCE`, the renderer adds `FORCE_EVAL/&PRINT/&FORCES` so CP2K
@@ -88,6 +91,14 @@ existing templates do not render `DFT/&KPOINTS`. The supported schemes are
 `dft.kpoints_grid` as three positive integers. The renderer can include
 `FULL_GRID`, `SYMMETRY`, and a non-default `WAVEFUNCTIONS` value inside
 `&KPOINTS`. KPOINTS are rejected for `PERIODIC NONE` cells.
+
+CELL_OPT controls are opt-in through `run_type CELL_OPT`. The first supported
+cell optimization path renders `MOTION/&CELL_OPT` with `TYPE DIRECT_CELL_OPT`,
+`OPTIMIZER`, `MAX_ITER`, `PRESSURE_TOLERANCE [bar]`, and optional
+`KEEP_ANGLES` or `KEEP_SYMMETRY`. CELL_OPT also renders
+`FORCE_EVAL/STRESS_TENSOR ANALYTICAL`, which CP2K requires for cell
+optimization. CELL_OPT is rejected for `PERIODIC NONE` cells. MD-driven cell
+optimization and space-group constraints remain out of scope for now.
 
 Unsupported `run_type` values such as `MD` are rejected for now even if CP2K
 supports them. That is intentional: the first generator covers only a small

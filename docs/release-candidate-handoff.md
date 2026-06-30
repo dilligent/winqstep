@@ -12,7 +12,8 @@ This is a local Windows prototype, not an installer or PyPI release. The
 candidate supports:
 
 - WSL2 CP2K QuickStep execution through `wsl.exe`.
-- GUI and CLI workflows for generated `ENERGY`, `ENERGY_FORCE`, and `GEO_OPT`
+- GUI and CLI workflows for generated `ENERGY`, `ENERGY_FORCE`, `GEO_OPT`, and
+  `CELL_OPT`
   inputs.
 - Existing CP2K `.inp` execution without regenerating the input.
 - Config and template editing, CP2K data inspection, preflight validation, job
@@ -81,7 +82,8 @@ full `-Diagnostics` only when WSL2 and CP2K are expected to be available.
 ## Known Limitations
 
 - QuickStep only. Other CP2K modules are outside the current scope.
-- Supported generated run types are `ENERGY`, `ENERGY_FORCE`, and `GEO_OPT`.
+- Supported generated run types are `ENERGY`, `ENERGY_FORCE`, `GEO_OPT`, and
+  `CELL_OPT`.
 - CP2K binaries, CP2K source trees, and CP2K data files are external
   dependencies and are never bundled.
 - The GUI is PowerShell-hosted WPF. It is intended for Windows desktop sessions

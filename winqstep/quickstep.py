@@ -6,12 +6,14 @@ from dataclasses import dataclass
 from typing import Any, Iterable, Literal
 
 
-RunType = Literal["ENERGY", "ENERGY_FORCE", "GEO_OPT"]
-RUN_TYPES = {"ENERGY", "ENERGY_FORCE", "GEO_OPT"}
+RunType = Literal["ENERGY", "ENERGY_FORCE", "GEO_OPT", "CELL_OPT"]
+RUN_TYPES = {"ENERGY", "ENERGY_FORCE", "GEO_OPT", "CELL_OPT"}
 PERIODIC_VALUES = {"NONE", "X", "Y", "Z", "XY", "XZ", "YZ", "XYZ"}
 SCF_METHODS = {"DEFAULT", "OT", "DIAGONALIZATION"}
 KPOINTS_SCHEMES = {"NONE", "GAMMA", "MONKHORST-PACK"}
 KPOINTS_WAVEFUNCTIONS = {"COMPLEX", "REAL"}
+MOTION_OPTIMIZERS = {"BFGS", "LBFGS", "CG"}
+CELL_OPT_TYPES = {"DIRECT_CELL_OPT"}
 OT_MINIMIZERS = {"SD", "CG", "DIIS", "BROYDEN"}
 OT_PRECONDITIONERS = {
     "FULL_ALL",
@@ -95,6 +97,16 @@ class GeoOptSettings:
 
 
 @dataclass(frozen=True)
+class CellOptSettings:
+    optimizer: str = "BFGS"
+    max_iter: int = 200
+    type: str = "DIRECT_CELL_OPT"
+    pressure_tolerance: str = "100"
+    keep_angles: bool = False
+    keep_symmetry: bool = False
+
+
+@dataclass(frozen=True)
 class QuickStepInput:
     project_name: str
     run_type: RunType
@@ -103,6 +115,7 @@ class QuickStepInput:
     kinds: tuple[Kind, ...]
     dft: DftSettings = DftSettings()
     geo_opt: GeoOptSettings = GeoOptSettings()
+    cell_opt: CellOptSettings = CellOptSettings()
 
 
 def _required_string(data: dict[str, Any], key: str) -> str:
@@ -218,10 +231,21 @@ def _parse_geo_opt(data: dict[str, Any]) -> GeoOptSettings:
     )
 
 
+def _parse_cell_opt(data: dict[str, Any]) -> CellOptSettings:
+    return CellOptSettings(
+        optimizer=_optional_string(data, "optimizer", "BFGS").upper(),
+        max_iter=_int_value(data, "max_iter", 200),
+        type=_optional_string(data, "type", "DIRECT_CELL_OPT").upper(),
+        pressure_tolerance=_optional_string(data, "pressure_tolerance", "100"),
+        keep_angles=_bool_value(data, "keep_angles", False),
+        keep_symmetry=_bool_value(data, "keep_symmetry", False),
+    )
+
+
 def quickstep_input_from_dict(data: dict[str, Any]) -> QuickStepInput:
     run_type = _required_string(data, "run_type").upper()
     if run_type not in RUN_TYPES:
-        raise QuickStepInputError("run_type must be ENERGY, ENERGY_FORCE, or GEO_OPT")
+        raise QuickStepInputError("run_type must be ENERGY, ENERGY_FORCE, GEO_OPT, or CELL_OPT")
 
     structure = data.get("structure")
     if not isinstance(structure, dict):
@@ -245,6 +269,7 @@ def quickstep_input_from_dict(data: dict[str, Any]) -> QuickStepInput:
         kinds=kinds,
         dft=_parse_dft(_object(data.get("dft", {}), "dft")),
         geo_opt=_parse_geo_opt(_object(data.get("geo_opt", {}), "geo_opt")),
+        cell_opt=_parse_cell_opt(_object(data.get("cell_opt", {}), "cell_opt")),
     )
     validate_quickstep_input(model)
     return model
@@ -308,8 +333,19 @@ def validate_quickstep_input(model: QuickStepInput) -> None:
         model.dft.kpoints_full_grid or model.dft.kpoints_symmetry or model.dft.kpoints_wavefunctions != "COMPLEX"
     ):
         raise QuickStepInputError("KPOINTS options require dft.kpoints_scheme other than NONE")
+    if model.geo_opt.optimizer not in MOTION_OPTIMIZERS:
+        raise QuickStepInputError("geo_opt.optimizer has an unsupported value")
     if model.geo_opt.max_iter <= 0:
         raise QuickStepInputError("geo_opt.max_iter must be positive")
+    if model.cell_opt.optimizer not in MOTION_OPTIMIZERS:
+        raise QuickStepInputError("cell_opt.optimizer has an unsupported value")
+    if model.cell_opt.max_iter <= 0:
+        raise QuickStepInputError("cell_opt.max_iter must be positive")
+    if model.cell_opt.type not in CELL_OPT_TYPES:
+        raise QuickStepInputError("cell_opt.type has an unsupported value")
+    _positive_float(model.cell_opt.pressure_tolerance, "cell_opt.pressure_tolerance")
+    if model.run_type == "CELL_OPT" and model.cell.periodic == "NONE":
+        raise QuickStepInputError("CELL_OPT requires a periodic cell")
 
 
 def render_quickstep_input(model: QuickStepInput) -> str:
@@ -323,6 +359,7 @@ def render_quickstep_input(model: QuickStepInput) -> str:
         "",
         "&FORCE_EVAL",
         "  METHOD QS",
+        *_render_force_eval_keywords(model),
         *_render_force_eval_print(model),
         "  &DFT",
         f"    BASIS_SET_FILE_NAME {model.dft.basis_set_file_name}",
@@ -362,18 +399,9 @@ def render_quickstep_input(model: QuickStepInput) -> str:
         "&END FORCE_EVAL",
     ]
 
-    if model.run_type == "GEO_OPT":
-        lines.extend(
-            [
-                "",
-                "&MOTION",
-                "  &GEO_OPT",
-                f"    OPTIMIZER {model.geo_opt.optimizer}",
-                f"    MAX_ITER {model.geo_opt.max_iter}",
-                "  &END GEO_OPT",
-                "&END MOTION",
-            ]
-        )
+    motion_lines = _render_motion(model)
+    if motion_lines:
+        lines.extend(["", *motion_lines])
 
     return "\n".join(lines) + "\n"
 
@@ -387,6 +415,40 @@ def _render_force_eval_print(model: QuickStepInput) -> list[str]:
         "    &END FORCES",
         "  &END PRINT",
     ]
+
+
+def _render_force_eval_keywords(model: QuickStepInput) -> list[str]:
+    if model.run_type != "CELL_OPT":
+        return []
+    return ["  STRESS_TENSOR ANALYTICAL"]
+
+
+def _render_motion(model: QuickStepInput) -> list[str]:
+    if model.run_type == "GEO_OPT":
+        return [
+            "&MOTION",
+            "  &GEO_OPT",
+            f"    OPTIMIZER {model.geo_opt.optimizer}",
+            f"    MAX_ITER {model.geo_opt.max_iter}",
+            "  &END GEO_OPT",
+            "&END MOTION",
+        ]
+    if model.run_type == "CELL_OPT":
+        lines = [
+            "&MOTION",
+            "  &CELL_OPT",
+            f"    OPTIMIZER {model.cell_opt.optimizer}",
+            f"    MAX_ITER {model.cell_opt.max_iter}",
+            f"    TYPE {model.cell_opt.type}",
+            f"    PRESSURE_TOLERANCE [bar] {model.cell_opt.pressure_tolerance}",
+        ]
+        if model.cell_opt.keep_angles:
+            lines.append("    KEEP_ANGLES T")
+        if model.cell_opt.keep_symmetry:
+            lines.append("    KEEP_SYMMETRY T")
+        lines.extend(["  &END CELL_OPT", "&END MOTION"])
+        return lines
+    return []
 
 
 def _render_scf_extras(dft: DftSettings) -> list[str]:

@@ -11,6 +11,7 @@ from winqstep.template import load_template, merge_template_fields, save_templat
 
 ROOT = Path(__file__).resolve().parents[1]
 ENERGY_TEMPLATE = ROOT / "examples" / "templates" / "energy_pbe.json"
+CELL_OPT_TEMPLATE = ROOT / "examples" / "templates" / "cell_opt_pbe.json"
 
 
 class TemplateTests(unittest.TestCase):
@@ -21,6 +22,14 @@ class TemplateTests(unittest.TestCase):
         self.assertEqual(template["dft"]["charge"], 0)
         self.assertEqual(template["dft"]["eps_scf"], "1.0E-6")
         self.assertEqual(template["kinds"][0]["element"], "H")
+
+    def test_load_template_normalizes_cell_opt_example(self) -> None:
+        template = load_template(CELL_OPT_TEMPLATE)
+
+        self.assertEqual(template["run_type"], "CELL_OPT")
+        self.assertEqual(template["cell_opt"]["type"], "DIRECT_CELL_OPT")
+        self.assertEqual(template["cell_opt"]["max_iter"], 20)
+        self.assertEqual(template["dft"]["kpoints_scheme"], "MONKHORST-PACK")
 
     def test_merge_fields_updates_dft_and_kinds_text(self) -> None:
         template = load_template(ENERGY_TEMPLATE)
@@ -118,6 +127,37 @@ class TemplateTests(unittest.TestCase):
         self.assertTrue(dft["kpoints_symmetry"])
         self.assertEqual(dft["kpoints_wavefunctions"], "REAL")
 
+    def test_merge_fields_updates_cell_opt_controls(self) -> None:
+        template = load_template(ENERGY_TEMPLATE)
+        merged = merge_template_fields(
+            template,
+            {
+                "run_type": "cell_opt",
+                "cell_opt_type": "direct_cell_opt",
+                "cell_opt_optimizer": "lbfgs",
+                "cell_opt_max_iter": "50",
+                "cell_opt_pressure_tolerance": "75",
+                "cell_opt_keep_angles": True,
+                "cell_opt_keep_symmetry": "yes",
+            },
+        )
+        validation = validate_template(merged)
+
+        self.assertTrue(validation["valid"], validation["errors"])
+        normalized = validation["template"]
+        self.assertEqual(normalized["run_type"], "CELL_OPT")
+        self.assertNotIn("geo_opt", normalized)
+        self.assertEqual(
+            list(normalized["cell_opt"]),
+            ["optimizer", "max_iter", "type", "pressure_tolerance", "keep_angles", "keep_symmetry"],
+        )
+        self.assertEqual(normalized["cell_opt"]["optimizer"], "LBFGS")
+        self.assertEqual(normalized["cell_opt"]["max_iter"], 50)
+        self.assertEqual(normalized["cell_opt"]["type"], "DIRECT_CELL_OPT")
+        self.assertEqual(normalized["cell_opt"]["pressure_tolerance"], "75")
+        self.assertTrue(normalized["cell_opt"]["keep_angles"])
+        self.assertTrue(normalized["cell_opt"]["keep_symmetry"])
+
     def test_validate_rejects_smearing_without_added_mos(self) -> None:
         template = load_template(ENERGY_TEMPLATE)
         merged = merge_template_fields(
@@ -171,6 +211,16 @@ class TemplateTests(unittest.TestCase):
         self.assertTrue(validation["valid"], validation["errors"])
         self.assertEqual(validation["template"]["run_type"], "ENERGY_FORCE")
         self.assertNotIn("geo_opt", validation["template"])
+
+    def test_validate_accepts_cell_opt_template(self) -> None:
+        template = load_template(ENERGY_TEMPLATE)
+        merged = merge_template_fields(template, {"run_type": "CELL_OPT"})
+        validation = validate_template(merged)
+
+        self.assertTrue(validation["valid"], validation["errors"])
+        self.assertEqual(validation["template"]["run_type"], "CELL_OPT")
+        self.assertIn("cell_opt", validation["template"])
+        self.assertIn("CELL_OPT template did not define cell_opt; defaults were added.", validation["warnings"])
 
     def test_validate_rejects_duplicate_kinds(self) -> None:
         template = load_json_file(ENERGY_TEMPLATE)

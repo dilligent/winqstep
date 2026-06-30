@@ -1,0 +1,47 @@
+{
+  "project_name": "workflow_cell_opt",
+  "run_type": "CELL_OPT",
+  "dft": {
+    "basis_set_file_name": "BASIS_MOLOPT",
+    "potential_file_name": "GTH_POTENTIALS",
+    "xc_functional": "PBE",
+    "charge": 0,
+    "multiplicity": 1,
+    "cutoff": 400,
+    "rel_cutoff": 40,
+    "eps_scf": "1.0E-5",
+    "max_scf": 80,
+    "scf_method": "DIAGONALIZATION",
+    "added_mos": 8,
+    "mixing_enabled": true,
+    "mixing_alpha": "0.2",
+    "smearing_enabled": true,
+    "electronic_temperature": "500",
+    "kpoints_scheme": "MONKHORST-PACK",
+    "kpoints_grid": [2, 2, 2]
+  },
+  "cell_opt": {
+    "optimizer": "BFGS",
+    "max_iter": 20,
+    "type": "DIRECT_CELL_OPT",
+    "pressure_tolerance": "100",
+    "keep_angles": true,
+    "keep_symmetry": false
+  },
+  "structure_transform": {
+    "fallback_cell": {
+      "periodic": "XYZ",
+      "a": [10.0, 0.0, 0.0],
+      "b": [0.0, 10.0, 0.0],
+      "c": [0.0, 0.0, 10.0]
+    },
+    "center_atoms": true
+  },
+  "kinds": [
+    {"element": "H", "basis_set": "DZVP-MOLOPT-SR-GTH", "potential": "GTH-PBE-q1"},
+    {"element": "O", "basis_set": "DZVP-MOLOPT-SR-GTH", "potential": "GTH-PBE-q6"},
+    {"element": "Si", "basis_set": "DZVP-MOLOPT-SR-GTH", "potential": "GTH-PBE-q4"},
+    {"element": "Na", "basis_set": "DZVP-MOLOPT-SR-GTH", "potential": "GTH-PBE-q9"},
+    {"element": "Cl", "basis_set": "DZVP-MOLOPT-SR-GTH", "potential": "GTH-PBE-q7"}
+  ]
+}

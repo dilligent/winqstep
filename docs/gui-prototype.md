@@ -151,6 +151,9 @@ writer before preview or run.
 KPOINTS controls include scheme, grid, full-grid, symmetry, and wavefunction
 selection. They default to `NONE` and validate through the same template writer
 and QuickStep renderer before preview or run.
+CELL_OPT controls include direct optimization type, optimizer, max iterations,
+pressure tolerance, keep-angles, and keep-symmetry. They validate through the
+same template writer and reject nonperiodic structures before CP2K is started.
 Fallback periodicity and fallback cell A/B/C vectors are edited there too, and
 `center_atoms` is a checkbox because it only applies when the fallback cell is
 used.

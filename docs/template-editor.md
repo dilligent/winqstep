@@ -20,13 +20,15 @@ python .\scripts\manage_template.py --template .\examples\templates\energy_pbe.j
 Editable fields include:
 
 - `project_name`
-- `run_type`: `ENERGY`, `ENERGY_FORCE`, or `GEO_OPT`
+- `run_type`: `ENERGY`, `ENERGY_FORCE`, `GEO_OPT`, or `CELL_OPT`
 - DFT fields: basis file, potential file, XC functional, charge,
   multiplicity, cutoff, relative cutoff, EPS_SCF, MAX_SCF, SCF method,
   ADDED_MOS, OT settings, diagonalization settings, mixing settings, and
   electronic-temperature smearing settings, plus KPOINTS scheme/grid,
   full-grid, symmetry, and wavefunction controls
 - GEO_OPT fields: optimizer and max iterations
+- CELL_OPT fields: optimizer, max iterations, optimization type, pressure
+  tolerance, keep-angles, and keep-symmetry
 - Structure transform fields: fallback periodicity, fallback cell A/B/C
   vectors, and whether fallback-cell structures should be centered
 - `kinds_text`: one KIND per line as `element basis_set potential`
@@ -40,11 +42,11 @@ The PowerShell WPF prototype has a `Template` tab plus `Load Template` and
 by the renderer and workflow layer.
 
 Single-line template fields are editable drop-down controls. Each field offers
-common CP2K/WinQStep choices, such as `ENERGY`, `ENERGY_FORCE`, and `GEO_OPT`
-for run type, common basis and potential file names, common XC functional
+common CP2K/WinQStep choices, such as `ENERGY`, `ENERGY_FORCE`, `GEO_OPT`, and
+`CELL_OPT` for run type, common basis and potential file names, common XC functional
 shortcuts, typical SCF/MGRID numeric values, SCF methods such as `DEFAULT`,
-`DIAGONALIZATION`, and `OT`, and `BFGS`, `LBFGS`, or `CG` for GEO_OPT
-optimizer. Fallback cell fields expose the supported CP2K periodicity labels
+`DIAGONALIZATION`, and `OT`, and `BFGS`, `LBFGS`, or `CG` for GEO_OPT and
+CELL_OPT optimizers. Fallback cell fields expose the supported CP2K periodicity labels
 and common cubic-cell vectors while still accepting direct typed values.
 KPOINTS fields expose `NONE`, `GAMMA`, and `MONKHORST-PACK`, common
 Monkhorst-Pack grids, `FULL_GRID`, `SYMMETRY`, and `WAVEFUNCTIONS` choices.
@@ -55,7 +57,8 @@ manual pages for `GLOBAL/RUN_TYPE`, `DFT/BASIS_SET_FILE_NAME`,
 `DFT/POTENTIAL_FILE_NAME`, `XC/XC_FUNCTIONAL`, `DFT/MGRID`, `DFT/SCF`, and
 `MOTION/GEO_OPT`, plus `SUBSYS/CELL`, `DFT/POISSON`, `SCF/OT`,
 `SCF/DIAGONALIZATION`, `SCF/MIXING`, `SCF/SMEAR`, and `DFT/KPOINTS` for
-periodicity, SCF solver, and k-point controls.
+periodicity, SCF solver, and k-point controls, plus `MOTION/CELL_OPT` for
+direct cell optimization controls.
 
 KIND entries are shown in an editable `Element`, `Basis Set`, `Potential` table
 instead of a raw text box. The GUI still serializes that table through
@@ -70,7 +73,8 @@ choices, duplicate KIND entries, and required basis/potential names. It rejects
 mixing or smearing unless the SCF method is `DIAGONALIZATION`; smearing also
 requires `ADDED_MOS` to add unoccupied orbitals. KPOINTS options are rejected
 unless a KPOINTS scheme is selected, and rendered workflow inputs reject
-KPOINTS for nonperiodic cells. When a CP2K data inspection cache is available,
-the GUI preflight step also compares template data-file names and KIND
-basis/potential labels against the cached CP2K data labels before `Preview` or
-`Run`.
+KPOINTS for nonperiodic cells. CELL_OPT inputs reject nonperiodic cells and
+currently support the `DIRECT_CELL_OPT` path. When a CP2K data inspection cache
+is available, the GUI preflight step also compares template data-file names and
+KIND basis/potential labels against the cached CP2K data labels before
+`Preview` or `Run`.

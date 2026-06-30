@@ -8,16 +8,19 @@ from pathlib import Path
 from typing import Any
 
 from .quickstep import (
+    CELL_OPT_TYPES,
     DIAGONALIZATION_ALGORITHMS,
     KPOINTS_SCHEMES,
     KPOINTS_WAVEFUNCTIONS,
     MIXING_METHODS,
+    MOTION_OPTIMIZERS,
     OT_MINIMIZERS,
     OT_PRECONDITIONERS,
     PERIODIC_VALUES,
     RUN_TYPES,
     SCF_METHODS,
     SMEARING_METHODS,
+    CellOptSettings,
     DftSettings,
     GeoOptSettings,
 )
@@ -28,6 +31,7 @@ TEMPLATE_KEY_ORDER = (
     "run_type",
     "dft",
     "geo_opt",
+    "cell_opt",
     "structure_transform",
     "kinds",
 )
@@ -60,6 +64,14 @@ DFT_KEY_ORDER = (
     "kpoints_wavefunctions",
 )
 GEO_OPT_KEY_ORDER = ("optimizer", "max_iter")
+CELL_OPT_KEY_ORDER = (
+    "optimizer",
+    "max_iter",
+    "type",
+    "pressure_tolerance",
+    "keep_angles",
+    "keep_symmetry",
+)
 FALLBACK_CELL_FIELD_KEYS = (
     "fallback_cell_periodic",
     "fallback_cell_a",
@@ -115,15 +127,18 @@ def validate_template(data: dict[str, Any]) -> dict[str, Any]:
     project_name = _required_string(data.get("project_name"), "project_name", errors)
     run_type = _string_value(data.get("run_type", "ENERGY"), "run_type", errors).upper()
     if run_type and run_type not in RUN_TYPES:
-        errors.append("run_type must be ENERGY, ENERGY_FORCE, or GEO_OPT")
+        errors.append("run_type must be ENERGY, ENERGY_FORCE, GEO_OPT, or CELL_OPT")
 
     dft = _normalize_dft(_object_value(data.get("dft", {}), "dft", errors), errors)
     geo_opt = _normalize_geo_opt(_object_value(data.get("geo_opt", {}), "geo_opt", errors), errors)
+    cell_opt = _normalize_cell_opt(_object_value(data.get("cell_opt", {}), "cell_opt", errors), errors)
     structure_transform = _normalize_structure_transform(data.get("structure_transform", {}), errors, warnings)
     kinds = _normalize_kinds(data.get("kinds"), errors)
 
     if run_type == "GEO_OPT" and not data.get("geo_opt"):
         warnings.append("GEO_OPT template did not define geo_opt; defaults were added.")
+    if run_type == "CELL_OPT" and not data.get("cell_opt"):
+        warnings.append("CELL_OPT template did not define cell_opt; defaults were added.")
     if not kinds:
         warnings.append("Template has no usable KIND entries.")
 
@@ -134,6 +149,8 @@ def validate_template(data: dict[str, Any]) -> dict[str, Any]:
     }
     if run_type == "GEO_OPT":
         template["geo_opt"] = geo_opt
+    if run_type == "CELL_OPT":
+        template["cell_opt"] = cell_opt
     if structure_transform:
         template["structure_transform"] = structure_transform
     template["kinds"] = kinds
@@ -155,6 +172,7 @@ def merge_template_fields(template: dict[str, Any], fields: dict[str, Any]) -> d
     merged = json.loads(json.dumps(template))
     dft = _ensure_object(merged, "dft")
     geo_opt = _ensure_object(merged, "geo_opt")
+    cell_opt = _ensure_object(merged, "cell_opt")
 
     for key in ("project_name", "run_type"):
         if key in fields:
@@ -168,6 +186,18 @@ def merge_template_fields(template: dict[str, Any], fields: dict[str, Any]) -> d
         geo_opt["max_iter"] = fields["geo_opt_max_iter"]
     if _field_has_value(fields, "max_iter"):
         geo_opt["max_iter"] = fields["max_iter"]
+    if _field_has_value(fields, "cell_opt_optimizer"):
+        cell_opt["optimizer"] = fields["cell_opt_optimizer"]
+    if _field_has_value(fields, "cell_opt_max_iter"):
+        cell_opt["max_iter"] = fields["cell_opt_max_iter"]
+    if _field_has_value(fields, "cell_opt_type"):
+        cell_opt["type"] = fields["cell_opt_type"]
+    if _field_has_value(fields, "cell_opt_pressure_tolerance"):
+        cell_opt["pressure_tolerance"] = fields["cell_opt_pressure_tolerance"]
+    if "cell_opt_keep_angles" in fields:
+        cell_opt["keep_angles"] = _bool_value(fields["cell_opt_keep_angles"])
+    if "cell_opt_keep_symmetry" in fields:
+        cell_opt["keep_symmetry"] = _bool_value(fields["cell_opt_keep_symmetry"])
     if "center_atoms" in fields:
         transform = _ensure_object(merged, "structure_transform")
         transform["center_atoms"] = _bool_value(fields["center_atoms"])
@@ -337,14 +367,46 @@ def _normalize_dft(data: dict[str, Any], errors: list[str]) -> dict[str, Any]:
 def _normalize_geo_opt(data: dict[str, Any], errors: list[str]) -> dict[str, Any]:
     defaults = GeoOptSettings()
     geo_opt = {
-        "optimizer": _required_string(
+        "optimizer": _choice_value(
             data.get("optimizer", defaults.optimizer),
             "geo_opt.optimizer",
+            MOTION_OPTIMIZERS,
             errors,
-        ).upper(),
+        ),
         "max_iter": _positive_int_value(data.get("max_iter", defaults.max_iter), "geo_opt.max_iter", errors),
     }
     return {key: geo_opt[key] for key in GEO_OPT_KEY_ORDER}
+
+
+def _normalize_cell_opt(data: dict[str, Any], errors: list[str]) -> dict[str, Any]:
+    defaults = CellOptSettings()
+    cell_opt = {
+        "optimizer": _choice_value(
+            data.get("optimizer", defaults.optimizer),
+            "cell_opt.optimizer",
+            MOTION_OPTIMIZERS,
+            errors,
+        ),
+        "max_iter": _positive_int_value(
+            data.get("max_iter", defaults.max_iter),
+            "cell_opt.max_iter",
+            errors,
+        ),
+        "type": _choice_value(
+            data.get("type", defaults.type),
+            "cell_opt.type",
+            CELL_OPT_TYPES,
+            errors,
+        ),
+        "pressure_tolerance": _positive_float_string(
+            data.get("pressure_tolerance", defaults.pressure_tolerance),
+            "cell_opt.pressure_tolerance",
+            errors,
+        ),
+        "keep_angles": _bool_value(data.get("keep_angles", defaults.keep_angles)),
+        "keep_symmetry": _bool_value(data.get("keep_symmetry", defaults.keep_symmetry)),
+    }
+    return {key: cell_opt[key] for key in CELL_OPT_KEY_ORDER}
 
 
 def _normalize_structure_transform(value: Any, errors: list[str], warnings: list[str]) -> dict[str, Any]:

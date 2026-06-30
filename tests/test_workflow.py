@@ -56,6 +56,26 @@ class WorkflowTests(unittest.TestCase):
         self.assertEqual(quickstep_data["run_type"], "ENERGY_FORCE")
         self.assertNotIn("geo_opt", quickstep_data)
 
+    def test_builds_cell_opt_workflow_data(self) -> None:
+        imported = import_structure(STRUCTURES / "POSCAR")
+        template = load_json_file(ROOT / "examples" / "templates" / "energy_pbe.json")
+        template["run_type"] = "CELL_OPT"
+        template["cell_opt"] = {
+            "optimizer": "BFGS",
+            "max_iter": 20,
+            "type": "DIRECT_CELL_OPT",
+            "pressure_tolerance": "100",
+            "keep_angles": True,
+            "keep_symmetry": False,
+        }
+
+        quickstep_data = build_quickstep_data(template, imported, project_name="si_cell_opt")
+
+        self.assertEqual(quickstep_data["run_type"], "CELL_OPT")
+        self.assertEqual(quickstep_data["cell_opt"]["type"], "DIRECT_CELL_OPT")
+        self.assertTrue(quickstep_data["cell_opt"]["keep_angles"])
+        self.assertNotIn("geo_opt", quickstep_data)
+
     def test_prepare_only_writes_workflow_metadata(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
             metadata = run_quickstep_workflow(

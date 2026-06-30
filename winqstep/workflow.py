@@ -52,6 +52,8 @@ def build_quickstep_data(
     }
     if "geo_opt" in template:
         quickstep_data["geo_opt"] = copy.deepcopy(_object(template.get("geo_opt"), "geo_opt"))
+    if "cell_opt" in template:
+        quickstep_data["cell_opt"] = copy.deepcopy(_object(template.get("cell_opt"), "cell_opt"))
 
     try:
         quickstep_input_from_dict(quickstep_data)

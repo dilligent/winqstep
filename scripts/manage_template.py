@@ -51,6 +51,12 @@ FIELD_ARGS = {
     "kpoints_wavefunctions": "kpoints_wavefunctions",
     "optimizer": "optimizer",
     "geo_opt_max_iter": "geo_opt_max_iter",
+    "cell_opt_optimizer": "cell_opt_optimizer",
+    "cell_opt_max_iter": "cell_opt_max_iter",
+    "cell_opt_type": "cell_opt_type",
+    "cell_opt_pressure_tolerance": "cell_opt_pressure_tolerance",
+    "cell_opt_keep_angles": "cell_opt_keep_angles",
+    "cell_opt_keep_symmetry": "cell_opt_keep_symmetry",
     "fallback_cell_periodic": "fallback_cell_periodic",
     "fallback_cell_a": "fallback_cell_a",
     "fallback_cell_b": "fallback_cell_b",
@@ -97,6 +103,12 @@ def main() -> int:
     parser.add_argument("--kpoints-wavefunctions")
     parser.add_argument("--optimizer")
     parser.add_argument("--geo-opt-max-iter")
+    parser.add_argument("--cell-opt-optimizer")
+    parser.add_argument("--cell-opt-max-iter")
+    parser.add_argument("--cell-opt-type")
+    parser.add_argument("--cell-opt-pressure-tolerance")
+    parser.add_argument("--cell-opt-keep-angles")
+    parser.add_argument("--cell-opt-keep-symmetry")
     parser.add_argument("--fallback-cell-periodic")
     parser.add_argument("--fallback-cell-a")
     parser.add_argument("--fallback-cell-b")

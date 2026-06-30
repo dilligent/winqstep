@@ -28,6 +28,12 @@ class QuickStepTests(unittest.TestCase):
 
         self.assertEqual(render_quickstep_input(quickstep_input_from_dict(data)), expected)
 
+    def test_renders_cell_opt_snapshot(self) -> None:
+        data = json.loads((ROOT / "examples" / "quickstep_cell_opt.json").read_text(encoding="utf-8"))
+        expected = (ROOT / "tests" / "fixtures" / "quickstep_cell_opt.inp").read_text(encoding="utf-8")
+
+        self.assertEqual(render_quickstep_input(quickstep_input_from_dict(data)), expected)
+
     def test_renders_energy_force_snapshot(self) -> None:
         data = json.loads((ROOT / "examples" / "quickstep_energy_force.json").read_text(encoding="utf-8"))
         expected = (ROOT / "tests" / "fixtures" / "quickstep_energy_force.inp").read_text(encoding="utf-8")
@@ -142,6 +148,14 @@ class QuickStepTests(unittest.TestCase):
         data["dft"]["kpoints_grid"] = [2, 2, 2]
 
         with self.assertRaisesRegex(QuickStepInputError, "KPOINTS require"):
+            quickstep_input_from_dict(data)
+
+    def test_rejects_cell_opt_for_nonperiodic_cell(self) -> None:
+        data = json.loads((ROOT / "examples" / "quickstep_cell_opt.json").read_text(encoding="utf-8"))
+        data["structure"]["cell"]["periodic"] = "NONE"
+        data["dft"]["kpoints_scheme"] = "NONE"
+
+        with self.assertRaisesRegex(QuickStepInputError, "CELL_OPT requires"):
             quickstep_input_from_dict(data)
 
     def test_rejects_mixing_without_diagonalization(self) -> None:

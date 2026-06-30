@@ -60,6 +60,8 @@ function New-WinQStepWindow {
         "TemplateProjectLabel", "RunTypeLabel", "BasisFileLabel", "PotentialFileLabel",
         "XcFunctionalLabel", "EpsScfLabel", "ChargeLabel", "MultiplicityLabel",
         "CutoffLabel", "RelCutoffLabel", "MaxScfLabel", "OptimizerLabel", "GeoMaxIterLabel",
+        "CellOptTypeLabel", "CellOptOptimizerLabel", "CellOptMaxIterLabel",
+        "CellOptPressureToleranceLabel",
         "ScfMethodLabel", "AddedMosLabel", "DiagonalizationAlgorithmLabel",
         "OtMinimizerLabel", "OtPreconditionerLabel", "MixingMethodLabel",
         "MixingAlphaLabel", "MixingBetaLabel", "SmearingMethodLabel",
@@ -69,11 +71,14 @@ function New-WinQStepWindow {
         "TemplateProjectBox", "TemplateRunTypeBox", "BasisSetFileBox", "PotentialFileBox",
         "XcFunctionalBox", "ChargeBox", "MultiplicityBox", "CutoffBox", "RelCutoffBox",
         "EpsScfBox", "MaxScfBox", "GeoOptimizerBox", "GeoMaxIterBox",
+        "CellOptTypeBox", "CellOptOptimizerBox", "CellOptMaxIterBox",
+        "CellOptPressureToleranceBox",
         "ScfMethodBox", "AddedMosBox", "DiagonalizationAlgorithmBox",
         "OtMinimizerBox", "OtPreconditionerBox", "MixingMethodBox",
         "MixingAlphaBox", "MixingBetaBox", "SmearingMethodBox",
         "ElectronicTemperatureBox", "KpointsSchemeBox", "KpointsGridBox",
         "KpointsWavefunctionsBox", "MixingEnabledBox", "SmearingEnabledBox",
+        "CellOptKeepAnglesBox", "CellOptKeepSymmetryBox",
         "KpointsFullGridBox", "KpointsSymmetryBox",
         "FallbackPeriodicBox", "FallbackCellABox", "FallbackCellBBox", "FallbackCellCBox",
         "CenterAtomsBox", "KindsText",
@@ -123,6 +128,8 @@ function New-WinQStepWindow {
         ExistingInputModeRadio = "mode.existing_input"
         MixingEnabledBox = "label.mixing_enabled"
         SmearingEnabledBox = "label.smearing_enabled"
+        CellOptKeepAnglesBox = "label.cell_opt_keep_angles"
+        CellOptKeepSymmetryBox = "label.cell_opt_keep_symmetry"
         KpointsFullGridBox = "label.kpoints_full_grid"
         KpointsSymmetryBox = "label.kpoints_symmetry"
         CenterAtomsBox = "label.center_atoms"
@@ -188,6 +195,10 @@ function New-WinQStepWindow {
         KpointsWavefunctionsLabel = "label.kpoints_wavefunctions"
         OptimizerLabel = "label.optimizer"
         GeoMaxIterLabel = "label.geo_max_iter"
+        CellOptTypeLabel = "label.cell_opt_type"
+        CellOptOptimizerLabel = "label.cell_opt_optimizer"
+        CellOptMaxIterLabel = "label.cell_opt_max_iter"
+        CellOptPressureToleranceLabel = "label.cell_opt_pressure_tolerance"
         FallbackPeriodicLabel = "label.fallback_periodic"
         FallbackCellALabel = "label.fallback_cell_a"
         FallbackCellBLabel = "label.fallback_cell_b"
@@ -1313,6 +1324,7 @@ function New-WinQStepWindow {
         $template = $Payload.template
         $dft = $template.dft
         $geoOpt = $template.geo_opt
+        $cellOpt = $template.cell_opt
         $structureTransform = $template.structure_transform
         $fallbackCell = $null
         if ($null -ne $structureTransform) {
@@ -1348,6 +1360,12 @@ function New-WinQStepWindow {
         $controls["KpointsWavefunctionsBox"].Text = & $GetJsonProperty $dft "kpoints_wavefunctions"
         $controls["GeoOptimizerBox"].Text = & $GetJsonProperty $geoOpt "optimizer"
         $controls["GeoMaxIterBox"].Text = & $GetJsonProperty $geoOpt "max_iter"
+        $controls["CellOptTypeBox"].Text = & $GetJsonProperty $cellOpt "type"
+        $controls["CellOptOptimizerBox"].Text = & $GetJsonProperty $cellOpt "optimizer"
+        $controls["CellOptMaxIterBox"].Text = & $GetJsonProperty $cellOpt "max_iter"
+        $controls["CellOptPressureToleranceBox"].Text = & $GetJsonProperty $cellOpt "pressure_tolerance"
+        $controls["CellOptKeepAnglesBox"].IsChecked = @("1", "true", "yes", "on").Contains((& $GetJsonProperty $cellOpt "keep_angles" "False").ToLowerInvariant())
+        $controls["CellOptKeepSymmetryBox"].IsChecked = @("1", "true", "yes", "on").Contains((& $GetJsonProperty $cellOpt "keep_symmetry" "False").ToLowerInvariant())
         $controls["FallbackPeriodicBox"].Text = & $GetJsonProperty $fallbackCell "periodic"
         $controls["FallbackCellABox"].Text = & $GetJsonVectorText $fallbackCell "a"
         $controls["FallbackCellBBox"].Text = & $GetJsonVectorText $fallbackCell "b"
@@ -1416,6 +1434,12 @@ function New-WinQStepWindow {
             kpoints_wavefunctions = $controls["KpointsWavefunctionsBox"].Text
             optimizer = $controls["GeoOptimizerBox"].Text
             geo_opt_max_iter = $controls["GeoMaxIterBox"].Text
+            cell_opt_type = $controls["CellOptTypeBox"].Text
+            cell_opt_optimizer = $controls["CellOptOptimizerBox"].Text
+            cell_opt_max_iter = $controls["CellOptMaxIterBox"].Text
+            cell_opt_pressure_tolerance = $controls["CellOptPressureToleranceBox"].Text
+            cell_opt_keep_angles = [bool]$controls["CellOptKeepAnglesBox"].IsChecked
+            cell_opt_keep_symmetry = [bool]$controls["CellOptKeepSymmetryBox"].IsChecked
             fallback_cell_periodic = $controls["FallbackPeriodicBox"].Text
             fallback_cell_a = $controls["FallbackCellABox"].Text
             fallback_cell_b = $controls["FallbackCellBBox"].Text
@@ -2836,6 +2860,8 @@ if ($SmokeTest) {
         "TemplateProjectBox", "TemplateRunTypeBox", "BasisSetFileBox", "PotentialFileBox",
         "XcFunctionalBox", "EpsScfBox", "ChargeBox", "MultiplicityBox",
         "CutoffBox", "RelCutoffBox", "MaxScfBox", "GeoOptimizerBox", "GeoMaxIterBox",
+        "CellOptTypeBox", "CellOptOptimizerBox", "CellOptMaxIterBox",
+        "CellOptPressureToleranceBox",
         "ScfMethodBox", "AddedMosBox", "DiagonalizationAlgorithmBox",
         "OtMinimizerBox", "OtPreconditionerBox", "MixingMethodBox",
         "MixingAlphaBox", "MixingBetaBox", "SmearingMethodBox",
@@ -2848,6 +2874,7 @@ if ($SmokeTest) {
     $report["template_combo_fields_editable"] = $templateComboNames.Where({ [bool]$window.FindName($_).IsEditable }).Count
     $report["template_run_type_options"] = @($window.FindName("TemplateRunTypeBox").Items | ForEach-Object { [string]$_.Content })
     $report["template_optimizer_options"] = @($window.FindName("GeoOptimizerBox").Items | ForEach-Object { [string]$_.Content })
+    $report["template_cell_opt_type_options"] = @($window.FindName("CellOptTypeBox").Items | ForEach-Object { [string]$_.Content })
     $report["template_project_name"] = [string]$window.FindName("TemplateProjectBox").Text
     $report["template_run_type"] = [string]$window.FindName("TemplateRunTypeBox").Text
     $report["template_cutoff"] = [string]$window.FindName("CutoffBox").Text
@@ -2855,6 +2882,12 @@ if ($SmokeTest) {
     $report["template_added_mos"] = [string]$window.FindName("AddedMosBox").Text
     $report["template_mixing_enabled"] = [bool]$window.FindName("MixingEnabledBox").IsChecked
     $report["template_smearing_enabled"] = [bool]$window.FindName("SmearingEnabledBox").IsChecked
+    $report["template_cell_opt_type"] = [string]$window.FindName("CellOptTypeBox").Text
+    $report["template_cell_opt_optimizer"] = [string]$window.FindName("CellOptOptimizerBox").Text
+    $report["template_cell_opt_max_iter"] = [string]$window.FindName("CellOptMaxIterBox").Text
+    $report["template_cell_opt_pressure_tolerance"] = [string]$window.FindName("CellOptPressureToleranceBox").Text
+    $report["template_cell_opt_keep_angles"] = [bool]$window.FindName("CellOptKeepAnglesBox").IsChecked
+    $report["template_cell_opt_keep_symmetry"] = [bool]$window.FindName("CellOptKeepSymmetryBox").IsChecked
     $report["template_kpoints_scheme"] = [string]$window.FindName("KpointsSchemeBox").Text
     $report["template_kpoints_grid"] = [string]$window.FindName("KpointsGridBox").Text
     $report["template_kpoints_full_grid"] = [bool]$window.FindName("KpointsFullGridBox").IsChecked
