@@ -63,6 +63,9 @@ Top-level fields:
 
 - `project_name`
 - `run_type`: `ENERGY`, `ENERGY_FORCE`, `GEO_OPT`, or `CELL_OPT`
+- `print_level`: optional `GLOBAL/PRINT_LEVEL`, one of `SILENT`, `LOW`,
+  `MEDIUM`, `HIGH`, or `DEBUG`; when omitted or blank, WinQStep leaves CP2K's
+  default print level implicit
 - `dft`: basis/potential file names, PBE-style functional, charge,
   multiplicity, MGRID cutoff, SCF controls, and optional KPOINTS controls
 - `geo_opt`: optimizer and max iteration settings for `GEO_OPT`
@@ -108,6 +111,8 @@ QuickStep subset with tests.
 
 - Every GUI field maps to one typed model field.
 - Every typed model field maps to one known CP2K section or keyword.
+- Optional `print_level` renders only as `GLOBAL/PRINT_LEVEL` when explicitly
+  set.
 - CELL and POISSON periodicity must stay synchronized.
 - Mixing and smearing are only generated with the diagonalization SCF path.
 - KPOINTS are only generated for explicitly selected periodic calculations.

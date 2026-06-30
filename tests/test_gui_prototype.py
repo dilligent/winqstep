@@ -47,11 +47,13 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn("Get-WinQStepText", helper_text)
         self.assertIn("Set-WinQStepContent", helper_text)
         self.assertIn("UiLanguageBox", xaml_text)
+        self.assertIn('x:Name="ApplyLanguageButton"', xaml_text)
         self.assertIn('ScrollViewer x:Name="MainScrollViewer"', xaml_text)
         self.assertIn('VerticalScrollBarVisibility="Auto"', xaml_text)
         self.assertIn('HorizontalScrollBarVisibility="Disabled"', xaml_text)
         self.assertIn('TabControl x:Name="MainTabs"', xaml_text)
         self.assertIn('x:Key="TemplateSectionGroupBoxStyle"', xaml_text)
+        self.assertIn('x:Name="TemplateGlobalGroup" Header="&amp;GLOBAL"', xaml_text)
         self.assertIn('x:Name="TemplateDftGroup" Header="&amp;FORCE_EVAL / &amp;DFT"', xaml_text)
         self.assertIn('x:Name="TemplateScfGroup" Header="&amp;DFT / &amp;SCF"', xaml_text)
         self.assertIn('x:Name="TemplateMixingGroup" Header="&amp;SCF / &amp;MIXING"', xaml_text)
@@ -75,6 +77,9 @@ class GuiPrototypeTests(unittest.TestCase):
             ],
         )
         self.assertIn('x:Name="TemplateRunTypeBox" Grid.Row="0" Grid.Column="3" IsEditable="True"', xaml_text)
+        self.assertIn('x:Name="PrintLevelBox" Grid.Row="1" Grid.Column="1" IsEditable="True"', xaml_text)
+        self.assertIn('<ComboBoxItem Content="SILENT"/>', xaml_text)
+        self.assertIn('<ComboBoxItem Content="DEBUG"/>', xaml_text)
         self.assertIn('<ComboBoxItem Content="ENERGY"/>', xaml_text)
         self.assertIn('<ComboBoxItem Content="ENERGY_FORCE"/>', xaml_text)
         self.assertIn('<ComboBoxItem Content="GEO_OPT"/>', xaml_text)
@@ -118,6 +123,8 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn('Height="130" Visibility="Collapsed"', xaml_text)
         self.assertIn("ui_language", script_text)
         self.assertIn('"button.preview": "Preview"', english_text)
+        self.assertIn('"button.apply": "Apply"', english_text)
+        self.assertIn('"label.print_level": "Print Level"', english_text)
         self.assertIn('"button.preview": "预览"', chinese_text)
         self.assertIn("[System.Windows.Threading.DispatcherTimer]::new()", script_text)
         self.assertIn("Start-WinQStepPythonProcess", helper_text)
@@ -141,6 +148,7 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn('"button.results": "结果"', chinese_text)
         self.assertIn("scripts\\validate_job_inputs.py", script_text)
         self.assertIn("template_section_groups_loaded", script_text)
+        self.assertIn("language_apply_switched_to_zh", script_text)
         self.assertIn("scripts\\check_startup.py", helper_text)
         self.assertIn("scripts\\build_release.py", helper_text)
         self.assertIn("scripts\\smoke_release_install.py", helper_text)
@@ -258,10 +266,11 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertTrue(report["config_workspace_encoding_ok"], report["config_workspace_path"])
         self.assertIn("Config valid", report["config_validation_text"])
         self.assertTrue(report["template_tab_loaded"])
-        self.assertEqual(report["template_section_groups_loaded"], 9)
+        self.assertEqual(report["template_section_groups_loaded"], 10)
         self.assertEqual(
             report["template_section_group_headers"],
             [
+                "&GLOBAL",
                 "&FORCE_EVAL / &DFT",
                 "&DFT / &SCF",
                 "&SCF / &MIXING",
@@ -273,13 +282,15 @@ class GuiPrototypeTests(unittest.TestCase):
                 "&SUBSYS / &KIND",
             ],
         )
-        self.assertEqual(report["template_combo_fields_loaded"], 34)
-        self.assertEqual(report["template_combo_fields_editable"], 34)
+        self.assertEqual(report["template_combo_fields_loaded"], 35)
+        self.assertEqual(report["template_combo_fields_editable"], 35)
         self.assertEqual(report["template_run_type_options"], ["ENERGY", "ENERGY_FORCE", "GEO_OPT", "CELL_OPT"])
+        self.assertEqual(report["template_print_level_options"], ["", "SILENT", "LOW", "MEDIUM", "HIGH", "DEBUG"])
         self.assertEqual(report["template_optimizer_options"], ["BFGS", "LBFGS", "CG"])
         self.assertEqual(report["template_cell_opt_type_options"], ["DIRECT_CELL_OPT"])
         self.assertEqual(report["template_project_name"], "workflow_energy")
         self.assertEqual(report["template_run_type"], "ENERGY")
+        self.assertEqual(report["template_print_level"], "")
         self.assertEqual(report["template_cutoff"], "400")
         self.assertEqual(report["template_scf_method"], "DEFAULT")
         self.assertEqual(report["template_added_mos"], "0")
@@ -447,6 +458,7 @@ class GuiPrototypeTests(unittest.TestCase):
             "ViewMetadataButton",
             "ViewStdoutButton",
             "ViewStderrButton",
+            "ApplyLanguageButton",
             "ClearButton",
         ]
         for name in expected_clicks:
@@ -472,6 +484,8 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertTrue(report["artifact_text_has_stderr"])
         self.assertTrue(report["artifact_log_has_stderr"])
         self.assertTrue(report["preview_text_has_output"])
+        self.assertTrue(report["language_apply_switched_to_zh"])
+        self.assertTrue(report["language_apply_changed_preview_text"])
         self.assertTrue(report["clear_emptied_text_fields"])
         self.assertTrue(report["clear_disabled_artifact_buttons"])
         self.assertTrue(report["clear_removed_history_items"])

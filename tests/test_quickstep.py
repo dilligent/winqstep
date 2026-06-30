@@ -49,11 +49,26 @@ class QuickStepTests(unittest.TestCase):
         self.assertNotIn("&GEO_OPT", rendered)
         self.assertNotIn("&MOTION", rendered)
 
+    def test_renders_global_print_level_when_set(self) -> None:
+        data = json.loads((ROOT / "examples" / "quickstep_energy.json").read_text(encoding="utf-8"))
+        data["print_level"] = "low"
+
+        rendered = render_quickstep_input(quickstep_input_from_dict(data))
+
+        self.assertIn("  PRINT_LEVEL LOW\n", rendered)
+
     def test_rejects_non_quickstep_run_type(self) -> None:
         data = json.loads((ROOT / "examples" / "quickstep_energy.json").read_text(encoding="utf-8"))
         data["run_type"] = "MD"
 
         with self.assertRaises(QuickStepInputError):
+            quickstep_input_from_dict(data)
+
+    def test_rejects_unknown_print_level(self) -> None:
+        data = json.loads((ROOT / "examples" / "quickstep_energy.json").read_text(encoding="utf-8"))
+        data["print_level"] = "verbose"
+
+        with self.assertRaisesRegex(QuickStepInputError, "print_level"):
             quickstep_input_from_dict(data)
 
     def test_rejects_missing_kind(self) -> None:

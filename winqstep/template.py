@@ -17,6 +17,7 @@ from .quickstep import (
     OT_MINIMIZERS,
     OT_PRECONDITIONERS,
     PERIODIC_VALUES,
+    PRINT_LEVELS,
     RUN_TYPES,
     SCF_METHODS,
     SMEARING_METHODS,
@@ -29,6 +30,7 @@ from .quickstep import (
 TEMPLATE_KEY_ORDER = (
     "project_name",
     "run_type",
+    "print_level",
     "dft",
     "geo_opt",
     "cell_opt",
@@ -128,6 +130,7 @@ def validate_template(data: dict[str, Any]) -> dict[str, Any]:
     run_type = _string_value(data.get("run_type", "ENERGY"), "run_type", errors).upper()
     if run_type and run_type not in RUN_TYPES:
         errors.append("run_type must be ENERGY, ENERGY_FORCE, GEO_OPT, or CELL_OPT")
+    print_level = _optional_choice_value(data.get("print_level"), "print_level", PRINT_LEVELS, errors)
 
     dft = _normalize_dft(_object_value(data.get("dft", {}), "dft", errors), errors)
     geo_opt = _normalize_geo_opt(_object_value(data.get("geo_opt", {}), "geo_opt", errors), errors)
@@ -147,6 +150,8 @@ def validate_template(data: dict[str, Any]) -> dict[str, Any]:
         "run_type": run_type,
         "dft": dft,
     }
+    if print_level:
+        template["print_level"] = print_level
     if run_type == "GEO_OPT":
         template["geo_opt"] = geo_opt
     if run_type == "CELL_OPT":
@@ -177,6 +182,10 @@ def merge_template_fields(template: dict[str, Any], fields: dict[str, Any]) -> d
     for key in ("project_name", "run_type"):
         if key in fields:
             merged[key] = fields[key]
+    if _field_has_value(fields, "print_level"):
+        merged["print_level"] = fields["print_level"]
+    elif "print_level" in fields:
+        merged.pop("print_level", None)
     for key in DFT_KEY_ORDER:
         if key in fields:
             dft[key] = fields[key]
@@ -555,6 +564,13 @@ def _int_min_value(value: Any, key: str, minimum: int, errors: list[str]) -> int
 
 def _choice_value(value: Any, key: str, choices: set[str], errors: list[str]) -> str:
     text = _required_string(value, key, errors).upper()
+    if text and text not in choices:
+        errors.append(f"{key} has an unsupported value")
+    return text
+
+
+def _optional_choice_value(value: Any, key: str, choices: set[str], errors: list[str]) -> str:
+    text = _string_value(value, key, errors).upper()
     if text and text not in choices:
         errors.append(f"{key} has an unsupported value")
     return text

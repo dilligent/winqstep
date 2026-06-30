@@ -21,8 +21,9 @@ Each round should end with a focused commit.
   guide polish, GUI async run completion hardening, and window-level GUI
   overflow scrolling, QuickStep CELL/PERIODIC template support, QuickStep SCF
   control expansion, QuickStep KPOINTS support, QuickStep CELL_OPT support, and
-  CP2K-section grouping in the Template tab.
-- Next active round: Round 40, expand QuickStep coverage from the next selected
+  CP2K-section grouping in the Template tab, optional QuickStep
+  `GLOBAL/PRINT_LEVEL`, and immediate GUI language apply.
+- Next active round: Round 41, expand QuickStep coverage from the next selected
   CP2K feature area.
 - Known local facts:
   - WSL2 is available.
@@ -1390,6 +1391,41 @@ Acceptance:
 Commit boundary:
 
 - One commit for the Template layout grouping, smoke/static tests, and docs.
+
+## Round 40: GLOBAL Print Level and GUI Language Apply
+
+Status: implemented.
+
+Goal: add conservative CP2K `GLOBAL/PRINT_LEVEL` support and make GUI language
+selection take effect without restarting or saving first.
+
+Tasks:
+
+- Add optional top-level `print_level` support to the QuickStep input model,
+  template validator, workflow merger, and `scripts/manage_template.py`.
+- Validate `SILENT`, `LOW`, `MEDIUM`, `HIGH`, and `DEBUG` from the CP2K
+  `GLOBAL/PRINT_LEVEL` manual entry.
+- Render `GLOBAL/PRINT_LEVEL` only when the field is explicitly set, preserving
+  existing generated input snapshots by default.
+- Expose `Print Level` in the Template tab's `&GLOBAL` group with an editable
+  drop-down.
+- Add an `Apply` button next to `UI Language` that refreshes the visible GUI
+  labels immediately without writing the config file.
+- Extend GUI smoke coverage to verify the language apply path and print-level
+  controls.
+
+Acceptance:
+
+- Generated inputs include `PRINT_LEVEL <level>` in `&GLOBAL` when requested.
+- Unsupported print levels are rejected before CP2K starts.
+- Workflow templates carry `print_level` through preview and run.
+- Clicking `Apply` after changing `UI Language` updates the active window's
+  localized labels; `Save Config` remains the persistence action.
+
+Commit boundary:
+
+- One commit for print-level model/template/GUI support, language apply wiring,
+  tests, and docs.
 
 ## Working Rules
 

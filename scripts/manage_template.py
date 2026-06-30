@@ -23,6 +23,7 @@ from winqstep.template import (
 FIELD_ARGS = {
     "project_name": "project_name",
     "run_type": "run_type",
+    "print_level": "print_level",
     "basis_set_file_name": "basis_set_file_name",
     "potential_file_name": "potential_file_name",
     "xc_functional": "xc_functional",
@@ -75,6 +76,7 @@ def main() -> int:
     parser.add_argument("--fields-json", help="JSON object with editable template fields to merge.")
     parser.add_argument("--project-name")
     parser.add_argument("--run-type")
+    parser.add_argument("--print-level")
     parser.add_argument("--basis-set-file-name")
     parser.add_argument("--potential-file-name")
     parser.add_argument("--xc-functional")

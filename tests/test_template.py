@@ -54,6 +54,19 @@ class TemplateTests(unittest.TestCase):
         self.assertEqual(normalized["geo_opt"]["max_iter"], 120)
         self.assertEqual(normalized["kinds"][1]["basis_set"], "TZVP-MOLOPT-GTH")
 
+    def test_merge_fields_updates_print_level(self) -> None:
+        template = load_template(ENERGY_TEMPLATE)
+        merged = merge_template_fields(template, {"print_level": "high"})
+        validation = validate_template(merged)
+
+        self.assertTrue(validation["valid"], validation["errors"])
+        self.assertEqual(validation["template"]["print_level"], "HIGH")
+
+        cleared = merge_template_fields(validation["template"], {"print_level": ""})
+        cleared_validation = validate_template(cleared)
+        self.assertTrue(cleared_validation["valid"], cleared_validation["errors"])
+        self.assertNotIn("print_level", cleared_validation["template"])
+
     def test_merge_fields_updates_fallback_cell_transform(self) -> None:
         template = load_template(ENERGY_TEMPLATE)
         merged = merge_template_fields(
@@ -285,6 +298,16 @@ class TemplateTests(unittest.TestCase):
                 "kpoints_wavefunctions",
             ])
             self.assertFalse(template_path.read_bytes().startswith(b"\xef\xbb\xbf"))
+
+    def test_save_template_writes_print_level_after_run_type(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            template_path = Path(tmp_dir) / "template.json"
+            template = merge_template_fields(load_template(ENERGY_TEMPLATE), {"print_level": "debug"})
+
+            saved = save_template(template_path, template)
+
+            self.assertEqual(list(saved)[:3], ["project_name", "run_type", "print_level"])
+            self.assertEqual(saved["print_level"], "DEBUG")
 
     def test_cli_writes_template_from_fields_json(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:

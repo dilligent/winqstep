@@ -8,6 +8,7 @@ from typing import Any, Iterable, Literal
 
 RunType = Literal["ENERGY", "ENERGY_FORCE", "GEO_OPT", "CELL_OPT"]
 RUN_TYPES = {"ENERGY", "ENERGY_FORCE", "GEO_OPT", "CELL_OPT"}
+PRINT_LEVELS = {"SILENT", "LOW", "MEDIUM", "HIGH", "DEBUG"}
 PERIODIC_VALUES = {"NONE", "X", "Y", "Z", "XY", "XZ", "YZ", "XYZ"}
 SCF_METHODS = {"DEFAULT", "OT", "DIAGONALIZATION"}
 KPOINTS_SCHEMES = {"NONE", "GAMMA", "MONKHORST-PACK"}
@@ -113,6 +114,7 @@ class QuickStepInput:
     cell: Cell
     atoms: tuple[Atom, ...]
     kinds: tuple[Kind, ...]
+    print_level: str | None = None
     dft: DftSettings = DftSettings()
     geo_opt: GeoOptSettings = GeoOptSettings()
     cell_opt: CellOptSettings = CellOptSettings()
@@ -130,6 +132,18 @@ def _optional_string(data: dict[str, Any], key: str, default: str) -> str:
     if not isinstance(value, str) or not value.strip():
         raise QuickStepInputError(f"{key} must be a non-empty string")
     return value.strip()
+
+
+def _optional_choice(data: dict[str, Any], key: str) -> str | None:
+    value = data.get(key)
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise QuickStepInputError(f"{key} must be a string")
+    stripped = value.strip()
+    if not stripped:
+        return None
+    return stripped.upper()
 
 
 def _int_value(data: dict[str, Any], key: str, default: int) -> int:
@@ -267,6 +281,7 @@ def quickstep_input_from_dict(data: dict[str, Any]) -> QuickStepInput:
         cell=_parse_cell(_object(structure.get("cell"), "structure.cell")),
         atoms=atoms,
         kinds=kinds,
+        print_level=_optional_choice(data, "print_level"),
         dft=_parse_dft(_object(data.get("dft", {}), "dft")),
         geo_opt=_parse_geo_opt(_object(data.get("geo_opt", {}), "geo_opt")),
         cell_opt=_parse_cell_opt(_object(data.get("cell_opt", {}), "cell_opt")),
@@ -288,6 +303,8 @@ def validate_quickstep_input(model: QuickStepInput) -> None:
     if missing_kinds:
         raise QuickStepInputError("missing KIND definitions for: " + ", ".join(missing_kinds))
 
+    if model.print_level is not None and model.print_level not in PRINT_LEVELS:
+        raise QuickStepInputError("print_level has an unsupported value")
     if model.cell.periodic not in PERIODIC_VALUES:
         raise QuickStepInputError("cell.periodic has an unsupported value")
     if model.cell.periodic != "NONE" and any(
@@ -355,6 +372,7 @@ def render_quickstep_input(model: QuickStepInput) -> str:
         "&GLOBAL",
         f"  PROJECT_NAME {model.project_name}",
         f"  RUN_TYPE {model.run_type}",
+        *_render_global_print_level(model),
         "&END GLOBAL",
         "",
         "&FORCE_EVAL",
@@ -404,6 +422,12 @@ def render_quickstep_input(model: QuickStepInput) -> str:
         lines.extend(["", *motion_lines])
 
     return "\n".join(lines) + "\n"
+
+
+def _render_global_print_level(model: QuickStepInput) -> list[str]:
+    if model.print_level is None:
+        return []
+    return [f"  PRINT_LEVEL {model.print_level}"]
 
 
 def _render_force_eval_print(model: QuickStepInput) -> list[str]:

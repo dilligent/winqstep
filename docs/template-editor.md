@@ -21,6 +21,8 @@ Editable fields include:
 
 - `project_name`
 - `run_type`: `ENERGY`, `ENERGY_FORCE`, `GEO_OPT`, or `CELL_OPT`
+- `print_level`: optional `GLOBAL/PRINT_LEVEL`; supported values are
+  `SILENT`, `LOW`, `MEDIUM`, `HIGH`, and `DEBUG`
 - DFT fields: basis file, potential file, XC functional, charge,
   multiplicity, cutoff, relative cutoff, EPS_SCF, MAX_SCF, SCF method,
   ADDED_MOS, OT settings, diagonalization settings, mixing settings, and
@@ -40,13 +42,14 @@ The writer saves UTF-8 JSON with stable key order.
 The PowerShell WPF prototype has a `Template` tab plus `Load Template` and
 `Save Template` buttons. The tab exposes conservative fields already supported
 by the renderer and workflow layer. Related controls are grouped by their CP2K
-input-section path, so nested blocks such as `SCF/MIXING`, `SCF/SMEAR`,
-`DFT/KPOINTS`, `MOTION/CELL_OPT`, `SUBSYS/CELL`, and `SUBSYS/KIND` are visible
-as sections instead of a flat list of peer fields.
+input-section path, so `GLOBAL`, nested blocks such as `SCF/MIXING`,
+`SCF/SMEAR`, `DFT/KPOINTS`, `MOTION/CELL_OPT`, `SUBSYS/CELL`, and
+`SUBSYS/KIND` are visible as sections instead of a flat list of peer fields.
 
 Single-line template fields are editable drop-down controls. Each field offers
 common CP2K/WinQStep choices, such as `ENERGY`, `ENERGY_FORCE`, `GEO_OPT`, and
-`CELL_OPT` for run type, common basis and potential file names, common XC functional
+`CELL_OPT` for run type, `SILENT`, `LOW`, `MEDIUM`, `HIGH`, and `DEBUG` for
+`GLOBAL/PRINT_LEVEL`, common basis and potential file names, common XC functional
 shortcuts, typical SCF/MGRID numeric values, SCF methods such as `DEFAULT`,
 `DIAGONALIZATION`, and `OT`, and `BFGS`, `LBFGS`, or `CG` for GEO_OPT and
 CELL_OPT optimizers. Fallback cell fields expose the supported CP2K periodicity labels
@@ -56,7 +59,7 @@ Monkhorst-Pack grids, `FULL_GRID`, `SYMMETRY`, and `WAVEFUNCTIONS` choices.
 The controls remain editable, so values not listed in the drop-down can still
 be typed directly and saved through the same template writer.
 The candidate lists are intentionally conservative and are based on the CP2K
-manual pages for `GLOBAL/RUN_TYPE`, `DFT/BASIS_SET_FILE_NAME`,
+manual pages for `GLOBAL/RUN_TYPE`, `GLOBAL/PRINT_LEVEL`, `DFT/BASIS_SET_FILE_NAME`,
 `DFT/POTENTIAL_FILE_NAME`, `XC/XC_FUNCTIONAL`, `DFT/MGRID`, `DFT/SCF`, and
 `MOTION/GEO_OPT`, plus `SUBSYS/CELL`, `DFT/POISSON`, `SCF/OT`,
 `SCF/DIAGONALIZATION`, `SCF/MIXING`, `SCF/SMEAR`, and `DFT/KPOINTS` for

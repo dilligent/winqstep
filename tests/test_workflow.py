@@ -56,6 +56,15 @@ class WorkflowTests(unittest.TestCase):
         self.assertEqual(quickstep_data["run_type"], "ENERGY_FORCE")
         self.assertNotIn("geo_opt", quickstep_data)
 
+    def test_builds_workflow_data_with_print_level(self) -> None:
+        imported = import_structure(STRUCTURES / "water.xyz")
+        template = dict(self.template)
+        template["print_level"] = "LOW"
+
+        quickstep_data = build_quickstep_data(template, imported, project_name="water_low_print")
+
+        self.assertEqual(quickstep_data["print_level"], "LOW")
+
     def test_builds_cell_opt_workflow_data(self) -> None:
         imported = import_structure(STRUCTURES / "POSCAR")
         template = load_json_file(ROOT / "examples" / "templates" / "energy_pbe.json")

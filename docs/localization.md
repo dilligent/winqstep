@@ -32,6 +32,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\start_gui.ps1 -Lan
 To persist a preference, set `ui_language` in the config to `en-US` or `zh-CN`,
 or use the `UI Language` field on the GUI `Config` tab and then `Save Config`.
 An empty value means system default.
+The `Apply` button next to `UI Language` refreshes the current window
+immediately without writing the config file.
 
 ## Scope
 
@@ -63,6 +65,8 @@ small lookup helpers such as `Get-WinQStepText` and `Format-WinQStepText`.
 `scripts/start_gui.ps1` applies those resources to the loaded WPF controls after
 `scripts/gui/WinQStep.xaml` is loaded. If no `-Language` override is supplied,
 loading a config with `ui_language` refreshes the currently visible GUI labels.
+The `Config` tab's language `Apply` button calls the same localization refresh
+path directly from the selected language value.
 
 Missing keys fall back to the key name, and non-English languages fall back to
 `en-US` for any keys not present in the selected resource file.

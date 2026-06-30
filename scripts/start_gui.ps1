@@ -59,7 +59,7 @@ function New-WinQStepWindow {
         "DefaultWorkspaceBox", "WslPreludeBox", "TimeoutBox", "UiLanguageBox", "ConfigValidationText",
         "TemplateProjectLabel", "RunTypeLabel", "BasisFileLabel", "PotentialFileLabel",
         "XcFunctionalLabel", "EpsScfLabel", "ChargeLabel", "MultiplicityLabel",
-        "CutoffLabel", "RelCutoffLabel", "MaxScfLabel", "OptimizerLabel", "GeoMaxIterLabel",
+        "CutoffLabel", "RelCutoffLabel", "PrintLevelLabel", "MaxScfLabel", "OptimizerLabel", "GeoMaxIterLabel",
         "CellOptTypeLabel", "CellOptOptimizerLabel", "CellOptMaxIterLabel",
         "CellOptPressureToleranceLabel",
         "ScfMethodLabel", "AddedMosLabel", "DiagonalizationAlgorithmLabel",
@@ -68,7 +68,7 @@ function New-WinQStepWindow {
         "ElectronicTemperatureLabel", "KpointsSchemeLabel", "KpointsGridLabel",
         "KpointsWavefunctionsLabel",
         "FallbackPeriodicLabel", "FallbackCellALabel", "FallbackCellBLabel", "FallbackCellCLabel",
-        "TemplateProjectBox", "TemplateRunTypeBox", "BasisSetFileBox", "PotentialFileBox",
+        "TemplateProjectBox", "TemplateRunTypeBox", "PrintLevelBox", "BasisSetFileBox", "PotentialFileBox",
         "XcFunctionalBox", "ChargeBox", "MultiplicityBox", "CutoffBox", "RelCutoffBox",
         "EpsScfBox", "MaxScfBox", "GeoOptimizerBox", "GeoMaxIterBox",
         "CellOptTypeBox", "CellOptOptimizerBox", "CellOptMaxIterBox",
@@ -85,7 +85,7 @@ function New-WinQStepWindow {
         "KindEntriesGrid", "DataLabelsGrid", "TemplateValidationText",
         "EnvironmentText", "StructureText", "PreviewText", "LogText",
         "ArtifactSummaryText", "ArtifactText", "HistoryGrid", "StatusText", "JobStatusText",
-        "LoadConfigButton", "SaveConfigButton", "LoadTemplateButton", "SaveTemplateButton",
+        "LoadConfigButton", "SaveConfigButton", "ApplyLanguageButton", "LoadTemplateButton", "SaveTemplateButton",
         "InspectDataButton", "DetectButton", "ImportButton",
         "PreviewButton", "RunButton", "CancelJobButton", "HistoryButton", "ClearButton",
         "ViewResultsButton", "SaveResultsButton",
@@ -102,6 +102,7 @@ function New-WinQStepWindow {
         $contentLocalization = @{
         LoadConfigButton = "button.load_config"
         SaveConfigButton = "button.save_config"
+        ApplyLanguageButton = "button.apply"
         LoadTemplateButton = "button.load_template"
         SaveTemplateButton = "button.save_template"
         InspectDataButton = "button.inspect_data"
@@ -171,6 +172,7 @@ function New-WinQStepWindow {
         UiLanguageLabel = "label.ui_language"
         TemplateProjectLabel = "label.project"
         RunTypeLabel = "label.run_type"
+        PrintLevelLabel = "label.print_level"
         BasisFileLabel = "label.basis_file"
         PotentialFileLabel = "label.potential_file"
         XcFunctionalLabel = "label.xc_functional"
@@ -259,6 +261,7 @@ function New-WinQStepWindow {
 
     $actionButtons = @(
         $controls["LoadConfigButton"], $controls["SaveConfigButton"],
+        $controls["ApplyLanguageButton"],
         $controls["LoadTemplateButton"], $controls["SaveTemplateButton"],
         $controls["InspectDataButton"], $controls["DetectButton"], $controls["ImportButton"],
         $controls["PreviewButton"], $controls["RunButton"],
@@ -300,6 +303,13 @@ function New-WinQStepWindow {
         }
         $null = Initialize-WinQStepLocalization $Language
         & $ApplyLocalizationToControls
+    }.GetNewClosure()
+
+    $ApplySelectedLanguage = {
+        $language = & $GetUiLanguageSelection
+        $null = Initialize-WinQStepLocalization $language
+        & $ApplyLocalizationToControls
+        & $SetUiLanguageSelection $language
     }.GetNewClosure()
 
     $TestIsExistingInputMode = {
@@ -1332,6 +1342,7 @@ function New-WinQStepWindow {
         }
         $controls["TemplateProjectBox"].Text = & $GetJsonProperty $template "project_name"
         $controls["TemplateRunTypeBox"].Text = & $GetJsonProperty $template "run_type"
+        $controls["PrintLevelBox"].Text = & $GetJsonProperty $template "print_level"
         $controls["BasisSetFileBox"].Text = & $GetJsonProperty $dft "basis_set_file_name"
         $controls["PotentialFileBox"].Text = & $GetJsonProperty $dft "potential_file_name"
         $controls["XcFunctionalBox"].Text = & $GetJsonProperty $dft "xc_functional"
@@ -1406,6 +1417,7 @@ function New-WinQStepWindow {
         $fields = [ordered]@{
             project_name = $controls["TemplateProjectBox"].Text
             run_type = $controls["TemplateRunTypeBox"].Text
+            print_level = $controls["PrintLevelBox"].Text
             basis_set_file_name = $controls["BasisSetFileBox"].Text
             potential_file_name = $controls["PotentialFileBox"].Text
             xc_functional = $controls["XcFunctionalBox"].Text
@@ -1997,6 +2009,10 @@ function New-WinQStepWindow {
         & $InvokeGuiAction -Status (Get-WinQStepText "status.saving_config") -Action {
             $null = & $SaveConfigFields $false $true
         }
+    }.GetNewClosure())
+
+    $controls["ApplyLanguageButton"].Add_Click({
+        & $ApplySelectedLanguage
     }.GetNewClosure())
 
     $controls["LoadTemplateButton"].Add_Click({
@@ -2654,6 +2670,12 @@ if ($ButtonSmokeTest) {
         & $RecordButtonSmokeClick $buttonName
     }
 
+    $window.FindName("UiLanguageBox").SelectedIndex = 2
+    [System.Windows.Forms.Application]::DoEvents()
+    & $RecordButtonSmokeClick "ApplyLanguageButton"
+    $languageAfterApply = Get-WinQStepLanguage
+    $previewButtonTextAfterLanguageApply = [string]$window.FindName("PreviewButton").Content
+
     $importTextHasAtomsBeforeClear = ([string]$window.FindName("StructureText").Text).Contains("atoms")
     $artifactSummaryBeforeClear = [string]$window.FindName("ArtifactSummaryText").Text
     $artifactTextBeforeClear = [string]$window.FindName("ArtifactText").Text
@@ -2692,6 +2714,8 @@ if ($ButtonSmokeTest) {
     $report["artifact_text_has_stderr"] = $artifactTextBeforeClear.Contains("stderr smoke")
     $report["artifact_log_has_stderr"] = $logTextBeforeClear.Contains("stderr smoke")
     $report["preview_text_has_output"] = $previewTextBeforeClear.Contains("PROGRAM ENDED")
+    $report["language_apply_switched_to_zh"] = ($languageAfterApply -eq "zh-CN")
+    $report["language_apply_changed_preview_text"] = ($previewButtonTextAfterLanguageApply -ne "Preview")
     $report["clear_emptied_text_fields"] = $textFieldsCleared
     $report["clear_disabled_artifact_buttons"] = $artifactViewButtonsDisabled
     $report["clear_removed_history_items"] = ($null -eq $window.FindName("HistoryGrid").ItemsSource)
@@ -2717,6 +2741,8 @@ if ($ButtonSmokeTest) {
         $report["artifact_text_has_stderr"] -and
         $report["artifact_log_has_stderr"] -and
         $report["preview_text_has_output"] -and
+        $report["language_apply_switched_to_zh"] -and
+        $report["language_apply_changed_preview_text"] -and
         $report["clear_emptied_text_fields"] -and
         $report["clear_disabled_artifact_buttons"] -and
         $report["clear_removed_history_items"]
@@ -2857,7 +2883,7 @@ if ($SmokeTest) {
     $report["config_workspace_encoding_ok"] = $report["config_workspace_resolved_path"].Contains($chineseFolderName)
     $report["config_validation_text"] = [string]$window.FindName("ConfigValidationText").Text
     $templateComboNames = @(
-        "TemplateProjectBox", "TemplateRunTypeBox", "BasisSetFileBox", "PotentialFileBox",
+        "TemplateProjectBox", "TemplateRunTypeBox", "PrintLevelBox", "BasisSetFileBox", "PotentialFileBox",
         "XcFunctionalBox", "EpsScfBox", "ChargeBox", "MultiplicityBox",
         "CutoffBox", "RelCutoffBox", "MaxScfBox", "GeoOptimizerBox", "GeoMaxIterBox",
         "CellOptTypeBox", "CellOptOptimizerBox", "CellOptMaxIterBox",
@@ -2870,7 +2896,7 @@ if ($SmokeTest) {
         "FallbackPeriodicBox", "FallbackCellABox", "FallbackCellBBox", "FallbackCellCBox"
     )
     $templateSectionGroupNames = @(
-        "TemplateDftGroup", "TemplateScfGroup", "TemplateMixingGroup",
+        "TemplateGlobalGroup", "TemplateDftGroup", "TemplateScfGroup", "TemplateMixingGroup",
         "TemplateSmearingGroup", "TemplateGeoOptGroup", "TemplateCellOptGroup",
         "TemplateCellGroup", "TemplateKpointsGroup", "TemplateKindGroup"
     )
@@ -2880,10 +2906,12 @@ if ($SmokeTest) {
     $report["template_combo_fields_loaded"] = $templateComboNames.Where({ $window.FindName($_) -is [System.Windows.Controls.ComboBox] }).Count
     $report["template_combo_fields_editable"] = $templateComboNames.Where({ [bool]$window.FindName($_).IsEditable }).Count
     $report["template_run_type_options"] = @($window.FindName("TemplateRunTypeBox").Items | ForEach-Object { [string]$_.Content })
+    $report["template_print_level_options"] = @($window.FindName("PrintLevelBox").Items | ForEach-Object { [string]$_.Content })
     $report["template_optimizer_options"] = @($window.FindName("GeoOptimizerBox").Items | ForEach-Object { [string]$_.Content })
     $report["template_cell_opt_type_options"] = @($window.FindName("CellOptTypeBox").Items | ForEach-Object { [string]$_.Content })
     $report["template_project_name"] = [string]$window.FindName("TemplateProjectBox").Text
     $report["template_run_type"] = [string]$window.FindName("TemplateRunTypeBox").Text
+    $report["template_print_level"] = [string]$window.FindName("PrintLevelBox").Text
     $report["template_cutoff"] = [string]$window.FindName("CutoffBox").Text
     $report["template_scf_method"] = [string]$window.FindName("ScfMethodBox").Text
     $report["template_added_mos"] = [string]$window.FindName("AddedMosBox").Text

@@ -111,6 +111,7 @@
           <Grid.ColumnDefinitions>
             <ColumnDefinition Width="160"/>
             <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
           </Grid.ColumnDefinitions>
           <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -153,8 +154,9 @@
             <ComboBoxItem Tag="en-US" Content="English (en-US)"/>
             <ComboBoxItem Tag="zh-CN" Content="中文 (zh-CN)"/>
           </ComboBox>
+          <Button x:Name="ApplyLanguageButton" Grid.Row="7" Grid.Column="2" Content="Apply" MinWidth="72"/>
 
-          <TextBox x:Name="ConfigValidationText" Grid.Row="8" Grid.Column="0" Grid.ColumnSpan="2"
+          <TextBox x:Name="ConfigValidationText" Grid.Row="8" Grid.Column="0" Grid.ColumnSpan="3"
                    FontFamily="Cascadia Mono, Consolas, Microsoft YaHei UI, Microsoft YaHei, SimSun"
                    FontSize="12" AcceptsReturn="True" TextWrapping="Wrap"
                    HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
@@ -163,34 +165,47 @@
       </TabItem>
       <TabItem x:Name="TemplateTab" Header="Template">
         <StackPanel Margin="8">
-          <Grid Margin="0,0,0,4">
-            <Grid.ColumnDefinitions>
-              <ColumnDefinition Width="150"/>
-              <ColumnDefinition Width="*"/>
-              <ColumnDefinition Width="150"/>
-              <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
-            <Grid.RowDefinitions>
-              <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
+          <GroupBox x:Name="TemplateGlobalGroup" Header="&amp;GLOBAL" Style="{StaticResource TemplateSectionGroupBoxStyle}">
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="150"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="150"/>
+                <ColumnDefinition Width="*"/>
+              </Grid.ColumnDefinitions>
+              <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+              </Grid.RowDefinitions>
 
-            <TextBlock x:Name="TemplateProjectLabel" Grid.Row="0" Grid.Column="0" Text="Project"/>
-            <ComboBox x:Name="TemplateProjectBox" Grid.Row="0" Grid.Column="1" IsEditable="True">
-              <ComboBoxItem Content="workflow_energy"/>
-              <ComboBoxItem Content="workflow_geo_opt"/>
-              <ComboBoxItem Content="workflow_cell_opt"/>
-              <ComboBoxItem Content="quickstep_energy"/>
-              <ComboBoxItem Content="quickstep_geo_opt"/>
-              <ComboBoxItem Content="quickstep_cell_opt"/>
-            </ComboBox>
-            <TextBlock x:Name="RunTypeLabel" Grid.Row="0" Grid.Column="2" Text="Run Type"/>
-            <ComboBox x:Name="TemplateRunTypeBox" Grid.Row="0" Grid.Column="3" IsEditable="True">
-              <ComboBoxItem Content="ENERGY"/>
-              <ComboBoxItem Content="ENERGY_FORCE"/>
-              <ComboBoxItem Content="GEO_OPT"/>
-              <ComboBoxItem Content="CELL_OPT"/>
-            </ComboBox>
-          </Grid>
+              <TextBlock x:Name="TemplateProjectLabel" Grid.Row="0" Grid.Column="0" Text="Project"/>
+              <ComboBox x:Name="TemplateProjectBox" Grid.Row="0" Grid.Column="1" IsEditable="True">
+                <ComboBoxItem Content="workflow_energy"/>
+                <ComboBoxItem Content="workflow_geo_opt"/>
+                <ComboBoxItem Content="workflow_cell_opt"/>
+                <ComboBoxItem Content="quickstep_energy"/>
+                <ComboBoxItem Content="quickstep_geo_opt"/>
+                <ComboBoxItem Content="quickstep_cell_opt"/>
+              </ComboBox>
+              <TextBlock x:Name="RunTypeLabel" Grid.Row="0" Grid.Column="2" Text="Run Type"/>
+              <ComboBox x:Name="TemplateRunTypeBox" Grid.Row="0" Grid.Column="3" IsEditable="True">
+                <ComboBoxItem Content="ENERGY"/>
+                <ComboBoxItem Content="ENERGY_FORCE"/>
+                <ComboBoxItem Content="GEO_OPT"/>
+                <ComboBoxItem Content="CELL_OPT"/>
+              </ComboBox>
+
+              <TextBlock x:Name="PrintLevelLabel" Grid.Row="1" Grid.Column="0" Text="Print Level"/>
+              <ComboBox x:Name="PrintLevelBox" Grid.Row="1" Grid.Column="1" IsEditable="True">
+                <ComboBoxItem Content=""/>
+                <ComboBoxItem Content="SILENT"/>
+                <ComboBoxItem Content="LOW"/>
+                <ComboBoxItem Content="MEDIUM"/>
+                <ComboBoxItem Content="HIGH"/>
+                <ComboBoxItem Content="DEBUG"/>
+              </ComboBox>
+            </Grid>
+          </GroupBox>
 
           <GroupBox x:Name="TemplateDftGroup" Header="&amp;FORCE_EVAL / &amp;DFT" Style="{StaticResource TemplateSectionGroupBoxStyle}">
             <Grid>
