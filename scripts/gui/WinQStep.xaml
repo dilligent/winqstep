@@ -661,6 +661,8 @@
                         Content="Mulliken" Margin="6,4" VerticalAlignment="Center"/>
               <CheckBox x:Name="PrintLowdinBox" Grid.Row="0" Grid.Column="1"
                         Content="Lowdin" Margin="6,4" VerticalAlignment="Center"/>
+              <CheckBox x:Name="PrintPdosBox" Grid.Row="0" Grid.Column="2"
+                        Content="PDOS" Margin="6,4" VerticalAlignment="Center"/>
             </Grid>
           </GroupBox>
 

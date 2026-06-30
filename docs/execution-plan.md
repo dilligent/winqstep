@@ -36,8 +36,10 @@ Each round should end with a focused commit.
   `DFT/&POISSON/POISSON_SOLVER` controls, and conservative QuickStep
   `DFT/&PRINT` Mulliken/Lowdin population-analysis controls, and explicit
   QuickStep wavefunction restart controls, and QuickStep
-  `MOTION/&CONSTRAINT/&FIXED_ATOMS` controls.
-- Next active round: Round 66, choose the next QuickStep expansion slice.
+  `MOTION/&CONSTRAINT/&FIXED_ATOMS` controls, and QuickStep
+  `DFT/&PRINT/&PDOS` with generated PDOS artifact discovery.
+- Next active round: Round 67, choose between 3D-assisted fixed-atom selection
+  and the next conservative QuickStep expansion slice.
 - Known local facts:
   - WSL2 is available.
   - Default distro is `Ubuntu`.
@@ -2282,17 +2284,58 @@ Commit boundary:
 - One commit for fixed atom constraint model fields, Template controls,
   validation, tests, and docs.
 
+## Round 66: QuickStep PDOS Print Artifacts
+
+Status: implemented.
+
+Goal: add the first file-generating `FORCE_EVAL/&DFT/&PRINT` control and make
+its outputs visible without taking on general artifact management yet.
+
+Rationale:
+
+- `DFT/&PRINT/&PDOS` is a common post-run analysis request for QuickStep
+  electronic-structure workflows.
+- It maps cleanly to one typed boolean and CP2K writes predictable `.pdos` or
+  `.pdos_raw` files next to the normal job output.
+- Keeping discovery limited to PDOS files avoids prematurely designing cube,
+  trajectory, restart, or band-structure artifact handling.
+
+Tasks:
+
+- Add typed `dft.print_pdos` support to the QuickStep model, template
+  normalizer, CLI field updater, and Template GUI.
+- Render `DFT/&PRINT/&PDOS ON` only when the field is enabled.
+- Extend runner metadata with `files.generated` discovery for `.pdos` and
+  `.pdos_raw` files created by the current job.
+- Show generated artifact counts and paths in GUI artifact and result summaries
+  and in history-derived artifact summaries.
+- Add renderer, template, workflow, history, GUI smoke/static tests, and
+  documentation.
+
+Acceptance:
+
+- Existing templates with PDOS disabled render exactly as before.
+- Enabling PDOS writes a stable `DFT/&PRINT/&PDOS ON` section.
+- A completed job that creates `.pdos` files records them under
+  `files.generated` and shows them in the GUI summaries.
+- Fast checks pass.
+
+Commit boundary:
+
+- One commit for PDOS model fields, generated artifact discovery, GUI summaries,
+  tests, and docs.
+
 ## QuickStep Feature Backlog
 
-Status: planned queue after Round 65.
+Status: planned queue after Round 66.
 
 Priority order:
 
-1. Extend `DFT/&PRINT` output controls. Add file-generating print keys only
-   together with artifact discovery and clear GUI presentation.
-2. 3D-assisted atom selection for fixed atoms. Connect the existing structure
+1. 3D-assisted atom selection for fixed atoms. Connect the existing structure
    preview to the new `motion.fixed_atoms` model so users can pick indices
    visually instead of typing them manually.
+2. Extend `DFT/&PRINT` output controls beyond PDOS. Add file-generating print
+   keys only together with artifact discovery and clear GUI presentation.
 3. `RUN_TYPE MD` with `MOTION/&MD`. Treat this as a larger milestone because it
    changes run duration, log expectations, trajectory artifacts, and Template
    defaults.

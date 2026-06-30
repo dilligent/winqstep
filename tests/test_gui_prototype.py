@@ -93,6 +93,7 @@ class GuiPrototypeTests(unittest.TestCase):
             "template_kpoints_wavefunctions": str(dft.get("kpoints_wavefunctions", "")),
             "template_print_mulliken": bool(dft.get("print_mulliken", False)),
             "template_print_lowdin": bool(dft.get("print_lowdin", False)),
+            "template_print_pdos": bool(dft.get("print_pdos", False)),
             "template_fixed_atoms": cls._template_vector_text(motion.get("fixed_atoms")),
             "template_fixed_atom_components": str(motion.get("fixed_atom_components", "XYZ")),
             "template_fallback_periodic": str(fallback_cell.get("periodic", "")),
@@ -284,6 +285,9 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn('"label.outer_scf_enabled": "Outer SCF"', english_text)
         self.assertIn('"label.print_mulliken": "Mulliken"', english_text)
         self.assertIn('"label.print_lowdin": "Lowdin"', english_text)
+        self.assertIn('"label.print_pdos": "PDOS"', english_text)
+        self.assertIn('x:Name="PrintPdosBox"', xaml_text)
+        self.assertIn("generated_artifacts", script_text)
         self.assertIn('"button.preview": "预览"', chinese_text)
         self.assertIn("[System.Windows.Threading.DispatcherTimer]::new()", script_text)
         self.assertIn("Start-WinQStepPythonProcess", helper_text)

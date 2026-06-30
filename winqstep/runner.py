@@ -6,6 +6,7 @@ import json
 import locale
 import re
 import subprocess
+import time
 from collections.abc import Callable
 from datetime import datetime, timezone
 from pathlib import Path
@@ -14,6 +15,9 @@ from typing import Any
 from .cp2k_output import parse_cp2k_output_file
 from .jobs import build_cp2k_job_dry_run
 from .quickstep import quickstep_input_from_dict, render_quickstep_input
+
+
+GENERATED_ARTIFACT_SUFFIXES = (".pdos", ".pdos_raw")
 
 
 class RunnerError(ValueError):
@@ -82,6 +86,7 @@ def run_quickstep_job(
         mpirun_command=_optional_str(config.get("mpirun_command")),
         mpi_ranks=mpi_ranks,
     )
+    dry_run["windows"]["generated_artifact_scan_start"] = time.time()
     if execute:
         _remove_previous_run_outputs(dry_run)
 
@@ -157,6 +162,7 @@ def run_existing_input_job(
         mpirun_command=_optional_str(config.get("mpirun_command")),
         mpi_ranks=mpi_ranks,
     )
+    dry_run["windows"]["generated_artifact_scan_start"] = time.time()
     if execute:
         _remove_previous_run_outputs(dry_run)
 
@@ -237,6 +243,7 @@ def _job_files(dry_run: dict[str, Any]) -> dict[str, Any]:
         "stdout": _file_info(windows["stdout_path"]),
         "stderr": _file_info(windows["stderr_path"]),
         "metadata": _file_info(windows["metadata_path"]),
+        "generated": _generated_artifacts(dry_run),
     }
 
 
@@ -254,6 +261,50 @@ def _file_info(path: str) -> dict[str, Any]:
         "exists": exists,
         "size": file_path.stat().st_size if exists else None,
     }
+
+
+def _generated_artifacts(dry_run: dict[str, Any]) -> list[dict[str, Any]]:
+    windows = dry_run["windows"]
+    job_dir = Path(windows["job_dir"])
+    if not job_dir.is_dir():
+        return []
+    known_paths = {
+        Path(windows[key]).resolve()
+        for key in ("input_path", "output_path", "stdout_path", "stderr_path", "metadata_path")
+    }
+    scan_start = _float_or_none(windows.get("generated_artifact_scan_start"))
+    artifacts: list[dict[str, Any]] = []
+    for path in sorted(job_dir.iterdir(), key=lambda item: item.name.lower()):
+        if not path.is_file() or path.resolve() in known_paths:
+            continue
+        artifact_type = _generated_artifact_type(path)
+        if artifact_type is None:
+            continue
+        if scan_start is not None and path.stat().st_mtime < scan_start:
+            continue
+        info = _file_info(str(path))
+        info["name"] = path.name
+        info["type"] = artifact_type
+        artifacts.append(info)
+    return artifacts
+
+
+def _generated_artifact_type(path: Path) -> str | None:
+    name = path.name.lower()
+    if name.endswith(".pdos_raw"):
+        return "pdos_raw"
+    if name.endswith(".pdos"):
+        return "pdos"
+    if any(name.endswith(suffix) for suffix in GENERATED_ARTIFACT_SUFFIXES):
+        return "generated"
+    return None
+
+
+def _float_or_none(value: Any) -> float | None:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
 
 
 def _write_metadata(path: Path, metadata: dict[str, Any]) -> None:

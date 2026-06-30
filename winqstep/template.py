@@ -62,6 +62,7 @@ DFT_KEY_ORDER = (
     "wfn_restart_file_name",
     "print_mulliken",
     "print_lowdin",
+    "print_pdos",
     "scf_guess",
     "eps_scf",
     "max_scf",
@@ -363,6 +364,7 @@ def _normalize_dft(data: dict[str, Any], errors: list[str]) -> dict[str, Any]:
         ),
         "print_mulliken": _bool_value(data.get("print_mulliken", defaults.print_mulliken)),
         "print_lowdin": _bool_value(data.get("print_lowdin", defaults.print_lowdin)),
+        "print_pdos": _bool_value(data.get("print_pdos", defaults.print_pdos)),
         "scf_guess": _optional_choice_value(
             data.get("scf_guess"),
             "dft.scf_guess",

@@ -35,6 +35,7 @@ The first generator should target:
 - `DFT/&PRINT`
 - `DFT/&PRINT/&MULLIKEN`
 - `DFT/&PRINT/&LOWDIN`
+- `DFT/&PRINT/&PDOS`
 - `DFT/&XC`
 - `DFT/&XC/&XC_FUNCTIONAL`
 - `DFT/&XC/&VDW_POTENTIAL` with `PAIR_POTENTIAL` DFT-D3
@@ -81,8 +82,8 @@ Top-level fields:
 - `dft`: basis/potential file names, XC functional settings, optional DFT-D3
   dispersion, charge, multiplicity, optional UKS spin polarization, MGRID
   cutoff, optional POISSON solver controls, optional wavefunction restart
-  controls, SCF controls, optional KPOINTS controls, and optional text-oriented
-  DFT print controls
+  controls, SCF controls, optional KPOINTS controls, and optional DFT print
+  controls
 - `motion`: optional `MOTION/&CONSTRAINT/&FIXED_ATOMS` controls for geometry
   and cell optimizations
 - `geo_opt`: optimizer and max iteration settings for `GEO_OPT`
@@ -102,10 +103,14 @@ solver values are `PERIODIC`, `ANALYTIC`, `MT`, `MULTIPOLE`, `WAVELET`, and
 `IMPLICIT`. WinQStep rejects explicit solver/periodicity combinations that the
 current model does not deliberately support.
 
-Text-oriented DFT print controls are opt-in. `dft.print_mulliken` renders
-`DFT/&PRINT/&MULLIKEN ON`, and `dft.print_lowdin` renders
-`DFT/&PRINT/&LOWDIN ON`. Both default to false so existing generated inputs do
-not add population analysis output unless users request it.
+DFT print controls are opt-in. `dft.print_mulliken` renders
+`DFT/&PRINT/&MULLIKEN ON`, `dft.print_lowdin` renders
+`DFT/&PRINT/&LOWDIN ON`, and `dft.print_pdos` renders
+`DFT/&PRINT/&PDOS ON`. All default to false so existing generated inputs do not
+add population analysis output or PDOS files unless users request them. When
+PDOS is enabled, the runner records generated `.pdos` and `.pdos_raw` files in
+metadata under `files.generated` so the GUI can list them with the other job
+artifacts.
 
 Wavefunction restart is explicit and opt-in. `dft.wfn_restart_file_name` renders
 `DFT/WFN_RESTART_FILE_NAME`, while `dft.scf_guess` renders `SCF/SCF_GUESS`.

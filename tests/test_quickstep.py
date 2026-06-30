@@ -180,7 +180,7 @@ class QuickStepTests(unittest.TestCase):
 
     def test_renders_dft_print_population_sections_when_enabled(self) -> None:
         data = json.loads((ROOT / "examples" / "quickstep_energy.json").read_text(encoding="utf-8"))
-        data["dft"].update({"print_mulliken": True, "print_lowdin": True})
+        data["dft"].update({"print_mulliken": True, "print_lowdin": True, "print_pdos": True})
 
         rendered = render_quickstep_input(quickstep_input_from_dict(data))
 
@@ -190,6 +190,8 @@ class QuickStepTests(unittest.TestCase):
             "      &END MULLIKEN\n"
             "      &LOWDIN ON\n"
             "      &END LOWDIN\n"
+            "      &PDOS ON\n"
+            "      &END PDOS\n"
             "    &END PRINT\n",
             rendered,
         )

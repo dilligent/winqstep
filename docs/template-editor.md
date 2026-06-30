@@ -32,8 +32,8 @@ Editable fields include:
   optional OUTER_SCF settings, ADDED_MOS, OT settings, diagonalization
   settings, mixing settings, and electronic-temperature smearing settings,
   plus KPOINTS scheme/grid,
-  full-grid, symmetry, wavefunction controls, and optional Mulliken/Lowdin DFT
-  print controls
+  full-grid, symmetry, wavefunction controls, and optional Mulliken, Lowdin,
+  and PDOS DFT print controls
 - GEO_OPT fields: optimizer and max iterations
 - CELL_OPT fields: optimizer, max iterations, optimization type, pressure
   tolerance, keep-angles, and keep-symmetry
@@ -92,8 +92,8 @@ preserves the historical generated input; explicit choices are normalized and
 validated by the same template and QuickStep model code as other DFT fields.
 KPOINTS fields expose `NONE`, `GAMMA`, and `MONKHORST-PACK`, common
 Monkhorst-Pack grids, `FULL_GRID`, `SYMMETRY`, and `WAVEFUNCTIONS` choices.
-DFT PRINT fields expose Mulliken and Lowdin population-analysis checkboxes;
-leaving them unchecked omits `DFT/&PRINT` entirely.
+DFT PRINT fields expose Mulliken, Lowdin, and PDOS checkboxes; leaving them
+unchecked omits `DFT/&PRINT` entirely.
 Fixed-atom constraint fields expose a space- or comma-separated list of
 1-based atom indices and a `COMPONENTS_TO_FIX` selector. They only save a
 `motion` template object when the atom list is non-empty.
@@ -112,7 +112,8 @@ manual pages for `GLOBAL/RUN_TYPE`, `GLOBAL/PRINT_LEVEL`,
 `FORCE_EVAL/DFT/SCF/DIAGONALIZATION`,
 `FORCE_EVAL/DFT/SCF/OUTER_SCF`, `FORCE_EVAL/DFT/SCF/MIXING`,
 `FORCE_EVAL/DFT/SCF/SMEAR`, `FORCE_EVAL/DFT/KPOINTS`,
-`FORCE_EVAL/DFT/PRINT/MULLIKEN`, and `FORCE_EVAL/DFT/PRINT/LOWDIN` for
+`FORCE_EVAL/DFT/PRINT/MULLIKEN`, `FORCE_EVAL/DFT/PRINT/LOWDIN`, and
+`FORCE_EVAL/DFT/PRINT/PDOS` for
 periodicity, POISSON solver, SCF solver, k-point controls, and DFT print
 controls, plus `MOTION/CONSTRAINT/FIXED_ATOMS` and `MOTION/CELL_OPT` for
 direct cell optimization controls.

@@ -41,6 +41,7 @@ FIELD_ARGS = {
     "wfn_restart_file_name": "wfn_restart_file_name",
     "print_mulliken": "print_mulliken",
     "print_lowdin": "print_lowdin",
+    "print_pdos": "print_pdos",
     "scf_guess": "scf_guess",
     "eps_scf": "eps_scf",
     "max_scf": "max_scf",
@@ -110,6 +111,7 @@ def main() -> int:
     parser.add_argument("--wfn-restart-file-name")
     parser.add_argument("--print-mulliken")
     parser.add_argument("--print-lowdin")
+    parser.add_argument("--print-pdos")
     parser.add_argument("--scf-guess")
     parser.add_argument("--eps-scf")
     parser.add_argument("--max-scf")

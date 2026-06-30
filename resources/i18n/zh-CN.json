@@ -80,6 +80,7 @@
   "label.kpoints_wavefunctions": "波函数",
   "label.print_mulliken": "Mulliken",
   "label.print_lowdin": "Lowdin",
+  "label.print_pdos": "PDOS",
   "label.optimizer": "优化器",
   "label.geo_max_iter": "GEO 最大步数",
   "label.cell_opt_type": "CELL_OPT 类型",

@@ -94,6 +94,7 @@ class DftSettings:
     wfn_restart_file_name: str | None = None
     print_mulliken: bool = False
     print_lowdin: bool = False
+    print_pdos: bool = False
     scf_guess: str | None = None
     eps_scf: str = "1.0E-6"
     max_scf: int = 50
@@ -291,6 +292,7 @@ def _parse_dft(data: dict[str, Any]) -> DftSettings:
         wfn_restart_file_name=_optional_free_string(data, "wfn_restart_file_name"),
         print_mulliken=_bool_value(data, "print_mulliken", False),
         print_lowdin=_bool_value(data, "print_lowdin", False),
+        print_pdos=_bool_value(data, "print_pdos", False),
         scf_guess=_optional_choice(data, "scf_guess"),
         eps_scf=_optional_string(data, "eps_scf", "1.0E-6"),
         max_scf=_int_value(data, "max_scf", 50),
@@ -617,6 +619,13 @@ def _render_dft_print(dft: DftSettings) -> list[str]:
             [
                 "      &LOWDIN ON",
                 "      &END LOWDIN",
+            ]
+        )
+    if dft.print_pdos:
+        lines.extend(
+            [
+                "      &PDOS ON",
+                "      &END PDOS",
             ]
         )
     if not lines:

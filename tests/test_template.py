@@ -24,6 +24,7 @@ class TemplateTests(unittest.TestCase):
         self.assertEqual(template["dft"]["wfn_restart_file_name"], "")
         self.assertFalse(template["dft"]["print_mulliken"])
         self.assertFalse(template["dft"]["print_lowdin"])
+        self.assertFalse(template["dft"]["print_pdos"])
         self.assertEqual(template["dft"]["scf_guess"], "")
         self.assertEqual(template["dft"]["eps_scf"], "1.0E-6")
         self.assertNotIn("motion", template)
@@ -213,13 +214,17 @@ class TemplateTests(unittest.TestCase):
 
     def test_merge_fields_updates_dft_print_controls(self) -> None:
         template = load_template(ENERGY_TEMPLATE)
-        merged = merge_template_fields(template, {"print_mulliken": "yes", "print_lowdin": True})
+        merged = merge_template_fields(
+            template,
+            {"print_mulliken": "yes", "print_lowdin": True, "print_pdos": True},
+        )
         validation = validate_template(merged)
 
         self.assertTrue(validation["valid"], validation["errors"])
         dft = validation["template"]["dft"]
         self.assertTrue(dft["print_mulliken"])
         self.assertTrue(dft["print_lowdin"])
+        self.assertTrue(dft["print_pdos"])
 
     def test_merge_fields_updates_cell_opt_controls(self) -> None:
         template = load_template(ENERGY_TEMPLATE)
@@ -475,6 +480,7 @@ class TemplateTests(unittest.TestCase):
                 "wfn_restart_file_name",
                 "print_mulliken",
                 "print_lowdin",
+                "print_pdos",
                 "scf_guess",
                 "eps_scf",
                 "max_scf",

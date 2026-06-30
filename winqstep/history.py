@@ -66,6 +66,7 @@ def _history_item(metadata_path: Path) -> dict[str, Any]:
     stderr_path = _metadata_path(metadata, "stderr")
     cp2k_output = _cp2k_output_summary(metadata, output_path)
     forces = _as_dict(cp2k_output.get("forces"))
+    generated_artifacts = _generated_artifacts(metadata)
 
     return {
         "metadata_path": str(metadata_path),
@@ -87,6 +88,8 @@ def _history_item(metadata_path: Path) -> dict[str, Any]:
         "total_energy_hartree": cp2k_output.get("total_energy_hartree"),
         "total_atomic_force": forces.get("total_atomic_force"),
         "force_unit": _optional_text(forces.get("unit")),
+        "generated_artifacts": generated_artifacts,
+        "generated_artifact_count": len(generated_artifacts),
     }
 
 
@@ -99,6 +102,28 @@ def _metadata_path(metadata: dict[str, Any], key: str) -> str | None:
 
     dry_windows = _as_dict(_as_dict(metadata.get("dry_run")).get("windows"))
     return _optional_text(dry_windows.get(f"{key}_path"))
+
+
+def _generated_artifacts(metadata: dict[str, Any]) -> list[dict[str, Any]]:
+    files = _as_dict(metadata.get("files"))
+    generated = files.get("generated")
+    if not isinstance(generated, list):
+        return []
+    artifacts: list[dict[str, Any]] = []
+    for item in generated:
+        data = _as_dict(item)
+        path = _optional_text(data.get("path"))
+        if not path:
+            continue
+        artifacts.append(
+            {
+                "path": path,
+                "name": _optional_text(data.get("name")) or Path(path).name,
+                "type": _optional_text(data.get("type")) or "generated",
+                "size": data.get("size"),
+            }
+        )
+    return artifacts
 
 
 def _cp2k_output_summary(metadata: dict[str, Any], output_path: str | None) -> dict[str, Any]:

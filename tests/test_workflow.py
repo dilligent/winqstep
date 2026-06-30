@@ -102,11 +102,13 @@ class WorkflowTests(unittest.TestCase):
         template = json.loads(json.dumps(self.template))
         template["dft"]["print_mulliken"] = True
         template["dft"]["print_lowdin"] = True
+        template["dft"]["print_pdos"] = True
 
         quickstep_data = build_quickstep_data(template, imported, project_name="water_print")
 
         self.assertTrue(quickstep_data["dft"]["print_mulliken"])
         self.assertTrue(quickstep_data["dft"]["print_lowdin"])
+        self.assertTrue(quickstep_data["dft"]["print_pdos"])
 
     def test_builds_cell_opt_workflow_data(self) -> None:
         imported = import_structure(STRUCTURES / "POSCAR")
@@ -159,6 +161,7 @@ class WorkflowTests(unittest.TestCase):
                 )
                 (job_dir / "workflow_run.stdout.log").write_text("", encoding="utf-8")
                 (job_dir / "workflow_run.stderr.log").write_text("", encoding="utf-8")
+                (job_dir / "workflow_run-k1-1.pdos").write_text("pdos", encoding="utf-8")
                 return SimpleNamespace(returncode=0, stdout=b"", stderr=b"")
 
             metadata = run_quickstep_workflow(
@@ -173,9 +176,12 @@ class WorkflowTests(unittest.TestCase):
             self.assertEqual(metadata["status"], "succeeded")
             self.assertEqual(metadata["cp2k_output"]["status"], "completed")
             self.assertEqual(metadata["cp2k_output"]["warning_count"], 0)
+            self.assertEqual(metadata["files"]["generated"][0]["name"], "workflow_run-k1-1.pdos")
+            self.assertEqual(metadata["files"]["generated"][0]["type"], "pdos")
             saved = json.loads(Path(metadata["files"]["metadata"]["path"]).read_text(encoding="utf-8"))
             self.assertEqual(saved["workflow"]["atom_count"], 3)
             self.assertEqual(saved["cp2k_output"]["status"], "completed")
+            self.assertEqual(saved["files"]["generated"][0]["type"], "pdos")
 
     def test_missing_kind_reports_template_error(self) -> None:
         imported = import_structure(STRUCTURES / "water.xyz")

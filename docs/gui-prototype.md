@@ -209,8 +209,10 @@ writer before preview or run.
 KPOINTS controls include scheme, grid, full-grid, symmetry, and wavefunction
 selection. They default to `NONE` and validate through the same template writer
 and QuickStep renderer before preview or run.
-DFT PRINT controls include Mulliken and Lowdin population-analysis checkboxes.
-They default to disabled and render `DFT/&PRINT` only when selected.
+DFT PRINT controls include Mulliken, Lowdin, and PDOS checkboxes. They default
+to disabled and render `DFT/&PRINT` only when selected. PDOS is the first
+file-generating print control; completed runs list generated `.pdos` and
+`.pdos_raw` files in artifact summaries.
 Fixed atom controls include a 1-based atom-index list and coordinate components
 to fix. They default to an empty list and render
 `MOTION/&CONSTRAINT/&FIXED_ATOMS` only for optimization run types.
@@ -237,8 +239,9 @@ the GUI.
 
 The `Artifacts` tab shows a compact summary for the current or selected job:
 job status, return code, CP2K output status, warning count, program-end marker,
-total energy, total atomic force, and the known input, output, metadata, stdout,
-stderr, and saved-result paths. The tab has read-only `Input`, `Output`,
+total energy, total atomic force, generated file count, and the known input,
+output, metadata, stdout, stderr, generated PDOS, and saved-result paths. The
+tab has read-only `Input`, `Output`,
 `Metadata`, `Stdout`, and `Stderr` buttons that load those files into the GUI
 text pane without modifying or rerunning the job. `Results` shows a structured
 text result summary, including per-atom forces when CP2K printed an

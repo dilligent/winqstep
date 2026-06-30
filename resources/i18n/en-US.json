@@ -80,6 +80,7 @@
   "label.kpoints_wavefunctions": "Wavefunctions",
   "label.print_mulliken": "Mulliken",
   "label.print_lowdin": "Lowdin",
+  "label.print_pdos": "PDOS",
   "label.optimizer": "Optimizer",
   "label.geo_max_iter": "GEO Max Iter",
   "label.cell_opt_type": "CELL_OPT Type",

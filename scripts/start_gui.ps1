@@ -129,7 +129,7 @@ function New-WinQStepWindow {
         "ElectronicTemperatureBox", "KpointsSchemeBox", "KpointsGridBox",
         "KpointsWavefunctionsBox", "OuterScfEnabledBox", "MixingEnabledBox", "SmearingEnabledBox",
         "DispersionEnabledBox",
-        "PrintMullikenBox", "PrintLowdinBox",
+        "PrintMullikenBox", "PrintLowdinBox", "PrintPdosBox",
         "UksEnabledBox", "CellOptKeepAnglesBox", "CellOptKeepSymmetryBox",
         "KpointsFullGridBox", "KpointsSymmetryBox",
         "FallbackPeriodicBox", "FallbackCellABox", "FallbackCellBBox", "FallbackCellCBox",
@@ -192,6 +192,7 @@ function New-WinQStepWindow {
         KpointsSymmetryBox = "label.kpoints_symmetry"
         PrintMullikenBox = "label.print_mulliken"
         PrintLowdinBox = "label.print_lowdin"
+        PrintPdosBox = "label.print_pdos"
         CenterAtomsBox = "label.center_atoms"
         }
         foreach ($entry in $contentLocalization.GetEnumerator()) {
@@ -1431,7 +1432,41 @@ function New-WinQStepWindow {
                 $lines += "results=[$exists] $path"
             }
         }
+        $generatedArtifacts = @($Artifacts["generated_artifacts"])
+        if ($generatedArtifacts.Count -gt 0) {
+            $lines += "generated_artifacts=$($generatedArtifacts.Count)"
+            foreach ($artifact in $generatedArtifacts) {
+                $artifactPath = [string]$artifact["path"]
+                $artifactType = [string]$artifact["type"]
+                $exists = if (-not [string]::IsNullOrWhiteSpace($artifactPath) -and [System.IO.File]::Exists($artifactPath)) { "exists" } else { "missing" }
+                $lines += "generated.$artifactType=[$exists] $artifactPath"
+            }
+        }
         return ($lines -join "`r`n")
+    }.GetNewClosure()
+
+    $GetGeneratedArtifacts = {
+        param($Value)
+        if ($null -eq $Value) {
+            return @()
+        }
+        $artifacts = @()
+        foreach ($item in @($Value)) {
+            if ($null -eq $item) {
+                continue
+            }
+            $path = & $GetJsonProperty $item "path"
+            if ([string]::IsNullOrWhiteSpace($path)) {
+                continue
+            }
+            $artifacts += @{
+                path = $path
+                name = (& $GetJsonProperty $item "name" ([System.IO.Path]::GetFileName($path)))
+                type = (& $GetJsonProperty $item "type" "generated")
+                size = (& $GetJsonProperty $item "size" "")
+            }
+        }
+        return $artifacts
     }.GetNewClosure()
 
     $BuildResultSummaryFromMetadata = {
@@ -1466,6 +1501,13 @@ function New-WinQStepWindow {
             "output=$(& $FormatResultValue (& $GetMetadataFilePath $Metadata "output"))",
             "metadata=$(& $FormatResultValue (& $GetMetadataFilePath $Metadata "metadata"))"
         )
+        $generatedArtifacts = @(& $GetGeneratedArtifacts (& $GetNestedValue $Metadata @("files", "generated")))
+        if ($generatedArtifacts.Count -gt 0) {
+            $lines += "generated_artifacts=$($generatedArtifacts.Count)"
+            foreach ($artifact in $generatedArtifacts) {
+                $lines += "generated.$($artifact["type"])=$($artifact["path"])"
+            }
+        }
 
         $forces = & $GetNestedValue $summary @("forces")
         if ($null -eq $forces) {
@@ -1542,6 +1584,13 @@ function New-WinQStepWindow {
             "output=$($Artifacts["paths"]["output"])",
             "metadata=$($Artifacts["paths"]["metadata"])"
         )
+        $generatedArtifacts = @($Artifacts["generated_artifacts"])
+        if ($generatedArtifacts.Count -gt 0) {
+            $lines += "generated_artifacts=$($generatedArtifacts.Count)"
+            foreach ($artifact in $generatedArtifacts) {
+                $lines += "generated.$($artifact["type"])=$($artifact["path"])"
+            }
+        }
         return ($lines -join "`r`n")
     }.GetNewClosure()
 
@@ -1571,6 +1620,7 @@ function New-WinQStepWindow {
                 stdout = (& $GetMetadataFilePath $Metadata "stdout")
                 stderr = (& $GetMetadataFilePath $Metadata "stderr")
             }
+            generated_artifacts = @(& $GetGeneratedArtifacts (& $GetNestedValue $Metadata @("files", "generated")))
             result_text = (& $BuildResultSummaryFromMetadata $Metadata)
         }
         if ([string]::IsNullOrWhiteSpace([string]$artifacts["project_name"])) {
@@ -1708,6 +1758,7 @@ function New-WinQStepWindow {
                 stdout = (& $GetJsonProperty $Item "stdout_path" "")
                 stderr = (& $GetJsonProperty $Item "stderr_path" "")
             }
+            generated_artifacts = @(& $GetGeneratedArtifacts (& $GetNestedValue $Item @("generated_artifacts")))
         }
         $artifacts["result_text"] = & $BuildResultSummaryFromArtifacts $artifacts
         $artifactState["Current"] = $artifacts
@@ -2080,6 +2131,7 @@ function New-WinQStepWindow {
         $controls["KpointsWavefunctionsBox"].Text = & $GetJsonProperty $dft "kpoints_wavefunctions"
         $controls["PrintMullikenBox"].IsChecked = @("1", "true", "yes", "on").Contains((& $GetJsonProperty $dft "print_mulliken" "False").ToLowerInvariant())
         $controls["PrintLowdinBox"].IsChecked = @("1", "true", "yes", "on").Contains((& $GetJsonProperty $dft "print_lowdin" "False").ToLowerInvariant())
+        $controls["PrintPdosBox"].IsChecked = @("1", "true", "yes", "on").Contains((& $GetJsonProperty $dft "print_pdos" "False").ToLowerInvariant())
         $controls["FixedAtomsBox"].Text = & $GetJsonVectorText $motion "fixed_atoms"
         $controls["FixedAtomComponentsBox"].Text = & $GetJsonProperty $motion "fixed_atom_components" "XYZ"
         $controls["GeoOptimizerBox"].Text = & $GetJsonProperty $geoOpt "optimizer"
@@ -2171,6 +2223,7 @@ function New-WinQStepWindow {
             kpoints_wavefunctions = $controls["KpointsWavefunctionsBox"].Text
             print_mulliken = [bool]$controls["PrintMullikenBox"].IsChecked
             print_lowdin = [bool]$controls["PrintLowdinBox"].IsChecked
+            print_pdos = [bool]$controls["PrintPdosBox"].IsChecked
             fixed_atoms = $controls["FixedAtomsBox"].Text
             fixed_atom_components = $controls["FixedAtomComponentsBox"].Text
             optimizer = $controls["GeoOptimizerBox"].Text
@@ -4092,6 +4145,7 @@ if ($SmokeTest) {
     $report["template_kpoints_wavefunctions"] = [string]$window.FindName("KpointsWavefunctionsBox").Text
     $report["template_print_mulliken"] = [bool]$window.FindName("PrintMullikenBox").IsChecked
     $report["template_print_lowdin"] = [bool]$window.FindName("PrintLowdinBox").IsChecked
+    $report["template_print_pdos"] = [bool]$window.FindName("PrintPdosBox").IsChecked
     $report["template_fixed_atoms"] = [string]$window.FindName("FixedAtomsBox").Text
     $report["template_fixed_atom_components"] = [string]$window.FindName("FixedAtomComponentsBox").Text
     $report["template_fallback_periodic"] = [string]$window.FindName("FallbackPeriodicBox").Text
