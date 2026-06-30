@@ -33,6 +33,10 @@ Command-line arguments override config values:
 python .\scripts\detect_environment.py --config .\examples\winqstep.config.json --cp2k-command /usr/local/bin/cp2k.ssmp
 ```
 
+The CLI emits JSON for scripting and diagnostics. In the GUI, the same probe
+result is parsed into a readable `Environment` tab summary while the raw JSON is
+kept in `Job Log`.
+
 Round 11 adds a config management command used by the GUI:
 
 ```powershell

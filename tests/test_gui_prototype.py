@@ -228,7 +228,11 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn("Invoke-WinQStepStartupDiagnostics", helper_text)
         self.assertIn("$Diagnostics", script_text)
         self.assertIn("$SkipLiveProbes", script_text)
+        self.assertIn("$EnvironmentDisplaySmokeTest", script_text)
         self.assertIn("ValidateActiveInputs", script_text)
+        self.assertIn("FormatEnvironmentProbeDisplay", script_text)
+        self.assertIn("Environment detection", script_text)
+        self.assertIn("detect_environment.py raw JSON", script_text)
         self.assertIn("FormatStructureImportDisplay", script_text)
         self.assertIn("Imported structure", script_text)
         self.assertIn("Atoms (cartesian coordinates, Angstrom)", script_text)
@@ -624,6 +628,39 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertEqual(report["json_stdout_error"], "plain stderr")
         self.assertIn("Expecting property name enclosed in double quotes", report["bad_fields_error"])
         self.assertFalse(report["stderr_has_native_wrapper"])
+
+    @unittest.skipUnless(platform.system() == "Windows", "WPF prototype is Windows-only")
+    def test_environment_display_smoke_formats_probe_json(self) -> None:
+        powershell = shutil.which("powershell") or shutil.which("pwsh")
+        if not powershell:
+            self.skipTest("PowerShell is not available")
+
+        completed = subprocess.run(
+            [
+                powershell,
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                str(ROOT / "scripts" / "start_gui.ps1"),
+                "-EnvironmentDisplaySmokeTest",
+            ],
+            capture_output=True,
+            check=False,
+        )
+
+        stderr = completed.stderr.decode("utf-8", errors="replace")
+        stdout = completed.stdout.decode("utf-8-sig", errors="replace")
+        self.assertEqual(completed.returncode, 0, stderr)
+        report = json.loads(stdout)
+        self.assertEqual(report["mode"], "environment_display_smoke")
+        self.assertTrue(report["environment_text_has_summary"])
+        self.assertTrue(report["environment_text_has_distro"])
+        self.assertTrue(report["environment_text_has_cp2k"])
+        self.assertTrue(report["environment_text_has_data_files"])
+        self.assertTrue(report["environment_text_has_warning"])
+        self.assertTrue(report["environment_text_has_command_status"])
+        self.assertTrue(report["environment_text_is_not_raw_json"])
 
 
 if __name__ == "__main__":

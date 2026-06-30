@@ -7,6 +7,7 @@ param(
     [switch]$EditedPreviewSmokeTest,
     [switch]$AsyncRunSmokeTest,
     [switch]$PythonInvokeSmokeTest,
+    [switch]$EnvironmentDisplaySmokeTest,
     [switch]$Diagnostics,
     [switch]$SkipLiveProbes,
     [string]$Language = ""
@@ -24,6 +25,7 @@ $EditedPreviewSmokeTestEnabled = [bool]$EditedPreviewSmokeTest
 $EditedPreviewSmokeState = @{ Report = $null }
 $Script:SuppressGuiMessageBoxes = $SuppressGuiMessageBoxes
 $Script:EditedPreviewSmokeStartAsyncJob = $null
+$Script:EnvironmentDisplaySmokeFormatter = $null
 
 . (Join-Path $PSScriptRoot "gui\WinQStep.GuiHost.ps1")
 function New-WinQStepWindow {
@@ -806,6 +808,161 @@ function New-WinQStepWindow {
             $z = if ($xyz.Count -gt 2) { & $FormatStructureScalar $xyz[2] } else { "" }
             $lines += ("{0,6} {1,-8} {2,14} {3,14} {4,14}" -f $index, $element, $x, $y, $z)
         }
+        return ($lines -join "`r`n")
+    }.GetNewClosure()
+
+    $FormatEnvironmentDisplayValue = {
+        param($Value, [string]$Default = "not_configured")
+        if ($null -eq $Value) {
+            return $Default
+        }
+        if ($Value -is [bool]) {
+            return ([string]$Value).ToLowerInvariant()
+        }
+        $text = [string]$Value
+        if ([string]::IsNullOrWhiteSpace($text)) {
+            return $Default
+        }
+        return $text
+    }.GetNewClosure()
+
+    $FormatEnvironmentList = {
+        param($Value, [int]$Limit = 12)
+        if ($null -eq $Value) {
+            return @()
+        }
+        $items = @($Value)
+        if ($items.Count -eq 0) {
+            return @()
+        }
+        $lines = @()
+        foreach ($item in @($items | Select-Object -First $Limit)) {
+            $text = [string]$item
+            if (-not [string]::IsNullOrWhiteSpace($text)) {
+                $lines += "- $text"
+            }
+        }
+        if ($items.Count -gt $Limit) {
+            $lines += "- ... ($($items.Count - $Limit) more)"
+        }
+        return $lines
+    }.GetNewClosure()
+
+    $FormatEnvironmentProbeDisplay = {
+        param([Parameter(Mandatory = $true)]$Payload)
+
+        $hostInfo = & $GetNestedValue $Payload @("host")
+        $wsl = & $GetNestedValue $Payload @("wsl")
+        $cp2k = & $GetNestedValue $Payload @("cp2k")
+        $mpi = & $GetNestedValue $Payload @("mpi")
+        $workspace = & $GetNestedValue $Payload @("workspace")
+        $commands = & $GetNestedValue $Payload @("commands")
+        $warnings = @()
+        $warningValue = & $GetNestedValue $Payload @("warnings")
+        if ($null -ne $warningValue) {
+            $warnings = @($warningValue)
+        }
+
+        $generatedAt = & $FormatEnvironmentDisplayValue (& $GetNestedValue $Payload @("generated_at")) "not_available"
+        $configPath = & $FormatEnvironmentDisplayValue (& $GetNestedValue $Payload @("config", "path")) "not_available"
+        $hostSystem = & $FormatEnvironmentDisplayValue (& $GetNestedValue $hostInfo @("system")) "unknown"
+        $hostRelease = & $FormatEnvironmentDisplayValue (& $GetNestedValue $hostInfo @("release")) ""
+        $hostMachine = & $FormatEnvironmentDisplayValue (& $GetNestedValue $hostInfo @("machine")) "unknown"
+        $wslAvailable = & $FormatEnvironmentDisplayValue (& $GetNestedValue $wsl @("available")) "false"
+        $wslExecutable = & $FormatEnvironmentDisplayValue (& $GetNestedValue $wsl @("executable"))
+        $selectedDistro = & $FormatEnvironmentDisplayValue (& $GetNestedValue $wsl @("selected_distro"))
+        $shellPrelude = & $FormatEnvironmentDisplayValue (& $GetNestedValue $wsl @("shell_prelude"))
+
+        $lines = @(
+            "Environment detection",
+            "Generated: $generatedAt",
+            "Config: $configPath",
+            "",
+            "Host",
+            "System: $hostSystem $hostRelease",
+            "Machine: $hostMachine",
+            "",
+            "WSL",
+            "Available: $wslAvailable",
+            "Executable: $wslExecutable",
+            "Selected distro: $selectedDistro",
+            "Shell prelude: $shellPrelude",
+            "Distros:"
+        )
+
+        $distrosValue = & $GetNestedValue $wsl @("distros")
+        $distros = if ($null -ne $distrosValue) { @($distrosValue) } else { @() }
+        if ($distros.Count -gt 0) {
+            foreach ($distro in $distros) {
+                $marker = if ([bool](& $GetNestedValue $distro @("default"))) { "*" } else { "-" }
+                $lines += ("  {0} {1} state={2} version={3}" -f
+                    $marker,
+                    (& $FormatEnvironmentDisplayValue (& $GetNestedValue $distro @("name")) "unknown"),
+                    (& $FormatEnvironmentDisplayValue (& $GetNestedValue $distro @("state")) "unknown"),
+                    (& $FormatEnvironmentDisplayValue (& $GetNestedValue $distro @("version")) "unknown")
+                )
+            }
+        }
+        else {
+            $lines += "  none"
+        }
+
+        $dataFilesValue = & $GetNestedValue $cp2k @("data_files")
+        $dataFiles = if ($null -ne $dataFilesValue) { @($dataFilesValue) } else { @() }
+        $versionOutput = (& $FormatEnvironmentDisplayValue (& $GetNestedValue $cp2k @("version_output")) "not_available")
+        if ($versionOutput.Length -gt 240) {
+            $versionOutput = $versionOutput.Substring(0, 240) + "..."
+        }
+        $cp2kCommand = & $FormatEnvironmentDisplayValue (& $GetNestedValue $cp2k @("command"))
+        $cp2kDataDir = & $FormatEnvironmentDisplayValue (& $GetNestedValue $cp2k @("data_dir"))
+        $lines += @(
+            "",
+            "CP2K",
+            "Command: $cp2kCommand",
+            "Version: $versionOutput",
+            "Data dir: $cp2kDataDir",
+            "Data files: $($dataFiles.Count)"
+        )
+        $lines += & $FormatEnvironmentList $dataFiles 12
+
+        $mpiCommand = & $FormatEnvironmentDisplayValue (& $GetNestedValue $mpi @("command"))
+        $defaultWorkspace = & $FormatEnvironmentDisplayValue (& $GetNestedValue $workspace @("default_windows_workspace"))
+        $lines += @(
+            "",
+            "MPI",
+            "Command: $mpiCommand",
+            "",
+            "Workspace",
+            "Default Windows workspace: $defaultWorkspace"
+        )
+
+        if ($warnings.Count -gt 0) {
+            $lines += ""
+            $lines += "Warnings"
+            foreach ($warningText in $warnings) {
+                $lines += "WARNING: $warningText"
+            }
+        }
+
+        if ($null -ne $commands) {
+            $commandProperties = @($commands.PSObject.Properties | Sort-Object Name)
+            if ($commandProperties.Count -gt 0) {
+                $lines += ""
+                $lines += "Probe commands"
+                foreach ($property in $commandProperties) {
+                    $commandResult = $property.Value
+                    $okText = & $FormatEnvironmentDisplayValue (& $GetNestedValue $commandResult @("ok")) "false"
+                    $returnCode = & $FormatEnvironmentDisplayValue (& $GetNestedValue $commandResult @("returncode")) "not_available"
+                    $errorText = & $FormatEnvironmentDisplayValue (& $GetNestedValue $commandResult @("error")) ""
+                    $line = "$($property.Name): ok=$okText returncode=$returnCode"
+                    if (-not [string]::IsNullOrWhiteSpace($errorText)) {
+                        $line += " error=$errorText"
+                    }
+                    $lines += $line
+                }
+            }
+        }
+
         return ($lines -join "`r`n")
     }.GetNewClosure()
 
@@ -2159,7 +2316,18 @@ function New-WinQStepWindow {
         & $InvokeGuiAction -Status (Get-WinQStepText "status.detecting_environment") -Action {
             $null = & $SaveConfigFields $false $false
             $result = Invoke-WinQStepPython @("scripts\detect_environment.py", "--config", $controls["ConfigPathBox"].Text)
-            $controls["EnvironmentText"].Text = $result.Output
+            $environmentText = $result.Output
+            try {
+                $environmentPayload = $result.Output | ConvertFrom-Json
+                $environmentText = & $FormatEnvironmentProbeDisplay $environmentPayload
+            }
+            catch {
+                if (-not [string]::IsNullOrWhiteSpace([string]$result.Error)) {
+                    $environmentText = (($result.Output, $result.Error) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }) -join "`r`n"
+                }
+            }
+            $controls["EnvironmentText"].Text = $environmentText
+            $controls["LogText"].Text = "--- detect_environment.py raw JSON ---`r`n$($result.Output)"
             & $AppendLog "detect_environment.py exited with code $($result.ExitCode)"
         }
     }.GetNewClosure())
@@ -2212,6 +2380,7 @@ function New-WinQStepWindow {
         & $StartAsyncJob
     }.GetNewClosure())
     $Script:EditedPreviewSmokeStartAsyncJob = $StartAsyncJob
+    $Script:EnvironmentDisplaySmokeFormatter = $FormatEnvironmentProbeDisplay
 
     $controls["CancelJobButton"].Add_Click({
         & $CancelAsyncJob
@@ -2350,6 +2519,70 @@ if ($PythonInvokeSmokeTest) {
         [string]::IsNullOrWhiteSpace($badFieldsResult.Output) -and
         ([string]$badFieldsResult.Error).Contains("Expecting property name enclosed in double quotes") -and
         -not [bool]$report["stderr_has_native_wrapper"]
+    ) {
+        exit 0
+    }
+    exit 1
+}
+
+if ($EnvironmentDisplaySmokeTest) {
+    $report = Test-WinQStepGuiPrerequisites
+    $window = New-WinQStepWindow
+    $payload = ([ordered]@{
+        generated_at = "2026-06-30T00:00:00Z"
+        config = [ordered]@{ path = "examples\winqstep.config.json" }
+        host = [ordered]@{
+            system = "Windows"
+            release = "11"
+            version = "10.0"
+            machine = "AMD64"
+        }
+        wsl = [ordered]@{
+            executable = "C:\Windows\System32\wsl.exe"
+            available = $true
+            selected_distro = "Ubuntu"
+            shell_prelude = "conda deactivate >/dev/null 2>&1 || true"
+            distros = @(
+                [ordered]@{ name = "Ubuntu"; state = "Running"; version = "2"; default = $true }
+            )
+        }
+        cp2k = [ordered]@{
+            command = "/home/teng/cp2k/exe/local/cp2k.ssmp"
+            version_output = "CP2K version 2025.2"
+            data_dir = "/home/teng/cp2k/data"
+            data_files = @("BASIS_MOLOPT", "GTH_POTENTIALS")
+        }
+        mpi = [ordered]@{ command = "" }
+        workspace = [ordered]@{ default_windows_workspace = "outputs" }
+        commands = [ordered]@{
+            wsl_list = [ordered]@{ ok = $true; returncode = 0; error = $null }
+            cp2k_version = [ordered]@{ ok = $true; returncode = 0; error = $null }
+            find_mpi = [ordered]@{ ok = $true; returncode = 0; error = $null }
+        }
+        warnings = @("No MPI launcher is configured; jobs will run CP2K directly.")
+    } | ConvertTo-Json -Depth 8 | ConvertFrom-Json)
+
+    $text = & $Script:EnvironmentDisplaySmokeFormatter $payload
+    $window.FindName("EnvironmentText").Text = $text
+    $report["mode"] = "environment_display_smoke"
+    $report["environment_text_has_summary"] = $text.Contains("Environment detection")
+    $report["environment_text_has_distro"] = $text.Contains("Selected distro: Ubuntu")
+    $report["environment_text_has_cp2k"] = $text.Contains("Command: /home/teng/cp2k/exe/local/cp2k.ssmp")
+    $report["environment_text_has_data_files"] = ($text.Contains("Data files: 2") -and $text.Contains("- BASIS_MOLOPT"))
+    $report["environment_text_has_warning"] = $text.Contains("WARNING: No MPI launcher is configured")
+    $report["environment_text_has_command_status"] = $text.Contains("cp2k_version: ok=true returncode=0")
+    $report["environment_text_is_not_raw_json"] = (-not $text.TrimStart().StartsWith("{"))
+    $report["environment_text"] = $text
+    $report | ConvertTo-Json -Depth 6
+
+    if (
+        $report["environment_text_has_summary"] -and
+        $report["environment_text_has_distro"] -and
+        $report["environment_text_has_cp2k"] -and
+        $report["environment_text_has_data_files"] -and
+        $report["environment_text_has_warning"] -and
+        $report["environment_text_has_command_status"] -and
+        $report["environment_text_is_not_raw_json"]
     ) {
         exit 0
     }

@@ -25,8 +25,9 @@ Each round should end with a focused commit.
   `GLOBAL/PRINT_LEVEL`, immediate GUI language apply, GUI workflow tab
   ordering, full CP2K input-section labels in the Template tab, and UTF-8
   hardening for live GUI job logs, and readable imported-structure display in
-  the GUI Structure tab.
-- Next active round: Round 44, expand QuickStep coverage from the next selected
+  the GUI Structure tab, and readable environment probe display in the GUI
+  Environment tab.
+- Next active round: Round 45, expand QuickStep coverage from the next selected
   CP2K feature area.
 - Known local facts:
   - WSL2 is available.
@@ -1517,6 +1518,35 @@ Acceptance:
 Commit boundary:
 
 - One commit for Structure tab display formatting, smoke tests, and docs.
+
+## Round 44: Readable Environment Probe Display
+
+Status: implemented.
+
+Goal: keep `detect_environment.py` JSON useful for automation while making the
+GUI `Environment` tab easier to read.
+
+Tasks:
+
+- Parse `detect_environment.py` JSON in the GUI Detect handler even when the
+  command exits nonzero because warnings are present.
+- Display host, WSL, CP2K, MPI, workspace, warnings, and probe-command status
+  as a readable summary in the `Environment` tab.
+- Keep the raw detection JSON in `Job Log` for copying and debugging.
+- Add a deterministic synthetic smoke test for the Environment display
+  formatter.
+
+Acceptance:
+
+- A valid probe payload shows `Environment detection`, selected distro, CP2K
+  command, data-file count, warnings, and probe command statuses without
+  exposing raw JSON as the primary `Environment` view.
+- Existing config validation and execution paths still read from saved config
+  fields, not from editable Environment-tab text.
+
+Commit boundary:
+
+- One commit for Environment display formatting, smoke tests, and docs.
 
 ## Working Rules
 

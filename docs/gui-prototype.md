@@ -126,9 +126,12 @@ tails, so Windows paths and CP2K stdout/stderr text with non-ASCII characters
 render correctly in the text panes instead of using the Windows default code
 page.
 
-`Detect` saves the current config fields before probing. `Preview` and `Run`
-save and validate the current config first, requiring `cp2k_command` and
-`cp2k_data_dir` before any job command is prepared or launched.
+`Detect` saves the current config fields before probing. The `Environment` tab
+shows a readable detection summary with host, WSL, CP2K, MPI, workspace,
+warnings, and probe-command status; the raw detection JSON is kept in `Job Log`
+for copying and debugging. `Preview` and `Run` save and validate the current
+config first, requiring `cp2k_command` and `cp2k_data_dir` before any job
+command is prepared or launched.
 
 In workflow mode, `Preview` and `Run` also save and validate the current
 template fields before rendering input. They then preflight the saved template
