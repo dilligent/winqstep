@@ -43,6 +43,10 @@ python .\scripts\run_checks.py --profile all --list
 
 The command returns JSON and exits nonzero if any executed check fails.
 
+The GUI button smoke uses a unique scratch workspace for each run. This keeps
+config, template, history, preview, and saved-result files from colliding when
+developers run GUI checks alongside the fast profile.
+
 ## Routine Use
 
 Before committing a normal implementation round:

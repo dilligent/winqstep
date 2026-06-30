@@ -15,6 +15,23 @@ GUI should call this core instead of owning CP2K-specific behavior directly.
   cancellation.
 - Persistence: project folder layout, recent environments, and user presets.
 
+## GUI Host Boundaries
+
+The PowerShell-hosted WPF GUI is split by responsibility:
+
+- `scripts/start_gui.ps1`: process entry point, window construction, event
+  wiring, view state, and user workflows.
+- `scripts/gui/WinQStep.xaml`: WPF layout and named controls.
+- `scripts/gui/WinQStep.GuiHost.ps1`: reusable host helpers for localization
+  loading, Python process invocation, startup diagnostics, UTF-8 file/process
+  I/O, and CP2K summary formatting.
+- `scripts/gui/WinQStep.GuiControls.ps1`: named-control registration and
+  localization application maps for WPF controls.
+
+The GUI helper scripts should not own CP2K input semantics. New QuickStep
+features should first land in the Python core and CLI commands, then be exposed
+by GUI controls that call those same commands.
+
 ## Process Boundaries
 
 CP2K remains an external program. WinQStep should communicate with it through

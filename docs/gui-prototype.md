@@ -41,6 +41,11 @@ still owns event wiring and GUI workflows, but the WPF layout now lives in
 `scripts/gui/WinQStep.xaml`, while reusable host/process/file helpers live in
 `scripts/gui/WinQStep.GuiHost.ps1`.
 
+Round 69 moves named-control registration and localization application maps out
+of the main script into `scripts/gui/WinQStep.GuiControls.ps1`. This keeps the
+large UI inventory and string-to-control maps separate from event handlers
+without changing the visual layout or user workflows.
+
 Round 20 adds GUI localization resources for `en-US` and `zh-CN`. The GUI
 defaults from Windows UI culture, and `-Language` can force a specific language
 for local testing or daily use.
@@ -123,9 +128,11 @@ The GUI does not parse or generate CP2K input itself. It displays JSON, rendered
 input text, job metadata, and CP2K output summaries produced by the core
 commands.
 
-The GUI layout is intentionally separate from event wiring. Edit
-`scripts/gui/WinQStep.xaml` for controls and layout, and edit
-`scripts/start_gui.ps1` for event handlers and view-state behavior.
+The GUI layout, control inventory, and event wiring are intentionally separate.
+Edit `scripts/gui/WinQStep.xaml` for controls and layout, edit
+`scripts/gui/WinQStep.GuiControls.ps1` when adding named controls or localized
+control mappings, and edit `scripts/start_gui.ps1` for event handlers and
+view-state behavior.
 User-facing GUI strings live in `resources/i18n/`, while CP2K keywords, JSON
 keys, metadata, paths, and raw CP2K output remain untranslated.
 

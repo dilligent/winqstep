@@ -86,9 +86,10 @@ def run_quickstep_job(
         mpirun_command=_optional_str(config.get("mpirun_command")),
         mpi_ranks=mpi_ranks,
     )
-    dry_run["windows"]["generated_artifact_scan_start"] = time.time()
     if execute:
         _remove_previous_run_outputs(dry_run)
+    dry_run["windows"]["generated_artifact_existing_paths"] = _current_generated_artifact_paths(dry_run)
+    dry_run["windows"]["generated_artifact_scan_start"] = time.time()
 
     metadata_path = Path(dry_run["windows"]["metadata_path"])
     metadata: dict[str, Any] = {
@@ -162,9 +163,10 @@ def run_existing_input_job(
         mpirun_command=_optional_str(config.get("mpirun_command")),
         mpi_ranks=mpi_ranks,
     )
-    dry_run["windows"]["generated_artifact_scan_start"] = time.time()
     if execute:
         _remove_previous_run_outputs(dry_run)
+    dry_run["windows"]["generated_artifact_existing_paths"] = _current_generated_artifact_paths(dry_run)
+    dry_run["windows"]["generated_artifact_scan_start"] = time.time()
 
     metadata_path = Path(dry_run["windows"]["metadata_path"])
     metadata: dict[str, Any] = {
@@ -253,6 +255,18 @@ def _remove_previous_run_outputs(dry_run: dict[str, Any]) -> None:
         Path(windows[key]).unlink(missing_ok=True)
 
 
+def _current_generated_artifact_paths(dry_run: dict[str, Any]) -> list[str]:
+    windows = dry_run["windows"]
+    job_dir = Path(windows["job_dir"])
+    if not job_dir.is_dir():
+        return []
+    return [
+        str(path.resolve())
+        for path in sorted(job_dir.iterdir(), key=lambda item: item.name.lower())
+        if path.is_file() and _generated_artifact_type(path) is not None
+    ]
+
+
 def _file_info(path: str) -> dict[str, Any]:
     file_path = Path(path)
     exists = file_path.exists()
@@ -273,14 +287,22 @@ def _generated_artifacts(dry_run: dict[str, Any]) -> list[dict[str, Any]]:
         for key in ("input_path", "output_path", "stdout_path", "stderr_path", "metadata_path")
     }
     scan_start = _float_or_none(windows.get("generated_artifact_scan_start"))
+    existing_generated_paths = {
+        str(Path(path).resolve())
+        for path in windows.get("generated_artifact_existing_paths", [])
+        if path
+    }
     artifacts: list[dict[str, Any]] = []
     for path in sorted(job_dir.iterdir(), key=lambda item: item.name.lower()):
-        if not path.is_file() or path.resolve() in known_paths:
+        resolved_path = path.resolve()
+        if not path.is_file() or resolved_path in known_paths:
+            continue
+        if str(resolved_path) in existing_generated_paths:
             continue
         artifact_type = _generated_artifact_type(path)
         if artifact_type is None:
             continue
-        if scan_start is not None and path.stat().st_mtime < scan_start:
+        if scan_start is not None and path.stat().st_mtime < (scan_start - 1.0):
             continue
         info = _file_info(str(path))
         info["name"] = path.name

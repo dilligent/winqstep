@@ -38,10 +38,12 @@ Each round should end with a focused commit.
   QuickStep wavefunction restart controls, and QuickStep
   `MOTION/&CONSTRAINT/&FIXED_ATOMS` controls, and QuickStep
   `DFT/&PRINT/&PDOS` with generated PDOS artifact discovery, and 3D-assisted
-  fixed-atom selection in the GUI Structure tab, and side-by-side Structure
-  text/3D preview layout.
-- Next active round: Round 69, choose the next conservative QuickStep expansion
-  slice.
+  fixed-atom selection in the GUI Structure tab, side-by-side Structure text/3D
+  preview layout, a separated GUI control-registration/localization helper,
+  pre-run generated-artifact snapshots for stable PDOS discovery, and isolated
+  GUI button-smoke scratch workspaces.
+- Next active round: Round 70, choose the next conservative QuickStep
+  expansion slice or continue low-risk GUI modularization.
 - Known local facts:
   - WSL2 is available.
   - Default distro is `Ubuntu`.
@@ -2406,9 +2408,58 @@ Commit boundary:
 
 - One commit for Structure layout, tests, and docs.
 
+## Round 69: GUI Control Module Split and Stability Hardening
+
+Status: implemented.
+
+Goal: reduce the maintenance pressure in the main PowerShell GUI script without
+changing user-visible behavior, while fixing test-instability issues exposed by
+stricter checks.
+
+Rationale:
+
+- `scripts/start_gui.ps1` remains the largest and highest-risk file in the
+  project, so new QuickStep controls make review harder when static control
+  lists and localization maps stay inline with event handlers.
+- Named-control registration and localization application are declarative GUI
+  inventory, not workflow behavior.
+- Moving only these maps is a low-risk modularization step because the same
+  WPF controls, localization keys, and event handlers remain in use.
+
+Tasks:
+
+- Add `scripts/gui/WinQStep.GuiControls.ps1` for named-control discovery and
+  localized control application.
+- Dot-source the new helper from `scripts/start_gui.ps1` and keep the main
+  script responsible for window construction and event wiring.
+- Include the new helper in startup diagnostics required-file checks.
+- Add GUI static and smoke-test coverage so missing helper files or broken
+  localization wiring fail fast.
+- Record pre-run generated-artifact snapshots in the runner so current `.pdos`
+  files are not dropped by timestamp precision and old `.pdos` files are not
+  reported as new outputs.
+- Give GUI ButtonSmoke a per-run scratch workspace and config workspace so
+  parallel checks do not mutate shared smoke files.
+- Update architecture and GUI documentation.
+
+Acceptance:
+
+- GUI smoke tests still load the same window, tab order, localized labels,
+  Template controls, Structure 3D preview, and artifact controls.
+- Existing button, workflow, preview, run, history, Structure preview, and
+  localization behavior remains unchanged.
+- Direct workflow-module tests, full unit discovery, and ButtonSmoke can run
+  without artifact-discovery or scratch-workspace ordering failures.
+- Fast checks pass.
+
+Commit boundary:
+
+- One commit for the helper split, startup diagnostics, runner/smoke stability,
+  tests, and docs.
+
 ## QuickStep Feature Backlog
 
-Status: planned queue after Round 68.
+Status: planned queue after Round 69.
 
 Priority order:
 

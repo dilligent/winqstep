@@ -164,6 +164,7 @@ function Test-WinQStepGuiPrerequisites {
         "scripts\release_candidate_walkthrough.py",
         "scripts\start_gui.ps1",
         "scripts\gui\WinQStep.GuiHost.ps1",
+        "scripts\gui\WinQStep.GuiControls.ps1",
         "scripts\gui\WinQStep.xaml",
         "resources\i18n\en-US.json",
         "resources\i18n\zh-CN.json",

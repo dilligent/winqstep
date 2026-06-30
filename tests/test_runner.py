@@ -95,6 +95,35 @@ class RunnerTests(unittest.TestCase):
                 Path(metadata["files"]["metadata"]["path"]).stat().st_size,
             )
 
+    def test_generated_artifacts_exclude_preexisting_files(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            job_dir = Path(tmp_dir)
+            (job_dir / "old-k1-1.pdos").write_text("old", encoding="utf-8")
+
+            def fake_executor(argv: list[str]) -> SimpleNamespace:
+                (job_dir / "water_energy.out").write_text(
+                    "The number of warnings for this run is : 0\n"
+                    "PROGRAM ENDED AT                 2026-06-29 03:24:28.023\n",
+                    encoding="utf-8",
+                )
+                (job_dir / "water_energy.stdout.log").write_text("", encoding="utf-8")
+                (job_dir / "water_energy.stderr.log").write_text("", encoding="utf-8")
+                (job_dir / "water_energy-k1-1.pdos").write_text("new", encoding="utf-8")
+                return SimpleNamespace(returncode=0, stdout=b"", stderr=b"")
+
+            metadata = run_quickstep_job(
+                config=self.config,
+                quickstep_data=self.quickstep,
+                windows_job_dir=tmp_dir,
+                executor=fake_executor,
+            )
+
+            self.assertEqual(
+                [item["name"] for item in metadata["files"]["generated"]],
+                ["water_energy-k1-1.pdos"],
+            )
+            self.assertEqual(metadata["files"]["generated"][0]["type"], "pdos")
+
     def test_energy_force_executor_updates_force_summary(self) -> None:
         quickstep = load_json_file(ROOT / "examples" / "quickstep_energy_force.json")
         with tempfile.TemporaryDirectory() as tmp_dir:

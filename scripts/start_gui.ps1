@@ -37,6 +37,7 @@ $Script:StructurePreviewSmokeToggleAtomSelection = $null
 $Script:StructurePreviewSmokeApplyFixedAtoms = $null
 
 . (Join-Path $PSScriptRoot "gui\WinQStep.GuiHost.ps1")
+. (Join-Path $PSScriptRoot "gui\WinQStep.GuiControls.ps1")
 
 function Ensure-WinQStepLocalExampleFile {
     param(
@@ -79,237 +80,13 @@ function New-WinQStepWindow {
     $window = [Windows.Markup.XamlReader]::Load($reader)
 
     $controls = @{}
-    $names = @(
-        "MainScrollViewer", "MainTabs",
-        "WorkflowModeRadio", "ExistingInputModeRadio",
-        "JobInputsGroup",
-        "ModeLabel", "ConfigPathLabel", "TemplatePathLabel", "StructurePathLabel",
-        "ExistingInputPathLabel", "JobFolderLabel", "ProjectLabel",
-        "ConfigPathBox", "TemplatePathBox", "StructurePathBox", "ExistingInputPathBox",
-        "JobDirBox", "ProjectNameBox",
-        "ConfigTab", "TemplateTab", "EnvironmentTab", "StructureTab",
-        "InputPreviewTab", "JobLogTab", "ArtifactsTab", "HistoryTab",
-        "StructurePreviewStatusText", "StructureSelectionText", "StructurePreviewViewport", "StructurePreviewCamera", "StructurePreviewVisual",
-        "TemplateManualText", "Cp2kInputManualLink",
-        "DistroLabel", "Cp2kCommandLabel", "Cp2kDataDirLabel", "MpiCommandLabel",
-        "WorkspaceLabel", "WslPreludeLabel", "TimeoutLabel", "UiLanguageLabel",
-        "DistroBox", "Cp2kCommandBox", "Cp2kDataDirBox", "MpirunCommandBox",
-        "DefaultWorkspaceBox", "WslPreludeBox", "TimeoutBox", "UiLanguageBox", "ConfigValidationText",
-        "TemplateProjectLabel", "RunTypeLabel", "BasisFileLabel", "PotentialFileLabel",
-        "XcFunctionalLabel", "XcPbeParametrizationLabel", "DispersionTypeLabel",
-        "DispersionParameterFileLabel", "DispersionReferenceFunctionalLabel",
-        "EpsScfLabel", "ChargeLabel", "MultiplicityLabel",
-        "CutoffLabel", "RelCutoffLabel", "PoissonSolverLabel", "PrintLevelLabel", "MaxScfLabel", "OptimizerLabel", "GeoMaxIterLabel",
-        "WfnRestartFileNameLabel", "ScfGuessLabel",
-        "CellOptTypeLabel", "CellOptOptimizerLabel", "CellOptMaxIterLabel",
-        "CellOptPressureToleranceLabel",
-        "FixedAtomsLabel", "FixedAtomComponentsLabel",
-        "ScfMethodLabel", "AddedMosLabel", "DiagonalizationAlgorithmLabel",
-        "OtMinimizerLabel", "OtPreconditionerLabel",
-        "OuterScfEpsScfLabel", "OuterScfMaxScfLabel",
-        "MixingMethodLabel",
-        "MixingAlphaLabel", "MixingBetaLabel", "SmearingMethodLabel",
-        "ElectronicTemperatureLabel", "KpointsSchemeLabel", "KpointsGridLabel",
-        "KpointsWavefunctionsLabel",
-        "FallbackPeriodicLabel", "FallbackCellALabel", "FallbackCellBLabel", "FallbackCellCLabel",
-        "TemplateProjectBox", "TemplateRunTypeBox", "PrintLevelBox", "BasisSetFileBox", "PotentialFileBox",
-        "PoissonSolverBox",
-        "WfnRestartFileNameBox",
-        "XcFunctionalBox", "XcPbeParametrizationBox", "DispersionTypeBox",
-        "DispersionParameterFileBox", "DispersionReferenceFunctionalBox",
-        "ChargeBox", "MultiplicityBox", "CutoffBox", "RelCutoffBox",
-        "EpsScfBox", "MaxScfBox", "GeoOptimizerBox", "GeoMaxIterBox",
-        "CellOptTypeBox", "CellOptOptimizerBox", "CellOptMaxIterBox",
-        "CellOptPressureToleranceBox",
-        "FixedAtomsBox", "FixedAtomComponentsBox",
-        "ScfMethodBox", "AddedMosBox", "DiagonalizationAlgorithmBox",
-        "ScfGuessBox",
-        "OtMinimizerBox", "OtPreconditionerBox",
-        "OuterScfEpsScfBox", "OuterScfMaxScfBox",
-        "MixingMethodBox",
-        "MixingAlphaBox", "MixingBetaBox", "SmearingMethodBox",
-        "ElectronicTemperatureBox", "KpointsSchemeBox", "KpointsGridBox",
-        "KpointsWavefunctionsBox", "OuterScfEnabledBox", "MixingEnabledBox", "SmearingEnabledBox",
-        "DispersionEnabledBox",
-        "PrintMullikenBox", "PrintLowdinBox", "PrintPdosBox",
-        "UksEnabledBox", "CellOptKeepAnglesBox", "CellOptKeepSymmetryBox",
-        "KpointsFullGridBox", "KpointsSymmetryBox",
-        "FallbackPeriodicBox", "FallbackCellABox", "FallbackCellBBox", "FallbackCellCBox",
-        "CenterAtomsBox", "KindsText",
-        "KindEntriesGrid", "DataLabelsGrid", "TemplateValidationText",
-        "EnvironmentText", "StructureText", "PreviewText", "LogText",
-        "ArtifactSummaryText", "ArtifactText", "HistoryGrid", "StatusText", "JobStatusText",
-        "LoadConfigButton", "SaveConfigButton", "ApplyLanguageButton", "LoadTemplateButton", "SaveTemplateButton",
-        "InspectDataButton", "DetectButton", "ImportButton",
-        "StructureResetViewButton", "StructureApplyFixedAtomsButton", "StructureClearSelectionButton",
-        "PreviewButton", "RunButton", "CancelJobButton", "HistoryButton", "ClearButton",
-        "ViewResultsButton", "SaveResultsButton",
-        "ViewInputButton", "ViewOutputButton", "ViewMetadataButton", "ViewStdoutButton", "ViewStderrButton",
-        "BrowseConfigButton", "BrowseTemplateButton", "BrowseStructureButton",
-        "BrowseExistingInputButton", "BrowseJobDirButton"
-    )
+    $names = @(Get-WinQStepGuiControlNames)
     foreach ($name in $names) {
         $controls[$name] = $window.FindName($name)
     }
 
     $ApplyLocalizationToControls = {
-        $window.Title = Get-WinQStepText "app.title"
-        $contentLocalization = @{
-        LoadConfigButton = "button.load_config"
-        SaveConfigButton = "button.save_config"
-        ApplyLanguageButton = "button.apply"
-        LoadTemplateButton = "button.load_template"
-        SaveTemplateButton = "button.save_template"
-        InspectDataButton = "button.inspect_data"
-        DetectButton = "button.detect"
-        ImportButton = "button.import"
-        StructureResetViewButton = "button.reset_view"
-        StructureApplyFixedAtomsButton = "button.apply_fixed_atoms"
-        StructureClearSelectionButton = "button.clear_selection"
-        PreviewButton = "button.preview"
-        RunButton = "button.run"
-        CancelJobButton = "button.stop"
-        HistoryButton = "button.history"
-        ClearButton = "button.clear"
-        BrowseConfigButton = "button.browse"
-        BrowseTemplateButton = "button.browse"
-        BrowseStructureButton = "button.browse"
-        BrowseExistingInputButton = "button.browse"
-        BrowseJobDirButton = "button.browse"
-        ViewResultsButton = "button.results"
-        SaveResultsButton = "button.save_results"
-        ViewInputButton = "button.input"
-        ViewOutputButton = "button.output"
-        ViewMetadataButton = "button.metadata"
-        ViewStdoutButton = "button.stdout"
-        ViewStderrButton = "button.stderr"
-        WorkflowModeRadio = "mode.workflow"
-        ExistingInputModeRadio = "mode.existing_input"
-        MixingEnabledBox = "label.mixing_enabled"
-        SmearingEnabledBox = "label.smearing_enabled"
-        UksEnabledBox = "label.uks_enabled"
-        DispersionEnabledBox = "label.dispersion_enabled"
-        CellOptKeepAnglesBox = "label.cell_opt_keep_angles"
-        CellOptKeepSymmetryBox = "label.cell_opt_keep_symmetry"
-        OuterScfEnabledBox = "label.outer_scf_enabled"
-        KpointsFullGridBox = "label.kpoints_full_grid"
-        KpointsSymmetryBox = "label.kpoints_symmetry"
-        PrintMullikenBox = "label.print_mulliken"
-        PrintLowdinBox = "label.print_lowdin"
-        PrintPdosBox = "label.print_pdos"
-        CenterAtomsBox = "label.center_atoms"
-        }
-        foreach ($entry in $contentLocalization.GetEnumerator()) {
-            Set-WinQStepContent $controls[$entry.Key] $entry.Value
-        }
-
-        $headerLocalization = @{
-        JobInputsGroup = "group.job_inputs"
-        ConfigTab = "tab.config"
-        TemplateTab = "tab.template"
-        EnvironmentTab = "tab.environment"
-        StructureTab = "tab.structure"
-        InputPreviewTab = "tab.input_preview"
-        JobLogTab = "tab.job_log"
-        ArtifactsTab = "tab.artifacts"
-        HistoryTab = "tab.history"
-        }
-        foreach ($entry in $headerLocalization.GetEnumerator()) {
-            Set-WinQStepHeader $controls[$entry.Key] $entry.Value
-        }
-
-        $textLocalization = @{
-        ModeLabel = "label.mode"
-        ConfigPathLabel = "label.config"
-        TemplatePathLabel = "label.template"
-        StructurePathLabel = "label.structure"
-        ExistingInputPathLabel = "label.existing_input"
-        JobFolderLabel = "label.job_folder"
-        ProjectLabel = "label.project"
-        DistroLabel = "label.distro"
-        Cp2kCommandLabel = "label.cp2k_command"
-        Cp2kDataDirLabel = "label.cp2k_data_dir"
-        MpiCommandLabel = "label.mpi_command"
-        WorkspaceLabel = "label.workspace"
-        WslPreludeLabel = "label.wsl_prelude"
-        TimeoutLabel = "label.timeout"
-        UiLanguageLabel = "label.ui_language"
-        TemplateProjectLabel = "label.project"
-        RunTypeLabel = "label.run_type"
-        PrintLevelLabel = "label.print_level"
-        BasisFileLabel = "label.basis_file"
-        PotentialFileLabel = "label.potential_file"
-        XcFunctionalLabel = "label.xc_functional"
-        XcPbeParametrizationLabel = "label.xc_pbe_parametrization"
-        DispersionTypeLabel = "label.dispersion_type"
-        DispersionParameterFileLabel = "label.dispersion_parameter_file"
-        DispersionReferenceFunctionalLabel = "label.dispersion_reference_functional"
-        EpsScfLabel = "label.eps_scf"
-        ChargeLabel = "label.charge"
-        MultiplicityLabel = "label.multiplicity"
-        CutoffLabel = "label.cutoff"
-        RelCutoffLabel = "label.rel_cutoff"
-        PoissonSolverLabel = "label.poisson_solver"
-        WfnRestartFileNameLabel = "label.wfn_restart_file_name"
-        MaxScfLabel = "label.max_scf"
-        ScfMethodLabel = "label.scf_method"
-        ScfGuessLabel = "label.scf_guess"
-        AddedMosLabel = "label.added_mos"
-        DiagonalizationAlgorithmLabel = "label.diagonalization_algorithm"
-        OtMinimizerLabel = "label.ot_minimizer"
-        OtPreconditionerLabel = "label.ot_preconditioner"
-        OuterScfEpsScfLabel = "label.outer_scf_eps_scf"
-        OuterScfMaxScfLabel = "label.outer_scf_max_scf"
-        MixingMethodLabel = "label.mixing_method"
-        MixingAlphaLabel = "label.mixing_alpha"
-        MixingBetaLabel = "label.mixing_beta"
-        SmearingMethodLabel = "label.smearing_method"
-        ElectronicTemperatureLabel = "label.electronic_temperature"
-        KpointsSchemeLabel = "label.kpoints_scheme"
-        KpointsGridLabel = "label.kpoints_grid"
-        KpointsWavefunctionsLabel = "label.kpoints_wavefunctions"
-        OptimizerLabel = "label.optimizer"
-        GeoMaxIterLabel = "label.geo_max_iter"
-        CellOptTypeLabel = "label.cell_opt_type"
-        CellOptOptimizerLabel = "label.cell_opt_optimizer"
-        CellOptMaxIterLabel = "label.cell_opt_max_iter"
-        CellOptPressureToleranceLabel = "label.cell_opt_pressure_tolerance"
-        FixedAtomsLabel = "label.fixed_atoms"
-        FixedAtomComponentsLabel = "label.fixed_atom_components"
-        FallbackPeriodicLabel = "label.fallback_periodic"
-        FallbackCellALabel = "label.fallback_cell_a"
-        FallbackCellBLabel = "label.fallback_cell_b"
-        FallbackCellCLabel = "label.fallback_cell_c"
-        StructureSelectionText = "structure.fixed_atoms.none"
-        StatusText = "status.ready"
-        }
-        foreach ($entry in $textLocalization.GetEnumerator()) {
-            Set-WinQStepText $controls[$entry.Key] $entry.Value
-        }
-
-        if ($controls["UiLanguageBox"].Items.Count -ge 3) {
-            $controls["UiLanguageBox"].Items[0].Content = Get-WinQStepText "language.system_default"
-            $controls["UiLanguageBox"].Items[0].Tag = ""
-            $controls["UiLanguageBox"].Items[1].Content = Get-WinQStepText "language.en_us"
-            $controls["UiLanguageBox"].Items[1].Tag = "en-US"
-            $controls["UiLanguageBox"].Items[2].Content = Get-WinQStepText "language.zh_cn"
-            $controls["UiLanguageBox"].Items[2].Tag = "zh-CN"
-        }
-
-        if ($controls["DataLabelsGrid"].Columns.Count -ge 3) {
-            $controls["DataLabelsGrid"].Columns[0].Header = Get-WinQStepText "column.element"
-            $controls["DataLabelsGrid"].Columns[1].Header = Get-WinQStepText "column.basis_sets"
-            $controls["DataLabelsGrid"].Columns[2].Header = Get-WinQStepText "column.potentials"
-        }
-        if ($controls["HistoryGrid"].Columns.Count -ge 7) {
-            $controls["HistoryGrid"].Columns[0].Header = Get-WinQStepText "column.completed"
-            $controls["HistoryGrid"].Columns[1].Header = Get-WinQStepText "column.mode"
-            $controls["HistoryGrid"].Columns[2].Header = Get-WinQStepText "column.status"
-            $controls["HistoryGrid"].Columns[3].Header = Get-WinQStepText "column.code"
-            $controls["HistoryGrid"].Columns[4].Header = Get-WinQStepText "column.warnings"
-            $controls["HistoryGrid"].Columns[5].Header = Get-WinQStepText "column.project_input"
-            $controls["HistoryGrid"].Columns[6].Header = Get-WinQStepText "column.output"
-        }
+        Set-WinQStepLocalizedControls -Window $window -Controls $controls
     }.GetNewClosure()
     & $ApplyLocalizationToControls
 
@@ -3756,12 +3533,19 @@ if ($ButtonSmokeTest) {
     $window = New-WinQStepWindow
     $buttonReports = [ordered]@{}
 
-    $historySmokeDir = Resolve-WinQStepPath "outputs\gui-button-history-smoke"
+    $historySmokeDir = Resolve-WinQStepPath ("outputs\gui-button-history-smoke-{0}" -f ([System.Guid]::NewGuid().ToString("N")))
     [System.IO.Directory]::CreateDirectory($historySmokeDir) | Out-Null
     $smokeConfigPath = Join-Path $historySmokeDir "button_smoke.config.json"
     $smokeTemplatePath = Join-Path $historySmokeDir "button_smoke.template.json"
     [System.IO.File]::Copy((Resolve-WinQStepPath "examples\winqstep.config.example.json"), $smokeConfigPath, $true)
     [System.IO.File]::Copy((Resolve-WinQStepPath "examples\templates\energy_pbe.example.json"), $smokeTemplatePath, $true)
+    $smokeConfig = [System.IO.File]::ReadAllText($smokeConfigPath, [System.Text.Encoding]::UTF8) | ConvertFrom-Json
+    $smokeConfig.default_windows_workspace = $historySmokeDir
+    [System.IO.File]::WriteAllText(
+        $smokeConfigPath,
+        (($smokeConfig | ConvertTo-Json -Depth 8) + "`n"),
+        $Script:Utf8NoBomEncoding
+    )
 
     $historyMetadataPath = Join-Path $historySmokeDir "button_history.winqstep.json"
     $historyInputPath = Join-Path $historySmokeDir "button_history.inp"
