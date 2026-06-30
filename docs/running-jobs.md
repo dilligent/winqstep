@@ -53,8 +53,11 @@ After a preview, run, or history selection, the GUI `Artifacts` tab lists the
 known input, output, metadata, stdout, stderr, and generated files. The first
 generated-file discovery slice records `.pdos` and `.pdos_raw` artifacts under
 `files.generated` in metadata. The artifact buttons read primary files into the
-GUI without opening them for editing. Missing files remain disabled, which is
-expected for prepare-only jobs before CP2K writes output.
+GUI without opening them for editing. The `Input` artifact can sync the editable
+`Input Preview` pane to the selected input file, but output, metadata, stdout,
+and stderr artifact views stay out of `Input Preview` and do not replace the
+editable input text. Missing files remain disabled, which is expected for
+prepare-only jobs before CP2K writes output.
 
 ## GUI Lifecycle Smoke
 

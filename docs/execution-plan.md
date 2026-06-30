@@ -41,8 +41,9 @@ Each round should end with a focused commit.
   fixed-atom selection in the GUI Structure tab, side-by-side Structure text/3D
   preview layout, a separated GUI control-registration/localization helper,
   pre-run generated-artifact snapshots for stable PDOS discovery, and isolated
-  GUI button-smoke scratch workspaces.
-- Next active round: Round 70, choose the next conservative QuickStep
+  GUI button-smoke scratch workspaces, and artifact output views that no longer
+  overwrite the editable `Input Preview` pane.
+- Next active round: Round 71, choose the next conservative QuickStep
   expansion slice or continue low-risk GUI modularization.
 - Known local facts:
   - WSL2 is available.
@@ -2457,9 +2458,47 @@ Commit boundary:
 - One commit for the helper split, startup diagnostics, runner/smoke stability,
   tests, and docs.
 
+## Round 70: Preserve Input Preview When Viewing Output Artifacts
+
+Status: implemented.
+
+Goal: prevent the `Artifacts` tab's `Output` button from replacing the editable
+`Input Preview` text after a run or history selection.
+
+Rationale:
+
+- `Input Preview` is the user's generated or selected input surface, and it can
+  be edited for follow-up runs.
+- CP2K output inspection belongs in the `Artifacts` text pane; overwriting
+  `Input Preview` makes it look like the input changed and can hide manual
+  edits.
+- The `Input` artifact may still intentionally sync the preview to the selected
+  input file.
+
+Tasks:
+
+- Restrict `ViewArtifact` preview synchronization to the `input` artifact.
+- Keep `output`, `metadata`, `stdout`, and `stderr` artifact reads out of
+  `PreviewText`.
+- Update ButtonSmoke to click `Input` then `Output` and assert that the input
+  preview remains input text.
+- Update GUI and running-job documentation.
+
+Acceptance:
+
+- Viewing an output artifact shows the output in `Artifacts` but does not
+  replace `Input Preview`.
+- Viewing an input artifact still restores the selected input text in
+  `Input Preview`.
+- GUI button smoke and fast checks pass.
+
+Commit boundary:
+
+- One commit for the artifact-preview fix, regression test, and docs.
+
 ## QuickStep Feature Backlog
 
-Status: planned queue after Round 69.
+Status: planned queue after Round 70.
 
 Priority order:
 

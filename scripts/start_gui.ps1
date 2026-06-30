@@ -1816,11 +1816,15 @@ function New-WinQStepWindow {
         }
         $text = [System.IO.File]::ReadAllText($path, [System.Text.Encoding]::UTF8)
         $controls["ArtifactText"].Text = "--- ${Key}: $path ---`r`n$text"
-        if ($Key -in @("input", "output")) {
-            & $ClearInputPreviewState
+        if ($Key -eq "input") {
             $controls["PreviewText"].Text = $text
+            $previewState["Current"] = [ordered]@{
+                InputPath = $path
+                Text = $text
+                SourceMode = "artifact_input"
+            }
         }
-        else {
+        elseif ($Key -ne "output") {
             $controls["LogText"].Text = $text
         }
     }.GetNewClosure()
@@ -3795,7 +3799,12 @@ if ($ButtonSmokeTest) {
         ""
     }
 
-    foreach ($buttonName in @("ViewInputButton", "ViewOutputButton", "ViewMetadataButton", "ViewStdoutButton", "ViewStderrButton")) {
+    & $RecordButtonSmokeClick "ViewInputButton"
+    $previewTextAfterViewInput = [string]$window.FindName("PreviewText").Text
+    & $RecordButtonSmokeClick "ViewOutputButton"
+    $previewTextAfterViewOutput = [string]$window.FindName("PreviewText").Text
+    $artifactTextAfterViewOutput = [string]$window.FindName("ArtifactText").Text
+    foreach ($buttonName in @("ViewMetadataButton", "ViewStdoutButton", "ViewStderrButton")) {
         & $RecordButtonSmokeClick $buttonName
     }
 
@@ -3876,9 +3885,16 @@ if ($ButtonSmokeTest) {
     $report["result_summary_saved"] = [System.IO.File]::Exists($savedResultsPath)
     $report["result_summary_path_in_summary"] = $artifactSummaryAfterSave.Contains("results=[exists] $savedResultsPath")
     $report["result_summary_file_has_force"] = $savedResultsText.Contains("total_atomic_force=0.00148299452 hartree/bohr")
+    $report["artifact_input_synced_preview"] = $previewTextAfterViewInput.Contains("&GLOBAL")
+    $report["artifact_output_text_has_program_end"] = $artifactTextAfterViewOutput.Contains("PROGRAM ENDED")
+    $report["artifact_output_preserved_input_preview"] = (
+        $previewTextAfterViewOutput -eq $previewTextAfterViewInput -and
+        $previewTextAfterViewOutput.Contains("&GLOBAL") -and
+        -not $previewTextAfterViewOutput.Contains("PROGRAM ENDED")
+    )
     $report["artifact_text_has_stderr"] = $artifactTextBeforeClear.Contains("stderr smoke")
     $report["artifact_log_has_stderr"] = $logTextBeforeClear.Contains("stderr smoke")
-    $report["preview_text_has_output"] = $previewTextBeforeClear.Contains("PROGRAM ENDED")
+    $report["preview_text_preserved_after_output_artifact"] = $previewTextBeforeClear.Contains("&GLOBAL") -and -not $previewTextBeforeClear.Contains("PROGRAM ENDED")
     $report["language_apply_switched_to_zh"] = ($languageAfterApply -eq "zh-CN")
     $report["language_apply_changed_preview_text"] = ($previewButtonTextAfterLanguageApply -ne "Preview")
     $report["clear_emptied_text_fields"] = $textFieldsCleared
@@ -3922,9 +3938,12 @@ if ($ButtonSmokeTest) {
         $report["result_summary_saved"] -and
         $report["result_summary_path_in_summary"] -and
         $report["result_summary_file_has_force"] -and
+        $report["artifact_input_synced_preview"] -and
+        $report["artifact_output_text_has_program_end"] -and
+        $report["artifact_output_preserved_input_preview"] -and
         $report["artifact_text_has_stderr"] -and
         $report["artifact_log_has_stderr"] -and
-        $report["preview_text_has_output"] -and
+        $report["preview_text_preserved_after_output_artifact"] -and
         $report["language_apply_switched_to_zh"] -and
         $report["language_apply_changed_preview_text"] -and
         $report["clear_emptied_text_fields"] -and

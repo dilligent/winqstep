@@ -258,8 +258,11 @@ total energy, total atomic force, generated file count, and the known input,
 output, metadata, stdout, stderr, generated PDOS, and saved-result paths. The
 tab has read-only `Input`, `Output`,
 `Metadata`, `Stdout`, and `Stderr` buttons that load those files into the GUI
-text pane without modifying or rerunning the job. `Results` shows a structured
-text result summary, including per-atom forces when CP2K printed an
+text pane without modifying or rerunning the job. `Input` also syncs the
+editable `Input Preview` pane to the selected input file. `Output`, `Metadata`,
+`Stdout`, and `Stderr` do not overwrite `Input Preview`, so inspecting CP2K
+output cannot silently replace the editable input text. `Results` shows a
+structured text result summary, including per-atom forces when CP2K printed an
 `ENERGY_FORCE` force block. `Save Results` writes that same summary as
 `*.results.txt` next to the job metadata.
 
