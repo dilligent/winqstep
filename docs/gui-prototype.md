@@ -135,6 +135,11 @@ The top `Mode` selector supports three paths:
   The same input path box is reused for a folder path; UTF-8 input-list files
   can still be typed manually.
 
+For existing-input batches, `Job Log` shows explicit `current/total` progress
+and succeeded/failed/error counts from `batch.winqstep-batch.json`. The
+`Artifacts` tab renders that batch index as a read-only result table, and
+`Save Results` exports the table as `batch-results.tsv`.
+
 The GUI does not parse or generate CP2K input itself. It displays JSON, rendered
 input text, job metadata, and CP2K output summaries produced by the core
 commands.

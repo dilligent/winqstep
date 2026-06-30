@@ -80,9 +80,15 @@ button selects a folder, and `Preview` runs
 
 `Run` first performs the same prepare-only batch check. If that summary is
 valid, the GUI starts the real serial batch in the background and updates `Job
-Log` from the batch index while it runs. `Artifacts` exposes the batch summary
-as metadata and as a result-summary view. Per-input job metadata remains visible
-through `History` after users load the batch job folder.
+Log` from the batch index while it runs. The log includes explicit
+`current/total`, recorded item count, and succeeded/failed/error counts.
+`Artifacts` exposes the batch summary as metadata, shows a read-only per-item
+result table, and lets `Save Results` export that table as `batch-results.tsv`.
+Per-input job metadata remains visible through `History` after users load the
+batch job folder.
 
 For input-list files, type the list file path directly into `Batch Inputs`;
 folder browsing is the default shortcut for the common case.
+
+Batch execution is intentionally serial. Resume, per-item skip/rerun, and
+per-item cancellation are not implemented yet.

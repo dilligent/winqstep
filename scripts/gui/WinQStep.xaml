@@ -898,6 +898,7 @@
           <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="120"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
           </Grid.RowDefinitions>
           <WrapPanel Grid.Row="0" Margin="0,0,0,6">
@@ -914,7 +915,21 @@
                    FontSize="12" AcceptsReturn="True" TextWrapping="Wrap"
                    HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
                    IsReadOnly="True"/>
-          <TextBox x:Name="ArtifactText" Grid.Row="2"
+          <DataGrid x:Name="BatchResultsGrid" Grid.Row="2" Height="170" Margin="0,6,0,6"
+                    AutoGenerateColumns="False" IsReadOnly="True" Visibility="Collapsed"
+                    SelectionMode="Single" HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                    FontSize="12">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="#" Binding="{Binding index}" Width="45"/>
+              <DataGridTextColumn Header="Status" Binding="{Binding status}" Width="90"/>
+              <DataGridTextColumn Header="Code" Binding="{Binding returncode}" Width="55"/>
+              <DataGridTextColumn Header="Input" Binding="{Binding input_path}" Width="220"/>
+              <DataGridTextColumn Header="Output" Binding="{Binding output_path}" Width="220"/>
+              <DataGridTextColumn Header="Metadata" Binding="{Binding metadata_path}" Width="220"/>
+              <DataGridTextColumn Header="Error" Binding="{Binding error}" Width="*"/>
+            </DataGrid.Columns>
+          </DataGrid>
+          <TextBox x:Name="ArtifactText" Grid.Row="3"
                    FontFamily="Cascadia Mono, Consolas, Microsoft YaHei UI, Microsoft YaHei, SimSun"
                    FontSize="12" AcceptsReturn="True" AcceptsTab="True" TextWrapping="NoWrap"
                    HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"

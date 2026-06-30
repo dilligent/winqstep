@@ -2635,9 +2635,35 @@ Commit boundary:
 
 - One commit for the batch Run bugfix and regression coverage.
 
+## Round 75 - GUI Batch Progress and Result Table Polish
+
+Status: completed.
+
+Scope:
+
+- Make existing-input batch progress explicit in Input Preview, Job Log,
+  Artifacts, and the job status line with `current/total`, recorded count, and
+  succeeded/failed/error counts.
+- Add a read-only batch result table to the Artifacts tab, populated from
+  `batch.winqstep-batch.json`.
+- Make `Save Results` export existing-input batch results as
+  `batch-results.tsv` while preserving single-job result summary behavior.
+- Extend GUI smoke tests to verify the batch result grid and TSV export.
+
+Acceptance:
+
+- Batch smoke prepares two inputs, shows two table rows, and writes a TSV with
+  the expected header and input rows.
+- Batch Run smoke verifies the async log includes explicit progress.
+- GUI and fast check profiles pass.
+
+Commit boundary:
+
+- One commit for batch progress/table polish, tests, and docs.
+
 ## QuickStep Feature Backlog
 
-Status: planned queue after Round 74.
+Status: planned queue after Round 75.
 
 Priority order:
 

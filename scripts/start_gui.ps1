@@ -538,9 +538,19 @@ function New-WinQStepWindow {
             $summary = & $ReadMetadataFile ([string]$State["BatchSummaryPath"])
             if ($null -ne $summary) {
                 $items = if ($null -ne $summary.items) { @($summary.items) } else { @() }
+                $total = [int]$summary.input_count
+                $recorded = [int]$summary.item_count
+                $current = $recorded
+                if ([string]$summary.status -eq "running" -and $total -gt 0 -and $recorded -lt $total) {
+                    $current = $recorded + 1
+                }
+                elseif ($total -gt 0 -and $current -gt $total) {
+                    $current = $total
+                }
                 $sections += (
                     @(
                         "Existing input batch: status=$($summary.status)",
+                        "progress: current=$current/$total, recorded=$recorded/$total, succeeded=$($summary.succeeded_count), failed=$($summary.failed_count), errors=$($summary.error_count)",
                         "inputs=$($summary.input_count), items=$($summary.item_count), prepared=$($summary.prepared_count), succeeded=$($summary.succeeded_count), failed=$($summary.failed_count), errors=$($summary.error_count)",
                         "job_dir=$($summary.job_dir)",
                         "summary=$($summary.summary_path)",
@@ -686,11 +696,106 @@ function New-WinQStepWindow {
         return @($Summary.items)
     }.GetNewClosure()
 
+    $GetJsonIntProperty = {
+        param($Object, [Parameter(Mandatory = $true)][string]$Name)
+        $text = & $GetJsonProperty $Object $Name "0"
+        try {
+            return [int]$text
+        }
+        catch {
+            return 0
+        }
+    }.GetNewClosure()
+
+    $GetBatchProgressText = {
+        param([Parameter(Mandatory = $true)]$Summary)
+        $status = & $GetJsonProperty $Summary "status"
+        $total = & $GetJsonIntProperty $Summary "input_count"
+        $recorded = & $GetJsonIntProperty $Summary "item_count"
+        $current = $recorded
+        if ($status -eq "running" -and $total -gt 0 -and $recorded -lt $total) {
+            $current = $recorded + 1
+        }
+        elseif ($total -gt 0 -and $current -gt $total) {
+            $current = $total
+        }
+        return "current=$current/$total, recorded=$recorded/$total, succeeded=$(& $GetJsonProperty $Summary "succeeded_count"), failed=$(& $GetJsonProperty $Summary "failed_count"), errors=$(& $GetJsonProperty $Summary "error_count")"
+    }.GetNewClosure()
+
+    $NewBatchResultRows = {
+        param([Parameter(Mandatory = $true)]$Summary)
+        $rows = @()
+        foreach ($item in @(& $GetBatchSummaryItems $Summary)) {
+            $rows += [pscustomobject][ordered]@{
+                index = (& $GetJsonProperty $item "index")
+                status = (& $GetJsonProperty $item "status")
+                returncode = (& $GetJsonProperty $item "returncode")
+                input_path = (& $GetJsonProperty $item "input_path")
+                job_dir = (& $GetJsonProperty $item "job_dir")
+                metadata_path = (& $GetJsonProperty $item "metadata_path")
+                output_path = (& $GetJsonProperty $item "output_path")
+                stdout_path = (& $GetJsonProperty $item "stdout_path")
+                stderr_path = (& $GetJsonProperty $item "stderr_path")
+                generated_artifact_count = (& $GetJsonProperty $item "generated_artifact_count")
+                error = (& $GetJsonProperty $item "error")
+            }
+        }
+        return $rows
+    }.GetNewClosure()
+
+    $FormatBatchResultTable = {
+        param([Parameter(Mandatory = $true)]$Summary)
+        $rows = @(& $NewBatchResultRows $Summary)
+        if ($rows.Count -eq 0) {
+            return "Batch result table: no items"
+        }
+        $lines = @(
+            "Batch result table",
+            ("{0,5} {1,-12} {2,6} {3,-40} {4,-40} {5}" -f "#", "status", "code", "input", "output", "error")
+        )
+        foreach ($row in $rows) {
+            $inputPath = [string]$row.input_path
+            $outputPath = [string]$row.output_path
+            if ($inputPath.Length -gt 40) {
+                $inputPath = "..." + $inputPath.Substring($inputPath.Length - 37)
+            }
+            if ($outputPath.Length -gt 40) {
+                $outputPath = "..." + $outputPath.Substring($outputPath.Length - 37)
+            }
+            $lines += ("{0,5} {1,-12} {2,6} {3,-40} {4,-40} {5}" -f $row.index, $row.status, $row.returncode, $inputPath, $outputPath, $row.error)
+        }
+        return ($lines -join "`r`n")
+    }.GetNewClosure()
+
+    $EscapeBatchTsvValue = {
+        param($Value)
+        if ($null -eq $Value) {
+            return ""
+        }
+        return ([string]$Value) -replace "`t", " " -replace "`r?`n", " "
+    }.GetNewClosure()
+
+    $FormatBatchResultTsv = {
+        param([Parameter(Mandatory = $true)]$Summary)
+        $columns = @("index", "status", "returncode", "input_path", "job_dir", "metadata_path", "output_path", "stdout_path", "stderr_path", "generated_artifact_count", "error")
+        $lines = @($columns -join "`t")
+        foreach ($row in @(& $NewBatchResultRows $Summary)) {
+            $values = foreach ($column in $columns) {
+                $property = $row.PSObject.Properties[$column]
+                $value = if ($null -ne $property) { $property.Value } else { "" }
+                & $EscapeBatchTsvValue $value
+            }
+            $lines += ($values -join "`t")
+        }
+        return (($lines -join "`r`n") + "`r`n")
+    }.GetNewClosure()
+
     $FormatBatchSummary = {
         param([Parameter(Mandatory = $true)]$Summary)
         $items = @(& $GetBatchSummaryItems $Summary)
         $lines = @(
             "Existing input batch: status=$(& $GetJsonProperty $Summary "status")",
+            "progress: $(& $GetBatchProgressText $Summary)",
             "inputs=$(& $GetJsonProperty $Summary "input_count"), items=$(& $GetJsonProperty $Summary "item_count"), prepared=$(& $GetJsonProperty $Summary "prepared_count"), succeeded=$(& $GetJsonProperty $Summary "succeeded_count"), failed=$(& $GetJsonProperty $Summary "failed_count"), errors=$(& $GetJsonProperty $Summary "error_count")",
             "prepare_only=$(& $GetJsonProperty $Summary "prepare_only"), stop_on_failure=$(& $GetJsonProperty $Summary "stop_on_failure"), stopped_on_failure=$(& $GetJsonProperty $Summary "stopped_on_failure")",
             "job_dir=$(& $GetJsonProperty $Summary "job_dir")",
@@ -729,6 +834,7 @@ function New-WinQStepWindow {
         return (@(
             "mode=existing_input_batch",
             "status=$(& $GetJsonProperty $Summary "status")",
+            "progress=$(& $GetBatchProgressText $Summary)",
             "inputs=$(& $GetJsonProperty $Summary "input_count"), items=$(& $GetJsonProperty $Summary "item_count"), prepared=$(& $GetJsonProperty $Summary "prepared_count"), succeeded=$(& $GetJsonProperty $Summary "succeeded_count"), failed=$(& $GetJsonProperty $Summary "failed_count"), errors=$(& $GetJsonProperty $Summary "error_count")",
             "job_dir=$(& $GetJsonProperty $Summary "job_dir")",
             "summary=[$exists] $summaryPath"
@@ -1756,6 +1862,8 @@ function New-WinQStepWindow {
             $artifacts["run_type"] = (& $GetNestedPath $Metadata @("workflow", "template", "run_type"))
         }
         $artifactState["Current"] = $artifacts
+        $controls["BatchResultsGrid"].ItemsSource = $null
+        $controls["BatchResultsGrid"].Visibility = [System.Windows.Visibility]::Collapsed
         $controls["ArtifactSummaryText"].Text = & $BuildArtifactSummary $artifacts
         & $UpdateArtifactControls
         & $SetJobStatusText (& $FormatFinishedJobStatus $Metadata ([string]$artifacts["status"]))
@@ -1765,6 +1873,7 @@ function New-WinQStepWindow {
         param([Parameter(Mandatory = $true)]$Summary)
         $summaryPath = & $GetJsonProperty $Summary "summary_path"
         $summaryText = & $FormatBatchSummary $Summary
+        $rows = @(& $NewBatchResultRows $Summary)
         $artifacts = @{
             status = (& $GetJsonProperty $Summary "status" "")
             returncode = ""
@@ -1786,12 +1895,15 @@ function New-WinQStepWindow {
                 stderr = ""
             }
             generated_artifacts = @()
-            result_text = $summaryText
+            result_text = "$summaryText`r`n`r`n$(& $FormatBatchResultTable $Summary)"
+            batch_summary = $Summary
         }
         $artifactState["Current"] = $artifacts
         $controls["ArtifactSummaryText"].Text = & $BuildBatchArtifactSummary $Summary
+        $controls["BatchResultsGrid"].ItemsSource = $rows
+        $controls["BatchResultsGrid"].Visibility = if ($rows.Count -gt 0) { [System.Windows.Visibility]::Visible } else { [System.Windows.Visibility]::Collapsed }
         & $UpdateArtifactControls
-        & $SetJobStatusText "Batch: status=$($artifacts["status"]) | summary=$summaryPath"
+        & $SetJobStatusText "Batch: status=$($artifacts["status"]) | $(& $GetBatchProgressText $Summary) | summary=$summaryPath"
     }.GetNewClosure()
 
     $CompleteAsyncJob = {
@@ -1962,6 +2074,8 @@ function New-WinQStepWindow {
         }
         $artifacts["result_text"] = & $BuildResultSummaryFromArtifacts $artifacts
         $artifactState["Current"] = $artifacts
+        $controls["BatchResultsGrid"].ItemsSource = $null
+        $controls["BatchResultsGrid"].Visibility = [System.Windows.Visibility]::Collapsed
         $controls["ArtifactSummaryText"].Text = & $BuildArtifactSummary $artifacts
         & $UpdateArtifactControls
         & $SetJobStatusText "Selected job: status=$($artifacts["status"]) | output=$($artifacts["paths"]["output"])"
@@ -2027,10 +2141,46 @@ function New-WinQStepWindow {
         return (Join-Path $parent "$stem.results.txt")
     }.GetNewClosure()
 
+    $GetBatchResultTablePath = {
+        param([Parameter(Mandatory = $true)][hashtable]$Current)
+        $paths = $Current["paths"]
+        $candidate = ""
+        if ($null -ne $paths -and $paths.ContainsKey("metadata")) {
+            $candidate = [string]$paths["metadata"]
+        }
+        if ([string]::IsNullOrWhiteSpace($candidate)) {
+            $jobDir = & $ResolveWindowsWorkspacePath $controls["JobDirBox"].Text
+            [System.IO.Directory]::CreateDirectory($jobDir) | Out-Null
+            return (Join-Path $jobDir "batch-results.tsv")
+        }
+        $parent = Split-Path -Parent $candidate
+        if ([string]::IsNullOrWhiteSpace($parent)) {
+            $parent = & $ResolveWindowsWorkspacePath $controls["JobDirBox"].Text
+        }
+        [System.IO.Directory]::CreateDirectory($parent) | Out-Null
+        return (Join-Path $parent "batch-results.tsv")
+    }.GetNewClosure()
+
     $SaveResultSummary = {
         $current = $artifactState["Current"]
         if ($null -eq $current -or [string]::IsNullOrWhiteSpace([string]$current["result_text"])) {
             throw "No result summary is available."
+        }
+        if ([string]$current["mode"] -eq "existing_input_batch" -and $null -ne $current["batch_summary"]) {
+            $path = & $GetBatchResultTablePath $current
+            $text = & $FormatBatchResultTsv $current["batch_summary"]
+            $encoding = $Script:Utf8NoBomEncoding
+            if ($null -eq $encoding) {
+                $encoding = New-Object System.Text.UTF8Encoding($false)
+            }
+            [System.IO.File]::WriteAllText($path, $text, $encoding)
+            $current["paths"]["results"] = $path
+            $artifactState["Current"] = $current
+            $controls["ArtifactSummaryText"].Text = & $BuildBatchArtifactSummary $current["batch_summary"]
+            $controls["ArtifactText"].Text = "--- batch results: $path ---`r`n$text"
+            $controls["LogText"].Text = "Saved batch result table: $path`r`n`r`n$text"
+            & $UpdateArtifactControls
+            return $path
         }
         $path = & $GetResultSummaryPath $current
         $text = [string]$current["result_text"]
@@ -3514,6 +3664,8 @@ function New-WinQStepWindow {
         $controls["LogText"].Clear()
         $controls["ArtifactSummaryText"].Clear()
         $controls["ArtifactText"].Clear()
+        $controls["BatchResultsGrid"].ItemsSource = $null
+        $controls["BatchResultsGrid"].Visibility = [System.Windows.Visibility]::Collapsed
         $controls["HistoryGrid"].ItemsSource = $null
         $controls["KindEntriesGrid"].ItemsSource = (& $NewKindEntriesTable).DefaultView
         $controls["DataLabelsGrid"].ItemsSource = $null
@@ -3694,10 +3846,35 @@ if ($BatchSmokeTest) {
     if ([System.IO.File]::Exists($summaryPath)) {
         $summary = [System.IO.File]::ReadAllText($summaryPath, [System.Text.Encoding]::UTF8) | ConvertFrom-Json
     }
+    $batchGrid = $window.FindName("BatchResultsGrid")
+    $batchGridRows = if ($null -ne $batchGrid.ItemsSource) { @($batchGrid.ItemsSource).Count } else { 0 }
+    $batchGridVisible = ($batchGrid.Visibility -eq [System.Windows.Visibility]::Visible)
+
+    $saveOk = $true
+    $saveError = ""
+    try {
+        $button = $window.FindName("SaveResultsButton")
+        $eventArgs = [System.Windows.RoutedEventArgs]::new([System.Windows.Controls.Button]::ClickEvent)
+        $button.RaiseEvent($eventArgs)
+        [System.Windows.Forms.Application]::DoEvents()
+    }
+    catch {
+        $saveOk = $false
+        $saveError = $_.Exception.Message
+    }
+    $savedBatchResultsPath = Join-Path $batchJobDir "batch-results.tsv"
+    $savedBatchResultsText = if ([System.IO.File]::Exists($savedBatchResultsPath)) {
+        [System.IO.File]::ReadAllText($savedBatchResultsPath, [System.Text.Encoding]::UTF8)
+    }
+    else {
+        ""
+    }
 
     $report["mode"] = "batch_smoke"
     $report["preview_ok"] = $previewOk
     $report["preview_error"] = $previewError
+    $report["save_ok"] = $saveOk
+    $report["save_error"] = $saveError
     $report["batch_mode_loaded"] = ($window.FindName("ExistingInputBatchModeRadio") -is [System.Windows.Controls.RadioButton])
     $report["batch_stop_on_failure_loaded"] = ($window.FindName("BatchStopOnFailureBox") -is [System.Windows.Controls.CheckBox])
     $report["batch_input_enabled"] = [bool]$window.FindName("ExistingInputPathBox").IsEnabled
@@ -3711,12 +3888,18 @@ if ($BatchSmokeTest) {
     $report["summary_path"] = $summaryPath
     $report["summary_status"] = if ($null -ne $summary) { [string]$summary.status } else { "" }
     $report["summary_item_count"] = if ($null -ne $summary) { [int]$summary.item_count } else { 0 }
+    $report["batch_results_grid_visible"] = $batchGridVisible
+    $report["batch_results_grid_rows"] = $batchGridRows
+    $report["batch_results_tsv_exists"] = [System.IO.File]::Exists($savedBatchResultsPath)
+    $report["batch_results_tsv_has_header"] = $savedBatchResultsText.StartsWith("index`tstatus`treturncode`tinput_path")
+    $report["batch_results_tsv_has_rows"] = ($savedBatchResultsText.Contains("batch_one.inp") -and $savedBatchResultsText.Contains("batch_two.inp"))
     $report["metadata_button_enabled"] = [bool]$window.FindName("ViewMetadataButton").IsEnabled
     $report["results_button_enabled"] = [bool]$window.FindName("ViewResultsButton").IsEnabled
     $report | ConvertTo-Json -Depth 6
 
     if (
         $report["preview_ok"] -and
+        $report["save_ok"] -and
         $report["batch_mode_loaded"] -and
         $report["batch_stop_on_failure_loaded"] -and
         $report["batch_input_enabled"] -and
@@ -3728,6 +3911,11 @@ if ($BatchSmokeTest) {
         $report["summary_exists"] -and
         $report["summary_status"] -eq "prepared" -and
         $report["summary_item_count"] -eq 2 -and
+        $report["batch_results_grid_visible"] -and
+        $report["batch_results_grid_rows"] -eq 2 -and
+        $report["batch_results_tsv_exists"] -and
+        $report["batch_results_tsv_has_header"] -and
+        $report["batch_results_tsv_has_rows"] -and
         $report["metadata_button_enabled"] -and
         $report["results_button_enabled"]
     ) {
@@ -3792,6 +3980,7 @@ if ($BatchRunSmokeTest) {
     $report["preview_text_has_summary"] = if ($null -ne $smokeReport) { ([string]$smokeReport["preview_text"]).Contains("Existing input batch: status=prepared") } else { $false }
     $report["artifact_summary_has_batch"] = if ($null -ne $smokeReport) { ([string]$smokeReport["artifact_summary_text"]).Contains("mode=existing_input_batch") } else { $false }
     $report["async_log_has_batch_status"] = if ($null -ne $smokeReport) { ([string]$smokeReport["async_log_text"]).Contains("Existing input batch: status=prepared") } else { $false }
+    $report["async_log_has_batch_progress"] = if ($null -ne $smokeReport) { ([string]$smokeReport["async_log_text"]).Contains("progress: current=2/2") } else { $false }
     $report["async_log_has_wrapper_paths"] = if ($null -ne $smokeReport) { ([string]$smokeReport["async_log_text"]).Contains("wrapper_stdout=") -and ([string]$smokeReport["async_log_text"]).Contains("wrapper_stderr=") } else { $false }
     $report["workflow_run_enabled_after_batch"] = $workflowRunEnabled
     $report["existing_run_enabled_after_batch"] = $existingRunEnabled
@@ -3809,6 +3998,7 @@ if ($BatchRunSmokeTest) {
         $report["preview_text_has_summary"] -and
         $report["artifact_summary_has_batch"] -and
         $report["async_log_has_batch_status"] -and
+        $report["async_log_has_batch_progress"] -and
         $report["async_log_has_wrapper_paths"] -and
         $report["workflow_run_enabled_after_batch"] -and
         $report["existing_run_enabled_after_batch"] -and
@@ -4680,6 +4870,8 @@ if ($SmokeTest) {
     $report["structure_clear_selection_initially_disabled"] = (-not [bool]$window.FindName("StructureClearSelectionButton").IsEnabled)
     $report["artifact_summary_loaded"] = ($window.FindName("ArtifactSummaryText") -is [System.Windows.Controls.TextBox])
     $report["artifact_text_loaded"] = ($window.FindName("ArtifactText") -is [System.Windows.Controls.TextBox])
+    $report["batch_results_grid_loaded"] = ($window.FindName("BatchResultsGrid") -is [System.Windows.Controls.DataGrid])
+    $report["batch_results_grid_initially_collapsed"] = ($window.FindName("BatchResultsGrid").Visibility -eq [System.Windows.Visibility]::Collapsed)
     $report["artifact_result_buttons_loaded"] = @(
         "ViewResultsButton", "SaveResultsButton"
     ).Where({ $window.FindName($_) -is [System.Windows.Controls.Button] }).Count

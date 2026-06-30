@@ -59,7 +59,7 @@ function Get-WinQStepGuiControlNames {
         "CenterAtomsBox", "KindsText",
         "KindEntriesGrid", "DataLabelsGrid", "TemplateValidationText",
         "EnvironmentText", "StructureText", "PreviewText", "LogText",
-        "ArtifactSummaryText", "ArtifactText", "HistoryGrid", "StatusText", "JobStatusText",
+        "ArtifactSummaryText", "ArtifactText", "BatchResultsGrid", "HistoryGrid", "StatusText", "JobStatusText",
         "LoadConfigButton", "SaveConfigButton", "ApplyLanguageButton", "LoadTemplateButton", "SaveTemplateButton",
         "InspectDataButton", "DetectButton", "ImportButton",
         "StructureResetViewButton", "StructureApplyFixedAtomsButton", "StructureClearSelectionButton",
