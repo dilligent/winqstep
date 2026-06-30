@@ -6,6 +6,8 @@ import subprocess
 import unittest
 from pathlib import Path
 
+from winqstep.template import load_template
+
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -15,6 +17,72 @@ class GuiPrototypeTests(unittest.TestCase):
     def _example_config_language() -> str:
         payload = json.loads((ROOT / "examples" / "winqstep.config.json").read_text(encoding="utf-8"))
         return str(payload.get("ui_language") or "")
+
+    @staticmethod
+    def _example_template() -> dict[str, object]:
+        return load_template(ROOT / "examples" / "templates" / "energy_pbe.json")
+
+    @staticmethod
+    def _template_vector_text(value: object) -> str:
+        if value is None:
+            return ""
+        if isinstance(value, str):
+            return value
+        if isinstance(value, (list, tuple)) and len(value) == 3:
+            parts = []
+            for item in value:
+                try:
+                    parts.append(f"{float(item):g}")
+                except (TypeError, ValueError):
+                    parts.append(str(item))
+            return " ".join(parts)
+        return str(value)
+
+    @classmethod
+    def _example_template_expectations(cls) -> dict[str, object]:
+        template = cls._example_template()
+        dft = template.get("dft", {})
+        cell_opt = template.get("cell_opt", {})
+        structure_transform = template.get("structure_transform", {})
+        fallback_cell = {}
+        if isinstance(structure_transform, dict):
+            fallback_cell = structure_transform.get("fallback_cell", {})
+
+        if not isinstance(dft, dict):
+            dft = {}
+        if not isinstance(cell_opt, dict):
+            cell_opt = {}
+        if not isinstance(fallback_cell, dict):
+            fallback_cell = {}
+
+        return {
+            "template_project_name": str(template.get("project_name", "")),
+            "template_run_type": str(template.get("run_type", "")),
+            "template_print_level": str(template.get("print_level", "")),
+            "template_cutoff": str(dft.get("cutoff", "")),
+            "template_scf_method": str(dft.get("scf_method", "")),
+            "template_added_mos": str(dft.get("added_mos", "")),
+            "template_mixing_enabled": bool(dft.get("mixing_enabled", False)),
+            "template_smearing_enabled": bool(dft.get("smearing_enabled", False)),
+            "template_cell_opt_type": str(cell_opt.get("type", "")),
+            "template_cell_opt_optimizer": str(cell_opt.get("optimizer", "")),
+            "template_cell_opt_max_iter": str(cell_opt.get("max_iter", "")),
+            "template_cell_opt_pressure_tolerance": str(cell_opt.get("pressure_tolerance", "")),
+            "template_cell_opt_keep_angles": bool(cell_opt.get("keep_angles", False)),
+            "template_cell_opt_keep_symmetry": bool(cell_opt.get("keep_symmetry", False)),
+            "template_kpoints_scheme": str(dft.get("kpoints_scheme", "")),
+            "template_kpoints_grid": cls._template_vector_text(dft.get("kpoints_grid")),
+            "template_kpoints_full_grid": bool(dft.get("kpoints_full_grid", False)),
+            "template_kpoints_symmetry": bool(dft.get("kpoints_symmetry", False)),
+            "template_kpoints_wavefunctions": str(dft.get("kpoints_wavefunctions", "")),
+            "template_fallback_periodic": str(fallback_cell.get("periodic", "")),
+            "template_fallback_cell_a": cls._template_vector_text(fallback_cell.get("a")),
+            "template_center_atoms": bool(
+                structure_transform.get("center_atoms", False)
+                if isinstance(structure_transform, dict)
+                else False
+            ),
+        }
 
     @staticmethod
     def _language_option_text(tag: str, ui_language: str) -> str:
@@ -55,22 +123,22 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn('x:Key="TemplateSectionGroupBoxStyle"', xaml_text)
         self.assertIn('x:Name="TemplateGlobalGroup" Header="&amp;GLOBAL"', xaml_text)
         self.assertIn('x:Name="TemplateDftGroup" Header="&amp;FORCE_EVAL / &amp;DFT"', xaml_text)
-        self.assertIn('x:Name="TemplateScfGroup" Header="&amp;DFT / &amp;SCF"', xaml_text)
-        self.assertIn('x:Name="TemplateMixingGroup" Header="&amp;SCF / &amp;MIXING"', xaml_text)
-        self.assertIn('x:Name="TemplateSmearingGroup" Header="&amp;SCF / &amp;SMEAR"', xaml_text)
+        self.assertIn('x:Name="TemplateScfGroup" Header="&amp;FORCE_EVAL / &amp;DFT / &amp;SCF"', xaml_text)
+        self.assertIn('x:Name="TemplateMixingGroup" Header="&amp;FORCE_EVAL / &amp;DFT / &amp;SCF / &amp;MIXING"', xaml_text)
+        self.assertIn('x:Name="TemplateSmearingGroup" Header="&amp;FORCE_EVAL / &amp;DFT / &amp;SCF / &amp;SMEAR"', xaml_text)
         self.assertIn('x:Name="TemplateGeoOptGroup" Header="&amp;MOTION / &amp;GEO_OPT"', xaml_text)
         self.assertIn('x:Name="TemplateCellOptGroup" Header="&amp;MOTION / &amp;CELL_OPT"', xaml_text)
-        self.assertIn('x:Name="TemplateCellGroup" Header="&amp;SUBSYS / &amp;CELL"', xaml_text)
-        self.assertIn('x:Name="TemplateKpointsGroup" Header="&amp;DFT / &amp;KPOINTS"', xaml_text)
-        self.assertIn('x:Name="TemplateKindGroup" Header="&amp;SUBSYS / &amp;KIND"', xaml_text)
+        self.assertIn('x:Name="TemplateCellGroup" Header="&amp;FORCE_EVAL / &amp;SUBSYS / &amp;CELL"', xaml_text)
+        self.assertIn('x:Name="TemplateKpointsGroup" Header="&amp;FORCE_EVAL / &amp;DFT / &amp;KPOINTS"', xaml_text)
+        self.assertIn('x:Name="TemplateKindGroup" Header="&amp;FORCE_EVAL / &amp;SUBSYS / &amp;KIND"', xaml_text)
         self.assertEqual(
             re.findall(r'<TabItem x:Name="([^"]+)"', xaml_text),
             [
                 "ConfigTab",
+                "EnvironmentTab",
+                "StructureTab",
                 "TemplateTab",
                 "InputPreviewTab",
-                "StructureTab",
-                "EnvironmentTab",
                 "JobLogTab",
                 "ArtifactsTab",
                 "HistoryTab",
@@ -272,14 +340,14 @@ class GuiPrototypeTests(unittest.TestCase):
             [
                 "&GLOBAL",
                 "&FORCE_EVAL / &DFT",
-                "&DFT / &SCF",
-                "&SCF / &MIXING",
-                "&SCF / &SMEAR",
+                "&FORCE_EVAL / &DFT / &SCF",
+                "&FORCE_EVAL / &DFT / &SCF / &MIXING",
+                "&FORCE_EVAL / &DFT / &SCF / &SMEAR",
                 "&MOTION / &GEO_OPT",
                 "&MOTION / &CELL_OPT",
-                "&SUBSYS / &CELL",
-                "&DFT / &KPOINTS",
-                "&SUBSYS / &KIND",
+                "&FORCE_EVAL / &SUBSYS / &CELL",
+                "&FORCE_EVAL / &DFT / &KPOINTS",
+                "&FORCE_EVAL / &SUBSYS / &KIND",
             ],
         )
         self.assertEqual(report["template_combo_fields_loaded"], 35)
@@ -288,28 +356,9 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertEqual(report["template_print_level_options"], ["", "SILENT", "LOW", "MEDIUM", "HIGH", "DEBUG"])
         self.assertEqual(report["template_optimizer_options"], ["BFGS", "LBFGS", "CG"])
         self.assertEqual(report["template_cell_opt_type_options"], ["DIRECT_CELL_OPT"])
-        self.assertEqual(report["template_project_name"], "workflow_energy")
-        self.assertEqual(report["template_run_type"], "ENERGY")
-        self.assertEqual(report["template_print_level"], "")
-        self.assertEqual(report["template_cutoff"], "400")
-        self.assertEqual(report["template_scf_method"], "DEFAULT")
-        self.assertEqual(report["template_added_mos"], "0")
-        self.assertFalse(report["template_mixing_enabled"])
-        self.assertFalse(report["template_smearing_enabled"])
-        self.assertEqual(report["template_cell_opt_type"], "")
-        self.assertEqual(report["template_cell_opt_optimizer"], "")
-        self.assertEqual(report["template_cell_opt_max_iter"], "")
-        self.assertEqual(report["template_cell_opt_pressure_tolerance"], "")
-        self.assertFalse(report["template_cell_opt_keep_angles"])
-        self.assertFalse(report["template_cell_opt_keep_symmetry"])
-        self.assertEqual(report["template_kpoints_scheme"], "NONE")
-        self.assertEqual(report["template_kpoints_grid"], "1 1 1")
-        self.assertFalse(report["template_kpoints_full_grid"])
-        self.assertFalse(report["template_kpoints_symmetry"])
-        self.assertEqual(report["template_kpoints_wavefunctions"], "COMPLEX")
-        self.assertEqual(report["template_fallback_periodic"], "XYZ")
-        self.assertEqual(report["template_fallback_cell_a"], "10 0 0")
-        self.assertTrue(report["template_center_atoms"])
+        expected_template = self._example_template_expectations()
+        for key, expected_value in expected_template.items():
+            self.assertEqual(report[key], expected_value)
         self.assertTrue(report["kind_entries_grid_loaded"])
         self.assertGreaterEqual(report["kind_entries_grid_rows"], 2)
         self.assertTrue(report["kinds_text_hidden"])
@@ -322,10 +371,10 @@ class GuiPrototypeTests(unittest.TestCase):
             report["tab_order"],
             [
                 "ConfigTab",
+                "EnvironmentTab",
+                "StructureTab",
                 "TemplateTab",
                 "InputPreviewTab",
-                "StructureTab",
-                "EnvironmentTab",
                 "JobLogTab",
                 "ArtifactsTab",
                 "HistoryTab",

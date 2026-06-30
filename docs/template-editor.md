@@ -42,9 +42,14 @@ The writer saves UTF-8 JSON with stable key order.
 The PowerShell WPF prototype has a `Template` tab plus `Load Template` and
 `Save Template` buttons. The tab exposes conservative fields already supported
 by the renderer and workflow layer. Related controls are grouped by their CP2K
-input-section path, so `GLOBAL`, nested blocks such as `SCF/MIXING`,
-`SCF/SMEAR`, `DFT/KPOINTS`, `MOTION/CELL_OPT`, `SUBSYS/CELL`, and
-`SUBSYS/KIND` are visible as sections instead of a flat list of peer fields.
+input-section path, so `&GLOBAL`, `&FORCE_EVAL / &DFT`,
+`&FORCE_EVAL / &DFT / &SCF`, nested blocks such as
+`&FORCE_EVAL / &DFT / &SCF / &MIXING`,
+`&FORCE_EVAL / &DFT / &SCF / &SMEAR`,
+`&FORCE_EVAL / &DFT / &KPOINTS`, `&MOTION / &CELL_OPT`,
+`&FORCE_EVAL / &SUBSYS / &CELL`, and
+`&FORCE_EVAL / &SUBSYS / &KIND` are visible as sections instead of a flat list
+of peer fields.
 
 Single-line template fields are editable drop-down controls. Each field offers
 common CP2K/WinQStep choices, such as `ENERGY`, `ENERGY_FORCE`, `GEO_OPT`, and
@@ -59,12 +64,15 @@ Monkhorst-Pack grids, `FULL_GRID`, `SYMMETRY`, and `WAVEFUNCTIONS` choices.
 The controls remain editable, so values not listed in the drop-down can still
 be typed directly and saved through the same template writer.
 The candidate lists are intentionally conservative and are based on the CP2K
-manual pages for `GLOBAL/RUN_TYPE`, `GLOBAL/PRINT_LEVEL`, `DFT/BASIS_SET_FILE_NAME`,
-`DFT/POTENTIAL_FILE_NAME`, `XC/XC_FUNCTIONAL`, `DFT/MGRID`, `DFT/SCF`, and
-`MOTION/GEO_OPT`, plus `SUBSYS/CELL`, `DFT/POISSON`, `SCF/OT`,
-`SCF/DIAGONALIZATION`, `SCF/MIXING`, `SCF/SMEAR`, and `DFT/KPOINTS` for
-periodicity, SCF solver, and k-point controls, plus `MOTION/CELL_OPT` for
-direct cell optimization controls.
+manual pages for `GLOBAL/RUN_TYPE`, `GLOBAL/PRINT_LEVEL`,
+`FORCE_EVAL/DFT/BASIS_SET_FILE_NAME`,
+`FORCE_EVAL/DFT/POTENTIAL_FILE_NAME`, `FORCE_EVAL/DFT/XC/XC_FUNCTIONAL`,
+`FORCE_EVAL/DFT/MGRID`, `FORCE_EVAL/DFT/SCF`, and `MOTION/GEO_OPT`, plus
+`FORCE_EVAL/SUBSYS/CELL`, `FORCE_EVAL/DFT/POISSON`,
+`FORCE_EVAL/DFT/SCF/OT`, `FORCE_EVAL/DFT/SCF/DIAGONALIZATION`,
+`FORCE_EVAL/DFT/SCF/MIXING`, `FORCE_EVAL/DFT/SCF/SMEAR`, and
+`FORCE_EVAL/DFT/KPOINTS` for periodicity, SCF solver, and k-point controls,
+plus `MOTION/CELL_OPT` for direct cell optimization controls.
 
 KIND entries are shown in an editable `Element`, `Basis Set`, `Potential` table
 instead of a raw text box. The GUI still serializes that table through

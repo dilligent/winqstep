@@ -22,8 +22,9 @@ Each round should end with a focused commit.
   overflow scrolling, QuickStep CELL/PERIODIC template support, QuickStep SCF
   control expansion, QuickStep KPOINTS support, QuickStep CELL_OPT support, and
   CP2K-section grouping in the Template tab, optional QuickStep
-  `GLOBAL/PRINT_LEVEL`, and immediate GUI language apply.
-- Next active round: Round 41, expand QuickStep coverage from the next selected
+  `GLOBAL/PRINT_LEVEL`, immediate GUI language apply, GUI workflow tab
+  ordering, and full CP2K input-section labels in the Template tab.
+- Next active round: Round 42, expand QuickStep coverage from the next selected
   CP2K feature area.
 - Known local facts:
   - WSL2 is available.
@@ -876,8 +877,8 @@ Tasks:
 
 Acceptance:
 
-- The tab order is `Config`, `Template`, `Input Preview`, `Structure`,
-  `Environment`, `Job Log`, `Artifacts`, `History`.
+- The historical tab-order polish made `Template` and `Input Preview`
+  adjacent. The current user-tested order is tracked in Round 41.
 - Tests fail if the Template and Input Preview tabs stop being adjacent.
 
 Commit boundary:
@@ -1371,8 +1372,10 @@ Tasks:
   input paths they render.
 - Keep all existing control names stable so loading, saving, validation, and
   smoke tests keep using the same GUI wiring.
-- Cover `DFT`, `SCF`, `SCF/MIXING`, `SCF/SMEAR`, `MOTION/GEO_OPT`,
-  `MOTION/CELL_OPT`, `SUBSYS/CELL`, `DFT/KPOINTS`, and `SUBSYS/KIND`.
+- Cover `FORCE_EVAL/DFT`, `FORCE_EVAL/DFT/SCF`,
+  `FORCE_EVAL/DFT/SCF/MIXING`, `FORCE_EVAL/DFT/SCF/SMEAR`,
+  `MOTION/GEO_OPT`, `MOTION/CELL_OPT`, `FORCE_EVAL/SUBSYS/CELL`,
+  `FORCE_EVAL/DFT/KPOINTS`, and `FORCE_EVAL/SUBSYS/KIND`.
 - Extend the GUI smoke report and static GUI tests to assert that these section
   groups load.
 - Make the config-language smoke assertion follow the current sample config so
@@ -1426,6 +1429,39 @@ Commit boundary:
 
 - One commit for print-level model/template/GUI support, language apply wiring,
   tests, and docs.
+
+## Round 41: GUI Workflow Tab and Section Label Polish
+
+Status: implemented.
+
+Goal: align the lower GUI tab order with trial-user feedback and make Template
+section headings show the full CP2K input path for each rendered block.
+
+Tasks:
+
+- Reorder the main GUI tabs to `Config`, `Environment`, `Structure`,
+  `Template`, `Input Preview`, `Job Log`, `Artifacts`, and `History`.
+- Keep `Template` and `Input Preview` adjacent so template editing and manual
+  input inspection remain a direct workflow pair.
+- Expand Template section headers from partial nested labels such as
+  `&SCF / &SMEAR` to full CP2K paths such as
+  `&FORCE_EVAL / &DFT / &SCF / &SMEAR`.
+- Update static GUI tests, smoke-report assertions, and user-facing docs.
+
+Acceptance:
+
+- Static XAML tests and GUI smoke tests assert the exact current tab order.
+- Template section headers load as `&GLOBAL`, `&FORCE_EVAL / &DFT`,
+  `&FORCE_EVAL / &DFT / &SCF`,
+  `&FORCE_EVAL / &DFT / &SCF / &MIXING`,
+  `&FORCE_EVAL / &DFT / &SCF / &SMEAR`, `&MOTION / &GEO_OPT`,
+  `&MOTION / &CELL_OPT`, `&FORCE_EVAL / &SUBSYS / &CELL`,
+  `&FORCE_EVAL / &DFT / &KPOINTS`, and
+  `&FORCE_EVAL / &SUBSYS / &KIND`.
+
+Commit boundary:
+
+- One commit for GUI tab order, Template section labels, tests, and docs.
 
 ## Working Rules
 

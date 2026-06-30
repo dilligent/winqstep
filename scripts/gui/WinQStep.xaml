@@ -163,6 +163,16 @@
                    IsReadOnly="True"/>
         </Grid>
       </TabItem>
+      <TabItem x:Name="EnvironmentTab" Header="Environment">
+        <TextBox x:Name="EnvironmentText" FontFamily="Cascadia Mono, Consolas, Microsoft YaHei UI, Microsoft YaHei, SimSun" FontSize="12"
+                 AcceptsReturn="True" AcceptsTab="True" TextWrapping="NoWrap"
+                 HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"/>
+      </TabItem>
+      <TabItem x:Name="StructureTab" Header="Structure">
+        <TextBox x:Name="StructureText" FontFamily="Cascadia Mono, Consolas, Microsoft YaHei UI, Microsoft YaHei, SimSun" FontSize="12"
+                 AcceptsReturn="True" AcceptsTab="True" TextWrapping="NoWrap"
+                 HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"/>
+      </TabItem>
       <TabItem x:Name="TemplateTab" Header="Template">
         <StackPanel Margin="8">
           <GroupBox x:Name="TemplateGlobalGroup" Header="&amp;GLOBAL" Style="{StaticResource TemplateSectionGroupBoxStyle}">
@@ -282,7 +292,7 @@
             </Grid>
           </GroupBox>
 
-          <GroupBox x:Name="TemplateScfGroup" Header="&amp;DFT / &amp;SCF" Style="{StaticResource TemplateSectionGroupBoxStyle}">
+          <GroupBox x:Name="TemplateScfGroup" Header="&amp;FORCE_EVAL / &amp;DFT / &amp;SCF" Style="{StaticResource TemplateSectionGroupBoxStyle}">
             <Grid>
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="150"/>
@@ -354,7 +364,7 @@
             </Grid>
           </GroupBox>
 
-          <GroupBox x:Name="TemplateMixingGroup" Header="&amp;SCF / &amp;MIXING" Style="{StaticResource TemplateSectionGroupBoxStyle}">
+          <GroupBox x:Name="TemplateMixingGroup" Header="&amp;FORCE_EVAL / &amp;DFT / &amp;SCF / &amp;MIXING" Style="{StaticResource TemplateSectionGroupBoxStyle}">
             <Grid>
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="150"/>
@@ -395,7 +405,7 @@
             </Grid>
           </GroupBox>
 
-          <GroupBox x:Name="TemplateSmearingGroup" Header="&amp;SCF / &amp;SMEAR" Style="{StaticResource TemplateSectionGroupBoxStyle}">
+          <GroupBox x:Name="TemplateSmearingGroup" Header="&amp;FORCE_EVAL / &amp;DFT / &amp;SCF / &amp;SMEAR" Style="{StaticResource TemplateSectionGroupBoxStyle}">
             <Grid>
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="150"/>
@@ -503,7 +513,7 @@
             </Grid>
           </GroupBox>
 
-          <GroupBox x:Name="TemplateCellGroup" Header="&amp;SUBSYS / &amp;CELL" Style="{StaticResource TemplateSectionGroupBoxStyle}">
+          <GroupBox x:Name="TemplateCellGroup" Header="&amp;FORCE_EVAL / &amp;SUBSYS / &amp;CELL" Style="{StaticResource TemplateSectionGroupBoxStyle}">
             <Grid>
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="150"/>
@@ -555,7 +565,7 @@
             </Grid>
           </GroupBox>
 
-          <GroupBox x:Name="TemplateKpointsGroup" Header="&amp;DFT / &amp;KPOINTS" Style="{StaticResource TemplateSectionGroupBoxStyle}">
+          <GroupBox x:Name="TemplateKpointsGroup" Header="&amp;FORCE_EVAL / &amp;DFT / &amp;KPOINTS" Style="{StaticResource TemplateSectionGroupBoxStyle}">
             <Grid>
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="150"/>
@@ -597,7 +607,7 @@
 
           <CheckBox x:Name="CenterAtomsBox" Content="Center Atoms" Margin="6,8,6,6" VerticalAlignment="Center"/>
 
-          <GroupBox x:Name="TemplateKindGroup" Header="&amp;SUBSYS / &amp;KIND" Style="{StaticResource TemplateSectionGroupBoxStyle}">
+          <GroupBox x:Name="TemplateKindGroup" Header="&amp;FORCE_EVAL / &amp;SUBSYS / &amp;KIND" Style="{StaticResource TemplateSectionGroupBoxStyle}">
             <StackPanel>
               <DataGrid x:Name="KindEntriesGrid" Height="170"
                         AutoGenerateColumns="False" CanUserAddRows="True" CanUserDeleteRows="True"
@@ -634,16 +644,6 @@
       </TabItem>
       <TabItem x:Name="InputPreviewTab" Header="Input Preview">
         <TextBox x:Name="PreviewText" FontFamily="Cascadia Mono, Consolas, Microsoft YaHei UI, Microsoft YaHei, SimSun" FontSize="12"
-                 AcceptsReturn="True" AcceptsTab="True" TextWrapping="NoWrap"
-                 HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"/>
-      </TabItem>
-      <TabItem x:Name="StructureTab" Header="Structure">
-        <TextBox x:Name="StructureText" FontFamily="Cascadia Mono, Consolas, Microsoft YaHei UI, Microsoft YaHei, SimSun" FontSize="12"
-                 AcceptsReturn="True" AcceptsTab="True" TextWrapping="NoWrap"
-                 HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"/>
-      </TabItem>
-      <TabItem x:Name="EnvironmentTab" Header="Environment">
-        <TextBox x:Name="EnvironmentText" FontFamily="Cascadia Mono, Consolas, Microsoft YaHei UI, Microsoft YaHei, SimSun" FontSize="12"
                  AcceptsReturn="True" AcceptsTab="True" TextWrapping="NoWrap"
                  HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"/>
       </TabItem>

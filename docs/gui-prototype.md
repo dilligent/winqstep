@@ -101,12 +101,12 @@ The main window content is hosted in a vertical scroll viewer, so if wrapped
 buttons, job inputs, or tab content exceed the current window height, users can
 scroll instead of maximizing the window.
 
-The main tab order follows the common workflow path: `Config`, `Template`,
-`Input Preview`, `Structure`, `Environment`, `Job Log`, `Artifacts`, and
-`History`. `Template` and `Input Preview` are adjacent so users can edit template
-fields and immediately inspect the generated CP2K input without crossing
-diagnostic tabs. They remain separate tabs to keep the editable template grid
-and read-only input text pane from competing for vertical space.
+The main tab order follows the common workflow path: `Config`, `Environment`,
+`Structure`, `Template`, `Input Preview`, `Job Log`, `Artifacts`, and `History`.
+`Template` and `Input Preview` are adjacent so users can edit template fields
+and immediately inspect the generated CP2K input without crossing diagnostic
+tabs. They remain separate tabs to keep the editable template grid and editable
+input text pane from competing for vertical space.
 
 The GUI does not parse or generate CP2K input itself. It displays JSON, rendered
 input text, job metadata, and CP2K output summaries produced by the core
@@ -146,10 +146,13 @@ file and never overwrites a user-provided existing input file silently.
 The single-line fields on the `Template` tab are editable drop-down controls:
 users can select common values from the list or type a custom value directly.
 The tab visually groups related controls by the CP2K input section they render,
-including `&GLOBAL`, `&FORCE_EVAL / &DFT`, `&DFT / &SCF`,
-`&SCF / &MIXING`, `&SCF / &SMEAR`, `&MOTION / &GEO_OPT`,
-`&MOTION / &CELL_OPT`, `&SUBSYS / &CELL`, `&DFT / &KPOINTS`, and
-`&SUBSYS / &KIND`.
+including `&GLOBAL`, `&FORCE_EVAL / &DFT`,
+`&FORCE_EVAL / &DFT / &SCF`,
+`&FORCE_EVAL / &DFT / &SCF / &MIXING`,
+`&FORCE_EVAL / &DFT / &SCF / &SMEAR`, `&MOTION / &GEO_OPT`,
+`&MOTION / &CELL_OPT`, `&FORCE_EVAL / &SUBSYS / &CELL`,
+`&FORCE_EVAL / &DFT / &KPOINTS`, and
+`&FORCE_EVAL / &SUBSYS / &KIND`.
 The `&GLOBAL` group includes the optional CP2K `PRINT_LEVEL`; leaving it blank
 keeps CP2K's default implicit, while selecting a level renders it explicitly.
 SCF controls include method selection, ADDED_MOS, OT minimizer/preconditioner,
