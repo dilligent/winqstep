@@ -61,6 +61,28 @@ class StructureImportTests(unittest.TestCase):
         imported = json.loads(completed.stdout.decode("utf-8"))
         self.assertEqual(imported["atoms"][2]["element"], "H")
 
+    def test_cli_can_include_preview_model(self) -> None:
+        completed = subprocess.run(
+            [
+                sys.executable,
+                str(ROOT / "scripts" / "import_structure.py"),
+                "--input",
+                str(STRUCTURES / "POSCAR"),
+                "--include-preview",
+                "--compact",
+            ],
+            capture_output=True,
+            check=False,
+        )
+
+        self.assertEqual(completed.returncode, 0, completed.stderr.decode("utf-8", errors="replace"))
+        payload = json.loads(completed.stdout.decode("utf-8"))
+        self.assertEqual(payload["mode"], "structure_import")
+        self.assertEqual(payload["structure"]["source"]["format"], "poscar")
+        self.assertEqual(payload["preview"]["mode"], "structure_preview")
+        self.assertEqual(payload["preview"]["displayed_atom_count"], 2)
+        self.assertEqual(len(payload["preview"]["cell"]["edges"]), 12)
+
 
 if __name__ == "__main__":
     unittest.main()

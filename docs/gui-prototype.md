@@ -141,6 +141,10 @@ coverage and basis/potential label warnings are shown in the `Template` and
 After `Import`, the `Structure` tab displays a readable imported-structure
 summary with source details, cell vectors, element counts, and a cartesian
 coordinate table instead of the raw normalized JSON emitted by the CLI importer.
+It also shows a native WPF 3D preview for successful imports. The preview
+renders atoms as colored spheres, periodic cell edges as a frame when available,
+and provides `Reset View`; it is display-only and does not feed back into
+template fields, generated input, or CP2K runs.
 Existing-input mode skips template handling but still validates that the input
 file exists and warns in the preview/log panes when referenced basis or
 potential files are obviously missing from the cached CP2K data inspection.

@@ -79,7 +79,7 @@ Implementation:
 
 ### Round B: Static WPF 3D Preview
 
-Status: next.
+Status: implemented.
 
 Goal: render imported structures in the `Structure` tab while preserving the
 existing readable text summary.
@@ -103,7 +103,21 @@ Acceptance:
 - Import failures keep the existing error behavior and do not leave stale 3D
   geometry that could mislead the user.
 
+Implementation:
+
+- The Structure tab now contains a native WPF `Viewport3D`, a localized preview
+  status line, a `Reset View` button, and the existing readable text summary.
+- GUI import calls `import_structure.py --include-preview` so one import returns
+  both normalized structure data and the display-only preview model.
+- Atom geometry is rendered as low-detail spheres; cell-frame edges are rendered
+  as thin 3D cylinders when the preview model provides cell edges.
+- `Clear` removes stale 3D geometry and disables `Reset View`.
+- GUI smoke coverage verifies viewport loading, import-time geometry creation,
+  reset-button wiring, and clear-time geometry removal.
+
 ### Round C: Interaction and Polish
+
+Status: next.
 
 Goal: make the preview useful for inspection rather than just a static picture.
 

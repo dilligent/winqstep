@@ -1642,6 +1642,41 @@ Commit boundary:
 
 - One commit for the preview model helper, tests, and local plan update.
 
+## Round 48: Static Structure 3D Preview
+
+Status: implemented.
+
+Goal: render imported structures in the GUI using the Round 47 preview model
+while keeping the existing readable Structure summary and calculation workflow
+unchanged.
+
+Tasks:
+
+- Extend `scripts/import_structure.py` with an optional `--include-preview`
+  wrapper payload for GUI use.
+- Add a native WPF `Viewport3D` region, preview status text, and `Reset View`
+  button to the Structure tab.
+- Render preview atoms as colored sphere geometry and cell-frame edges as thin
+  cylinder geometry.
+- Reset the camera from preview center and bounding radius.
+- Clear stale 3D geometry on failed imports and on `Clear`.
+- Localize the new Reset View button and preview status text.
+- Extend GUI smoke coverage to verify viewport loading, import-time geometry,
+  reset-button wiring, and clear-time cleanup.
+
+Acceptance:
+
+- Successful Structure import populates both readable text and static 3D
+  geometry.
+- Nonperiodic structures still show atoms even without a cell frame.
+- Clearing the GUI removes stale structure geometry.
+- Preview and Run continue to use the existing structure/input paths rather than
+  viewer state.
+
+Commit boundary:
+
+- One commit for static WPF 3D preview rendering, tests, localization, and docs.
+
 ## Working Rules
 
 - Keep each round small enough to review.

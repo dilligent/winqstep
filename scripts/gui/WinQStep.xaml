@@ -169,9 +169,41 @@
                  HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"/>
       </TabItem>
       <TabItem x:Name="StructureTab" Header="Structure">
-        <TextBox x:Name="StructureText" FontFamily="Cascadia Mono, Consolas, Microsoft YaHei UI, Microsoft YaHei, SimSun" FontSize="12"
-                 AcceptsReturn="True" AcceptsTab="True" TextWrapping="NoWrap"
-                 HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"/>
+        <Grid Margin="8">
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="260"/>
+            <RowDefinition Height="*"/>
+          </Grid.RowDefinitions>
+          <DockPanel Grid.Row="0" LastChildFill="True" Margin="0,0,0,4">
+            <Button x:Name="StructureResetViewButton" DockPanel.Dock="Right" Content="Reset View" MinWidth="92"/>
+            <TextBlock x:Name="StructurePreviewStatusText" Text="No structure preview loaded."/>
+          </DockPanel>
+          <Border Grid.Row="1" BorderBrush="#C7D2DE" BorderThickness="1" Background="#111827">
+            <Viewport3D x:Name="StructurePreviewViewport" ClipToBounds="True">
+              <Viewport3D.Camera>
+                <PerspectiveCamera x:Name="StructurePreviewCamera"
+                                   Position="0,0,10"
+                                   LookDirection="0,0,-10"
+                                   UpDirection="0,1,0"
+                                   FieldOfView="45"/>
+              </Viewport3D.Camera>
+              <ModelVisual3D>
+                <ModelVisual3D.Content>
+                  <Model3DGroup>
+                    <AmbientLight Color="#FF505A66"/>
+                    <DirectionalLight Color="#FFFFFFFF" Direction="-0.7,-1.0,-1.4"/>
+                    <DirectionalLight Color="#FFB8C7D9" Direction="0.8,0.5,1.2"/>
+                  </Model3DGroup>
+                </ModelVisual3D.Content>
+              </ModelVisual3D>
+              <ModelVisual3D x:Name="StructurePreviewVisual"/>
+            </Viewport3D>
+          </Border>
+          <TextBox x:Name="StructureText" Grid.Row="2" FontFamily="Cascadia Mono, Consolas, Microsoft YaHei UI, Microsoft YaHei, SimSun" FontSize="12"
+                   AcceptsReturn="True" AcceptsTab="True" TextWrapping="NoWrap"
+                   HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"/>
+        </Grid>
       </TabItem>
       <TabItem x:Name="TemplateTab" Header="Template">
         <StackPanel Margin="8">

@@ -60,6 +60,7 @@ function New-WinQStepWindow {
         "JobDirBox", "ProjectNameBox",
         "ConfigTab", "TemplateTab", "EnvironmentTab", "StructureTab",
         "InputPreviewTab", "JobLogTab", "ArtifactsTab", "HistoryTab",
+        "StructurePreviewStatusText", "StructurePreviewViewport", "StructurePreviewCamera", "StructurePreviewVisual",
         "DistroLabel", "Cp2kCommandLabel", "Cp2kDataDirLabel", "MpiCommandLabel",
         "WorkspaceLabel", "WslPreludeLabel", "TimeoutLabel", "UiLanguageLabel",
         "DistroBox", "Cp2kCommandBox", "Cp2kDataDirBox", "MpirunCommandBox",
@@ -94,6 +95,7 @@ function New-WinQStepWindow {
         "ArtifactSummaryText", "ArtifactText", "HistoryGrid", "StatusText", "JobStatusText",
         "LoadConfigButton", "SaveConfigButton", "ApplyLanguageButton", "LoadTemplateButton", "SaveTemplateButton",
         "InspectDataButton", "DetectButton", "ImportButton",
+        "StructureResetViewButton",
         "PreviewButton", "RunButton", "CancelJobButton", "HistoryButton", "ClearButton",
         "ViewResultsButton", "SaveResultsButton",
         "ViewInputButton", "ViewOutputButton", "ViewMetadataButton", "ViewStdoutButton", "ViewStderrButton",
@@ -115,6 +117,7 @@ function New-WinQStepWindow {
         InspectDataButton = "button.inspect_data"
         DetectButton = "button.detect"
         ImportButton = "button.import"
+        StructureResetViewButton = "button.reset_view"
         PreviewButton = "button.preview"
         RunButton = "button.run"
         CancelJobButton = "button.stop"
@@ -265,6 +268,7 @@ function New-WinQStepWindow {
     )
     $artifactState = @{ Current = $null }
     $previewState = @{ Current = $null }
+    $structurePreviewState = @{ Current = $null }
 
     $actionButtons = @(
         $controls["LoadConfigButton"], $controls["SaveConfigButton"],
@@ -815,6 +819,233 @@ function New-WinQStepWindow {
         }
         return ($lines -join "`r`n")
     }.GetNewClosure()
+
+    $GetPreviewNumber = {
+        param($Value, [double]$Default = 0.0)
+        if ($null -eq $Value) {
+            return $Default
+        }
+        try {
+            return [System.Convert]::ToDouble($Value, [System.Globalization.CultureInfo]::InvariantCulture)
+        }
+        catch {
+            return $Default
+        }
+    }.GetNewClosure()
+
+    $GetPreviewVector = {
+        param($Value, [double[]]$Default = @(0.0, 0.0, 0.0))
+        if ($null -eq $Value) {
+            return [double[]]$Default
+        }
+        $items = @($Value)
+        if ($items.Count -ne 3) {
+            return [double[]]$Default
+        }
+        return [double[]]@(
+            (& $GetPreviewNumber $items[0] $Default[0]),
+            (& $GetPreviewNumber $items[1] $Default[1]),
+            (& $GetPreviewNumber $items[2] $Default[2])
+        )
+    }.GetNewClosure()
+
+    $NewPreviewPoint = {
+        param($Value, [double[]]$Center)
+        $vector = & $GetPreviewVector $Value
+        return [System.Windows.Media.Media3D.Point3D]::new(
+            $vector[0] - $Center[0],
+            $vector[1] - $Center[1],
+            $vector[2] - $Center[2]
+        )
+    }.GetNewClosure()
+
+    $NewPreviewColor = {
+        param([string]$Hex, [string]$Fallback = "#B0B0B0")
+        $candidate = if ([string]::IsNullOrWhiteSpace($Hex)) { $Fallback } else { $Hex }
+        try {
+            return [System.Windows.Media.ColorConverter]::ConvertFromString($candidate)
+        }
+        catch {
+            return [System.Windows.Media.ColorConverter]::ConvertFromString($Fallback)
+        }
+    }.GetNewClosure()
+
+    $NewPreviewMaterial = {
+        param([string]$Hex)
+        $brush = [System.Windows.Media.SolidColorBrush]::new((& $NewPreviewColor $Hex))
+        if ($brush.CanFreeze) {
+            $brush.Freeze()
+        }
+        $material = [System.Windows.Media.Media3D.DiffuseMaterial]::new($brush)
+        if ($material.CanFreeze) {
+            $material.Freeze()
+        }
+        return $material
+    }.GetNewClosure()
+
+    $NewSphereMesh = {
+        param(
+            [Parameter(Mandatory = $true)][System.Windows.Media.Media3D.Point3D]$Center,
+            [double]$Radius,
+            [int]$LatitudeSegments = 6,
+            [int]$LongitudeSegments = 12
+        )
+        $mesh = [System.Windows.Media.Media3D.MeshGeometry3D]::new()
+        for ($lat = 0; $lat -le $LatitudeSegments; $lat += 1) {
+            $theta = [Math]::PI * $lat / $LatitudeSegments
+            $sinTheta = [Math]::Sin($theta)
+            $cosTheta = [Math]::Cos($theta)
+            for ($lon = 0; $lon -le $LongitudeSegments; $lon += 1) {
+                $phi = 2.0 * [Math]::PI * $lon / $LongitudeSegments
+                $x = $Center.X + $Radius * $sinTheta * [Math]::Cos($phi)
+                $y = $Center.Y + $Radius * $cosTheta
+                $z = $Center.Z + $Radius * $sinTheta * [Math]::Sin($phi)
+                $mesh.Positions.Add([System.Windows.Media.Media3D.Point3D]::new($x, $y, $z))
+            }
+        }
+        $rowSize = $LongitudeSegments + 1
+        for ($lat = 0; $lat -lt $LatitudeSegments; $lat += 1) {
+            for ($lon = 0; $lon -lt $LongitudeSegments; $lon += 1) {
+                $first = $lat * $rowSize + $lon
+                $second = $first + $rowSize
+                $mesh.TriangleIndices.Add($first)
+                $mesh.TriangleIndices.Add($second)
+                $mesh.TriangleIndices.Add($first + 1)
+                $mesh.TriangleIndices.Add($first + 1)
+                $mesh.TriangleIndices.Add($second)
+                $mesh.TriangleIndices.Add($second + 1)
+            }
+        }
+        if ($mesh.CanFreeze) {
+            $mesh.Freeze()
+        }
+        return $mesh
+    }.GetNewClosure()
+
+    $NewCylinderMesh = {
+        param(
+            [Parameter(Mandatory = $true)][System.Windows.Media.Media3D.Point3D]$Start,
+            [Parameter(Mandatory = $true)][System.Windows.Media.Media3D.Point3D]$End,
+            [double]$Radius,
+            [int]$Segments = 8
+        )
+        $axis = [System.Windows.Media.Media3D.Vector3D]::new($End.X - $Start.X, $End.Y - $Start.Y, $End.Z - $Start.Z)
+        if ($axis.Length -le 1.0e-8) {
+            return $null
+        }
+        $axis.Normalize()
+        $reference = [System.Windows.Media.Media3D.Vector3D]::new(0.0, 0.0, 1.0)
+        if ([Math]::Abs([System.Windows.Media.Media3D.Vector3D]::DotProduct($axis, $reference)) -gt 0.9) {
+            $reference = [System.Windows.Media.Media3D.Vector3D]::new(0.0, 1.0, 0.0)
+        }
+        $normal1 = [System.Windows.Media.Media3D.Vector3D]::CrossProduct($axis, $reference)
+        $normal1.Normalize()
+        $normal2 = [System.Windows.Media.Media3D.Vector3D]::CrossProduct($axis, $normal1)
+        $normal2.Normalize()
+
+        $mesh = [System.Windows.Media.Media3D.MeshGeometry3D]::new()
+        for ($index = 0; $index -lt $Segments; $index += 1) {
+            $angle = 2.0 * [Math]::PI * $index / $Segments
+            $offset = ($normal1 * ([Math]::Cos($angle) * $Radius)) + ($normal2 * ([Math]::Sin($angle) * $Radius))
+            $mesh.Positions.Add($Start + $offset)
+            $mesh.Positions.Add($End + $offset)
+        }
+        for ($index = 0; $index -lt $Segments; $index += 1) {
+            $next = ($index + 1) % $Segments
+            $a = $index * 2
+            $b = $a + 1
+            $c = $next * 2
+            $d = $c + 1
+            $mesh.TriangleIndices.Add($a)
+            $mesh.TriangleIndices.Add($b)
+            $mesh.TriangleIndices.Add($c)
+            $mesh.TriangleIndices.Add($c)
+            $mesh.TriangleIndices.Add($b)
+            $mesh.TriangleIndices.Add($d)
+        }
+        if ($mesh.CanFreeze) {
+            $mesh.Freeze()
+        }
+        return $mesh
+    }.GetNewClosure()
+
+    $ResetStructurePreviewCamera = {
+        param($Preview)
+        $radius = & $GetPreviewNumber (& $GetNestedValue $Preview @("bounding_radius")) 5.0
+        $distance = [Math]::Max($radius * 2.8, 5.0)
+        $camera = $controls["StructurePreviewCamera"]
+        $camera.Position = [System.Windows.Media.Media3D.Point3D]::new(0.0, 0.0, $distance)
+        $camera.LookDirection = [System.Windows.Media.Media3D.Vector3D]::new(0.0, 0.0, -$distance)
+        $camera.UpDirection = [System.Windows.Media.Media3D.Vector3D]::new(0.0, 1.0, 0.0)
+        $camera.NearPlaneDistance = 0.01
+        $camera.FarPlaneDistance = [Math]::Max(100.0, $distance + ($radius * 6.0))
+    }.GetNewClosure()
+
+    $ClearStructurePreview = {
+        $structurePreviewState["Current"] = $null
+        $controls["StructurePreviewVisual"].Content = [System.Windows.Media.Media3D.Model3DGroup]::new()
+        $controls["StructurePreviewStatusText"].Text = Get-WinQStepText "structure.preview.empty"
+        $controls["StructureResetViewButton"].IsEnabled = $false
+        & $ResetStructurePreviewCamera ([ordered]@{ bounding_radius = 5.0 })
+    }.GetNewClosure()
+
+    $SetStructurePreview = {
+        param($Preview)
+        if ($null -eq $Preview) {
+            & $ClearStructurePreview
+            return
+        }
+
+        $center = & $GetPreviewVector (& $GetNestedValue $Preview @("center"))
+        $radius = & $GetPreviewNumber (& $GetNestedValue $Preview @("bounding_radius")) 5.0
+        $atomGeometryRadiusScale = 0.35
+        $group = [System.Windows.Media.Media3D.Model3DGroup]::new()
+
+        $previewAtomsValue = & $GetNestedValue $Preview @("atoms")
+        $previewAtoms = if ($null -ne $previewAtomsValue) { @($previewAtomsValue) } else { @() }
+        foreach ($atom in $previewAtoms) {
+            if ($null -eq $atom) {
+                continue
+            }
+            $point = & $NewPreviewPoint (& $GetNestedValue $atom @("xyz")) $center
+            $displayRadius = [Math]::Max((& $GetPreviewNumber (& $GetNestedValue $atom @("radius")) 0.7) * $atomGeometryRadiusScale, 0.12)
+            $mesh = & $NewSphereMesh $point $displayRadius
+            $material = & $NewPreviewMaterial (& $GetNestedPath $atom @("color"))
+            $model = [System.Windows.Media.Media3D.GeometryModel3D]::new($mesh, $material)
+            $model.BackMaterial = $material
+            $group.Children.Add($model)
+        }
+
+        $edgeRadius = [Math]::Max([Math]::Min($radius * 0.004, 0.04), 0.015)
+        $previewEdgesValue = & $GetNestedValue $Preview @("cell", "edges")
+        $previewEdges = if ($null -ne $previewEdgesValue) { @($previewEdgesValue) } else { @() }
+        foreach ($edge in $previewEdges) {
+            if ($null -eq $edge) {
+                continue
+            }
+            $start = & $NewPreviewPoint (& $GetNestedValue $edge @("start")) $center
+            $end = & $NewPreviewPoint (& $GetNestedValue $edge @("end")) $center
+            $mesh = & $NewCylinderMesh $start $end $edgeRadius
+            if ($null -eq $mesh) {
+                continue
+            }
+            $material = & $NewPreviewMaterial "#D6E4F0"
+            $model = [System.Windows.Media.Media3D.GeometryModel3D]::new($mesh, $material)
+            $model.BackMaterial = $material
+            $group.Children.Add($model)
+        }
+
+        $structurePreviewState["Current"] = $Preview
+        $controls["StructurePreviewVisual"].Content = $group
+        & $ResetStructurePreviewCamera $Preview
+        $displayedAtoms = & $GetPreviewNumber (& $GetNestedValue $Preview @("displayed_atom_count")) 0.0
+        $totalAtoms = & $GetPreviewNumber (& $GetNestedValue $Preview @("atom_count")) 0.0
+        $edgeCount = $previewEdges.Count
+        $controls["StructurePreviewStatusText"].Text = Format-WinQStepText "structure.preview.loaded" @([int]$displayedAtoms, [int]$totalAtoms, $edgeCount)
+        $controls["StructureResetViewButton"].IsEnabled = ($group.Children.Count -gt 0)
+    }.GetNewClosure()
+
+    & $ClearStructurePreview
 
     $FormatEnvironmentDisplayValue = {
         param($Value, [string]$Default = "not_configured")
@@ -2377,19 +2608,31 @@ function New-WinQStepWindow {
 
     $controls["ImportButton"].Add_Click({
         & $InvokeGuiAction -Status (Get-WinQStepText "status.importing_structure") -Action {
-            $result = Invoke-WinQStepPython @("scripts\import_structure.py", "--input", $controls["StructurePathBox"].Text)
+            $result = Invoke-WinQStepPython @("scripts\import_structure.py", "--input", $controls["StructurePathBox"].Text, "--include-preview")
             $structureText = $result.Output
             if ($result.ExitCode -eq 0) {
                 try {
-                    $structurePayload = $result.Output | ConvertFrom-Json
+                    $payload = $result.Output | ConvertFrom-Json
+                    $structurePayload = if ($null -ne $payload.structure) { $payload.structure } else { $payload }
                     $structureText = & $FormatStructureImportDisplay $structurePayload
+                    if ($null -ne $payload.preview) {
+                        & $SetStructurePreview $payload.preview
+                    }
+                    else {
+                        & $ClearStructurePreview
+                    }
                 }
                 catch {
                     $structureText = $result.Output
+                    & $ClearStructurePreview
                 }
             }
             elseif (-not [string]::IsNullOrWhiteSpace([string]$result.Error)) {
                 $structureText = (($result.Output, $result.Error) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }) -join "`r`n"
+                & $ClearStructurePreview
+            }
+            else {
+                & $ClearStructurePreview
             }
             $controls["StructureText"].Text = $structureText
             & $AppendLog "import_structure.py exited with code $($result.ExitCode)"
@@ -2485,6 +2728,12 @@ function New-WinQStepWindow {
         & $ApplySelectedDataLabel
     }.GetNewClosure())
 
+    $controls["StructureResetViewButton"].Add_Click({
+        if ($null -ne $structurePreviewState["Current"]) {
+            & $ResetStructurePreviewCamera $structurePreviewState["Current"]
+        }
+    }.GetNewClosure())
+
     $controls["ClearButton"].Add_Click({
         $controls["EnvironmentText"].Clear()
         $controls["StructureText"].Clear()
@@ -2497,6 +2746,7 @@ function New-WinQStepWindow {
         $controls["DataLabelsGrid"].ItemsSource = $null
         $controls["DataLabelsGrid"].Visibility = [System.Windows.Visibility]::Collapsed
         & $ClearInputPreviewState
+        & $ClearStructurePreview
         $artifactState["Current"] = $null
         & $SetJobStatusText ""
         & $UpdateArtifactControls
@@ -3023,6 +3273,16 @@ if ($ButtonSmokeTest) {
         & $RecordButtonSmokeClick $buttonName
     }
     $importStructureText = [string]$window.FindName("StructureText").Text
+    $structurePreviewContent = $window.FindName("StructurePreviewVisual").Content
+    $structurePreviewGeometryCount = if ($null -ne $structurePreviewContent -and $null -ne $structurePreviewContent.Children) {
+        $structurePreviewContent.Children.Count
+    }
+    else {
+        0
+    }
+    $structurePreviewStatus = [string]$window.FindName("StructurePreviewStatusText").Text
+    $structureResetEnabledAfterImport = [bool]$window.FindName("StructureResetViewButton").IsEnabled
+    & $RecordButtonSmokeClick "StructureResetViewButton"
 
     & $RecordButtonSmokeClick "PreviewButton" "PreviewWorkflowButton"
     $workflowPreviewText = [string]$window.FindName("PreviewText").Text
@@ -3105,6 +3365,13 @@ if ($ButtonSmokeTest) {
     $textFieldsCleared = @(
         "EnvironmentText", "StructureText", "PreviewText", "LogText", "ArtifactSummaryText", "ArtifactText"
     ).Where({ -not [string]::IsNullOrWhiteSpace([string]$window.FindName($_).Text) }).Count -eq 0
+    $structurePreviewContentAfterClear = $window.FindName("StructurePreviewVisual").Content
+    $structurePreviewGeometryCountAfterClear = if ($null -ne $structurePreviewContentAfterClear -and $null -ne $structurePreviewContentAfterClear.Children) {
+        $structurePreviewContentAfterClear.Children.Count
+    }
+    else {
+        0
+    }
 
     $report["button_clicks"] = $buttonReports
     $report["button_live_probes_skipped"] = [bool]$SkipLiveProbes
@@ -3121,6 +3388,9 @@ if ($ButtonSmokeTest) {
         $importStructureText.Contains("     1 O") -and
         $importStructureText.Contains("     2 H")
     )
+    $report["structure_preview_geometry_count"] = $structurePreviewGeometryCount
+    $report["structure_preview_status_has_atoms"] = $structurePreviewStatus.Contains("3/3")
+    $report["structure_preview_reset_enabled_after_import"] = $structureResetEnabledAfterImport
     $report["history_grid_count"] = $historyItems.Count
     $report["history_selected_project"] = if ($null -ne $selectedHistoryItem) { [string]$selectedHistoryItem.project_name } else { "" }
     $report["history_log_has_jobs"] = $historyLogText.Contains("History jobs:")
@@ -3139,6 +3409,8 @@ if ($ButtonSmokeTest) {
     $report["language_apply_switched_to_zh"] = ($languageAfterApply -eq "zh-CN")
     $report["language_apply_changed_preview_text"] = ($previewButtonTextAfterLanguageApply -ne "Preview")
     $report["clear_emptied_text_fields"] = $textFieldsCleared
+    $report["clear_removed_structure_preview_geometry"] = ($structurePreviewGeometryCountAfterClear -eq 0)
+    $report["clear_disabled_structure_reset"] = (-not [bool]$window.FindName("StructureResetViewButton").IsEnabled)
     $report["clear_disabled_artifact_buttons"] = $artifactViewButtonsDisabled
     $report["clear_removed_history_items"] = ($null -eq $window.FindName("HistoryGrid").ItemsSource)
     $report | ConvertTo-Json -Depth 6
@@ -3151,6 +3423,9 @@ if ($ButtonSmokeTest) {
         $report["import_text_has_atom_count"] -and
         $report["import_text_has_elements"] -and
         $report["import_text_has_coordinate_table"] -and
+        $report["structure_preview_geometry_count"] -ge 3 -and
+        $report["structure_preview_status_has_atoms"] -and
+        $report["structure_preview_reset_enabled_after_import"] -and
         $report["history_grid_count"] -gt 0 -and
         $report["history_selected_project"] -eq "button_history" -and
         $report["history_log_has_jobs"] -and
@@ -3169,6 +3444,8 @@ if ($ButtonSmokeTest) {
         $report["language_apply_switched_to_zh"] -and
         $report["language_apply_changed_preview_text"] -and
         $report["clear_emptied_text_fields"] -and
+        $report["clear_removed_structure_preview_geometry"] -and
+        $report["clear_disabled_structure_reset"] -and
         $report["clear_disabled_artifact_buttons"] -and
         $report["clear_removed_history_items"]
     )
@@ -3278,6 +3555,11 @@ if ($SmokeTest) {
     $report["cancel_button_initially_disabled"] = (-not [bool]$window.FindName("CancelJobButton").IsEnabled)
     $report["job_status_text_loaded"] = ($window.FindName("JobStatusText") -is [System.Windows.Controls.TextBlock])
     $report["job_status_text_initial"] = [string]$window.FindName("JobStatusText").Text
+    $report["structure_preview_viewport_loaded"] = ($window.FindName("StructurePreviewViewport") -is [System.Windows.Controls.Viewport3D])
+    $report["structure_preview_visual_loaded"] = ($window.FindName("StructurePreviewVisual") -is [System.Windows.Media.Media3D.ModelVisual3D])
+    $report["structure_preview_camera_loaded"] = ($window.FindName("StructurePreviewCamera") -is [System.Windows.Media.Media3D.PerspectiveCamera])
+    $report["structure_preview_status_initial"] = [string]$window.FindName("StructurePreviewStatusText").Text
+    $report["structure_reset_button_initially_disabled"] = (-not [bool]$window.FindName("StructureResetViewButton").IsEnabled)
     $report["artifact_summary_loaded"] = ($window.FindName("ArtifactSummaryText") -is [System.Windows.Controls.TextBox])
     $report["artifact_text_loaded"] = ($window.FindName("ArtifactText") -is [System.Windows.Controls.TextBox])
     $report["artifact_result_buttons_loaded"] = @(

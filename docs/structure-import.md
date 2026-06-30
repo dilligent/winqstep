@@ -53,6 +53,9 @@ The command emits JSON:
 In the GUI, the same normalized importer output is parsed for display and shown
 as a readable structure summary: source path, format, reader, atom count,
 element counts, cell vectors, periodicity, and a cartesian coordinate table.
+When the GUI needs a visual preview, it calls the same importer with
+`--include-preview`, which wraps the normalized structure under `structure` and
+adds a display-only `preview` model for WPF rendering.
 The workflow still uses the structure file path and the normalized importer
 model internally.
 

@@ -131,6 +131,10 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn('x:Name="TemplateCellGroup" Header="&amp;FORCE_EVAL / &amp;SUBSYS / &amp;CELL"', xaml_text)
         self.assertIn('x:Name="TemplateKpointsGroup" Header="&amp;FORCE_EVAL / &amp;DFT / &amp;KPOINTS"', xaml_text)
         self.assertIn('x:Name="TemplateKindGroup" Header="&amp;FORCE_EVAL / &amp;SUBSYS / &amp;KIND"', xaml_text)
+        self.assertIn('x:Name="StructurePreviewViewport"', xaml_text)
+        self.assertIn('x:Name="StructurePreviewCamera"', xaml_text)
+        self.assertIn('x:Name="StructurePreviewVisual"', xaml_text)
+        self.assertIn('x:Name="StructureResetViewButton"', xaml_text)
         self.assertEqual(
             re.findall(r'<TabItem x:Name="([^"]+)"', xaml_text),
             [
@@ -234,6 +238,11 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn("Environment detection", script_text)
         self.assertIn("detect_environment.py raw JSON", script_text)
         self.assertIn("FormatStructureImportDisplay", script_text)
+        self.assertIn("SetStructurePreview", script_text)
+        self.assertIn("ClearStructurePreview", script_text)
+        self.assertIn("NewSphereMesh", script_text)
+        self.assertIn("NewCylinderMesh", script_text)
+        self.assertIn("--include-preview", script_text)
         self.assertIn("Imported structure", script_text)
         self.assertIn("Atoms (cartesian coordinates, Angstrom)", script_text)
         self.assertIn("$SetKindEntriesFromText", script_text)
@@ -264,6 +273,8 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn("[System.Windows.MessageBoxResult]::No", script_text)
         self.assertIn("message.edited_preview_confirm", english_text)
         self.assertIn("No cancels this run", english_text)
+        self.assertIn('"button.reset_view": "Reset View"', english_text)
+        self.assertIn("structure.preview.loaded", english_text)
         self.assertIn("stderr_has_native_wrapper", script_text)
         self.assertIn("PreviewWorkflowButton", script_text)
         self.assertIn("PreviewExistingInputButton", script_text)
@@ -334,6 +345,11 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertTrue(report["cancel_button_initially_disabled"])
         self.assertTrue(report["job_status_text_loaded"])
         self.assertEqual(report["job_status_text_initial"], "")
+        self.assertTrue(report["structure_preview_viewport_loaded"])
+        self.assertTrue(report["structure_preview_visual_loaded"])
+        self.assertTrue(report["structure_preview_camera_loaded"])
+        self.assertEqual(report["structure_preview_status_initial"], "No structure preview loaded.")
+        self.assertTrue(report["structure_reset_button_initially_disabled"])
         self.assertTrue(report["artifact_summary_loaded"])
         self.assertTrue(report["artifact_text_loaded"])
         self.assertEqual(report["artifact_result_buttons_loaded"], 2)
@@ -515,6 +531,7 @@ class GuiPrototypeTests(unittest.TestCase):
             "LoadTemplateButton",
             "SaveTemplateButton",
             "ImportButton",
+            "StructureResetViewButton",
             "PreviewWorkflowButton",
             "PreviewExistingInputButton",
             "HistoryButton",
@@ -540,6 +557,9 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertTrue(report["import_text_has_atom_count"])
         self.assertTrue(report["import_text_has_elements"])
         self.assertTrue(report["import_text_has_coordinate_table"])
+        self.assertGreaterEqual(report["structure_preview_geometry_count"], 3)
+        self.assertTrue(report["structure_preview_status_has_atoms"])
+        self.assertTrue(report["structure_preview_reset_enabled_after_import"])
         self.assertGreaterEqual(report["history_grid_count"], 1)
         self.assertEqual(report["history_selected_project"], "button_history")
         self.assertTrue(report["history_log_has_jobs"])
@@ -558,6 +578,8 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertTrue(report["language_apply_switched_to_zh"])
         self.assertTrue(report["language_apply_changed_preview_text"])
         self.assertTrue(report["clear_emptied_text_fields"])
+        self.assertTrue(report["clear_removed_structure_preview_geometry"])
+        self.assertTrue(report["clear_disabled_structure_reset"])
         self.assertTrue(report["clear_disabled_artifact_buttons"])
         self.assertTrue(report["clear_removed_history_items"])
 
