@@ -39,7 +39,10 @@ The writer saves UTF-8 JSON with stable key order.
 
 The PowerShell WPF prototype has a `Template` tab plus `Load Template` and
 `Save Template` buttons. The tab exposes conservative fields already supported
-by the renderer and workflow layer.
+by the renderer and workflow layer. Related controls are grouped by their CP2K
+input-section path, so nested blocks such as `SCF/MIXING`, `SCF/SMEAR`,
+`DFT/KPOINTS`, `MOTION/CELL_OPT`, `SUBSYS/CELL`, and `SUBSYS/KIND` are visible
+as sections instead of a flat list of peer fields.
 
 Single-line template fields are editable drop-down controls. Each field offers
 common CP2K/WinQStep choices, such as `ENERGY`, `ENERGY_FORCE`, `GEO_OPT`, and

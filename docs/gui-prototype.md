@@ -144,6 +144,10 @@ file and never overwrites a user-provided existing input file silently.
 
 The single-line fields on the `Template` tab are editable drop-down controls:
 users can select common values from the list or type a custom value directly.
+The tab visually groups related controls by the CP2K input section they render,
+including `&FORCE_EVAL / &DFT`, `&DFT / &SCF`, `&SCF / &MIXING`,
+`&SCF / &SMEAR`, `&MOTION / &GEO_OPT`, `&MOTION / &CELL_OPT`,
+`&SUBSYS / &CELL`, `&DFT / &KPOINTS`, and `&SUBSYS / &KIND`.
 SCF controls include method selection, ADDED_MOS, OT minimizer/preconditioner,
 diagonalization algorithm, optional mixing, and optional smearing. Mixing and
 smearing remain disabled by default and validate through the same template

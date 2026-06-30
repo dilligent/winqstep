@@ -20,8 +20,9 @@ Each round should end with a focused commit.
   artifact build, release install smoke, live CP2K release validation, and user
   guide polish, GUI async run completion hardening, and window-level GUI
   overflow scrolling, QuickStep CELL/PERIODIC template support, QuickStep SCF
-  control expansion, QuickStep KPOINTS support, and QuickStep CELL_OPT support.
-- Next active round: Round 39, expand QuickStep coverage from the next selected
+  control expansion, QuickStep KPOINTS support, QuickStep CELL_OPT support, and
+  CP2K-section grouping in the Template tab.
+- Next active round: Round 40, expand QuickStep coverage from the next selected
   CP2K feature area.
 - Known local facts:
   - WSL2 is available.
@@ -1355,6 +1356,40 @@ Commit boundary:
 
 - One commit for CELL_OPT model, renderer, template/GUI controls, examples,
   tests, docs, and local CP2K validation.
+
+## Round 39: Template CP2K Section Grouping
+
+Status: implemented.
+
+Goal: make the Template tab reflect the nested shape of the generated CP2K
+input file instead of presenting all controls as flat peers.
+
+Tasks:
+
+- Group Template controls with WPF `GroupBox` sections named after the CP2K
+  input paths they render.
+- Keep all existing control names stable so loading, saving, validation, and
+  smoke tests keep using the same GUI wiring.
+- Cover `DFT`, `SCF`, `SCF/MIXING`, `SCF/SMEAR`, `MOTION/GEO_OPT`,
+  `MOTION/CELL_OPT`, `SUBSYS/CELL`, `DFT/KPOINTS`, and `SUBSYS/KIND`.
+- Extend the GUI smoke report and static GUI tests to assert that these section
+  groups load.
+- Make the config-language smoke assertion follow the current sample config so
+  local saved config preferences do not create false GUI failures.
+
+Acceptance:
+
+- Mixing and smearing controls are visibly grouped as their own SCF subsections.
+- KPOINTS, CELL_OPT, cell, and KIND controls are visually grouped by the
+  matching CP2K input-section path.
+- The GUI still loads, edits, saves, and validates the same template fields as
+  before.
+- GUI smoke tests pass with either an empty sample `ui_language` or a locally
+  saved language preference.
+
+Commit boundary:
+
+- One commit for the Template layout grouping, smoke/static tests, and docs.
 
 ## Working Rules
 

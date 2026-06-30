@@ -2869,7 +2869,14 @@ if ($SmokeTest) {
         "KpointsWavefunctionsBox",
         "FallbackPeriodicBox", "FallbackCellABox", "FallbackCellBBox", "FallbackCellCBox"
     )
+    $templateSectionGroupNames = @(
+        "TemplateDftGroup", "TemplateScfGroup", "TemplateMixingGroup",
+        "TemplateSmearingGroup", "TemplateGeoOptGroup", "TemplateCellOptGroup",
+        "TemplateCellGroup", "TemplateKpointsGroup", "TemplateKindGroup"
+    )
     $report["template_tab_loaded"] = ($window.FindName("TemplateProjectBox") -is [System.Windows.Controls.ComboBox])
+    $report["template_section_groups_loaded"] = $templateSectionGroupNames.Where({ $window.FindName($_) -is [System.Windows.Controls.GroupBox] }).Count
+    $report["template_section_group_headers"] = @($templateSectionGroupNames | ForEach-Object { [string]$window.FindName($_).Header })
     $report["template_combo_fields_loaded"] = $templateComboNames.Where({ $window.FindName($_) -is [System.Windows.Controls.ComboBox] }).Count
     $report["template_combo_fields_editable"] = $templateComboNames.Where({ [bool]$window.FindName($_).IsEditable }).Count
     $report["template_run_type_options"] = @($window.FindName("TemplateRunTypeBox").Items | ForEach-Object { [string]$_.Content })

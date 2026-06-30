@@ -16,6 +16,12 @@
     <Style TargetType="TextBlock">
       <Setter Property="VerticalAlignment" Value="Center"/>
     </Style>
+    <Style x:Key="TemplateSectionGroupBoxStyle" TargetType="GroupBox">
+      <Setter Property="Margin" Value="0,6,0,2"/>
+      <Setter Property="Padding" Value="10,8,10,10"/>
+      <Setter Property="BorderBrush" Value="#C7D2DE"/>
+      <Setter Property="Background" Value="#FAFBFC"/>
+    </Style>
   </Window.Resources>
   <ScrollViewer x:Name="MainScrollViewer"
                 VerticalScrollBarVisibility="Auto"
@@ -156,353 +162,460 @@
         </Grid>
       </TabItem>
       <TabItem x:Name="TemplateTab" Header="Template">
-        <Grid Margin="8">
-          <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="150"/>
-            <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="150"/>
-            <ColumnDefinition Width="*"/>
-          </Grid.ColumnDefinitions>
-          <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="90"/>
-          </Grid.RowDefinitions>
+        <StackPanel Margin="8">
+          <Grid Margin="0,0,0,4">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="150"/>
+              <ColumnDefinition Width="*"/>
+              <ColumnDefinition Width="150"/>
+              <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+              <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
 
-          <TextBlock x:Name="TemplateProjectLabel" Grid.Row="0" Grid.Column="0" Text="Project"/>
-          <ComboBox x:Name="TemplateProjectBox" Grid.Row="0" Grid.Column="1" IsEditable="True">
-            <ComboBoxItem Content="workflow_energy"/>
-            <ComboBoxItem Content="workflow_geo_opt"/>
-            <ComboBoxItem Content="workflow_cell_opt"/>
-            <ComboBoxItem Content="quickstep_energy"/>
-            <ComboBoxItem Content="quickstep_geo_opt"/>
-            <ComboBoxItem Content="quickstep_cell_opt"/>
-          </ComboBox>
-          <TextBlock x:Name="RunTypeLabel" Grid.Row="0" Grid.Column="2" Text="Run Type"/>
-          <ComboBox x:Name="TemplateRunTypeBox" Grid.Row="0" Grid.Column="3" IsEditable="True">
-            <ComboBoxItem Content="ENERGY"/>
-            <ComboBoxItem Content="ENERGY_FORCE"/>
-            <ComboBoxItem Content="GEO_OPT"/>
-            <ComboBoxItem Content="CELL_OPT"/>
-          </ComboBox>
+            <TextBlock x:Name="TemplateProjectLabel" Grid.Row="0" Grid.Column="0" Text="Project"/>
+            <ComboBox x:Name="TemplateProjectBox" Grid.Row="0" Grid.Column="1" IsEditable="True">
+              <ComboBoxItem Content="workflow_energy"/>
+              <ComboBoxItem Content="workflow_geo_opt"/>
+              <ComboBoxItem Content="workflow_cell_opt"/>
+              <ComboBoxItem Content="quickstep_energy"/>
+              <ComboBoxItem Content="quickstep_geo_opt"/>
+              <ComboBoxItem Content="quickstep_cell_opt"/>
+            </ComboBox>
+            <TextBlock x:Name="RunTypeLabel" Grid.Row="0" Grid.Column="2" Text="Run Type"/>
+            <ComboBox x:Name="TemplateRunTypeBox" Grid.Row="0" Grid.Column="3" IsEditable="True">
+              <ComboBoxItem Content="ENERGY"/>
+              <ComboBoxItem Content="ENERGY_FORCE"/>
+              <ComboBoxItem Content="GEO_OPT"/>
+              <ComboBoxItem Content="CELL_OPT"/>
+            </ComboBox>
+          </Grid>
 
-          <TextBlock x:Name="BasisFileLabel" Grid.Row="1" Grid.Column="0" Text="Basis File"/>
-          <ComboBox x:Name="BasisSetFileBox" Grid.Row="1" Grid.Column="1" IsEditable="True">
-            <ComboBoxItem Content="BASIS_MOLOPT"/>
-            <ComboBoxItem Content="BASIS_SET"/>
-            <ComboBoxItem Content="BASIS_MOLOPT_UCL"/>
-            <ComboBoxItem Content="GTH_BASIS_SETS"/>
-          </ComboBox>
-          <TextBlock x:Name="PotentialFileLabel" Grid.Row="1" Grid.Column="2" Text="Potential File"/>
-          <ComboBox x:Name="PotentialFileBox" Grid.Row="1" Grid.Column="3" IsEditable="True">
-            <ComboBoxItem Content="GTH_POTENTIALS"/>
-            <ComboBoxItem Content="POTENTIAL"/>
-            <ComboBoxItem Content="POTENTIAL_UCL"/>
-          </ComboBox>
+          <GroupBox x:Name="TemplateDftGroup" Header="&amp;FORCE_EVAL / &amp;DFT" Style="{StaticResource TemplateSectionGroupBoxStyle}">
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="150"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="150"/>
+                <ColumnDefinition Width="*"/>
+              </Grid.ColumnDefinitions>
+              <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+              </Grid.RowDefinitions>
 
-          <TextBlock x:Name="XcFunctionalLabel" Grid.Row="2" Grid.Column="0" Text="XC Functional"/>
-          <ComboBox x:Name="XcFunctionalBox" Grid.Row="2" Grid.Column="1" IsEditable="True">
-            <ComboBoxItem Content="PBE"/>
-            <ComboBoxItem Content="BLYP"/>
-            <ComboBoxItem Content="BP"/>
-            <ComboBoxItem Content="PADE"/>
-            <ComboBoxItem Content="PBE0"/>
-            <ComboBoxItem Content="B3LYP"/>
-            <ComboBoxItem Content="TPSS"/>
-            <ComboBoxItem Content="NO_SHORTCUT"/>
-          </ComboBox>
-          <TextBlock x:Name="EpsScfLabel" Grid.Row="2" Grid.Column="2" Text="EPS SCF"/>
-          <ComboBox x:Name="EpsScfBox" Grid.Row="2" Grid.Column="3" IsEditable="True">
-            <ComboBoxItem Content="1.0E-5"/>
-            <ComboBoxItem Content="1.0E-6"/>
-            <ComboBoxItem Content="1.0E-7"/>
-            <ComboBoxItem Content="1.0E-8"/>
-          </ComboBox>
+              <TextBlock x:Name="BasisFileLabel" Grid.Row="0" Grid.Column="0" Text="Basis File"/>
+              <ComboBox x:Name="BasisSetFileBox" Grid.Row="0" Grid.Column="1" IsEditable="True">
+                <ComboBoxItem Content="BASIS_MOLOPT"/>
+                <ComboBoxItem Content="BASIS_SET"/>
+                <ComboBoxItem Content="BASIS_MOLOPT_UCL"/>
+                <ComboBoxItem Content="GTH_BASIS_SETS"/>
+              </ComboBox>
+              <TextBlock x:Name="PotentialFileLabel" Grid.Row="0" Grid.Column="2" Text="Potential File"/>
+              <ComboBox x:Name="PotentialFileBox" Grid.Row="0" Grid.Column="3" IsEditable="True">
+                <ComboBoxItem Content="GTH_POTENTIALS"/>
+                <ComboBoxItem Content="POTENTIAL"/>
+                <ComboBoxItem Content="POTENTIAL_UCL"/>
+              </ComboBox>
 
-          <TextBlock x:Name="ChargeLabel" Grid.Row="3" Grid.Column="0" Text="Charge"/>
-          <ComboBox x:Name="ChargeBox" Grid.Row="3" Grid.Column="1" IsEditable="True">
-            <ComboBoxItem Content="-2"/>
-            <ComboBoxItem Content="-1"/>
-            <ComboBoxItem Content="0"/>
-            <ComboBoxItem Content="1"/>
-            <ComboBoxItem Content="2"/>
-          </ComboBox>
-          <TextBlock x:Name="MultiplicityLabel" Grid.Row="3" Grid.Column="2" Text="Multiplicity"/>
-          <ComboBox x:Name="MultiplicityBox" Grid.Row="3" Grid.Column="3" IsEditable="True">
-            <ComboBoxItem Content="1"/>
-            <ComboBoxItem Content="2"/>
-            <ComboBoxItem Content="3"/>
-            <ComboBoxItem Content="4"/>
-          </ComboBox>
+              <TextBlock x:Name="XcFunctionalLabel" Grid.Row="1" Grid.Column="0" Text="XC Functional"/>
+              <ComboBox x:Name="XcFunctionalBox" Grid.Row="1" Grid.Column="1" IsEditable="True">
+                <ComboBoxItem Content="PBE"/>
+                <ComboBoxItem Content="BLYP"/>
+                <ComboBoxItem Content="BP"/>
+                <ComboBoxItem Content="PADE"/>
+                <ComboBoxItem Content="PBE0"/>
+                <ComboBoxItem Content="B3LYP"/>
+                <ComboBoxItem Content="TPSS"/>
+                <ComboBoxItem Content="NO_SHORTCUT"/>
+              </ComboBox>
+              <TextBlock x:Name="ChargeLabel" Grid.Row="1" Grid.Column="2" Text="Charge"/>
+              <ComboBox x:Name="ChargeBox" Grid.Row="1" Grid.Column="3" IsEditable="True">
+                <ComboBoxItem Content="-2"/>
+                <ComboBoxItem Content="-1"/>
+                <ComboBoxItem Content="0"/>
+                <ComboBoxItem Content="1"/>
+                <ComboBoxItem Content="2"/>
+              </ComboBox>
 
-          <TextBlock x:Name="CutoffLabel" Grid.Row="4" Grid.Column="0" Text="Cutoff"/>
-          <ComboBox x:Name="CutoffBox" Grid.Row="4" Grid.Column="1" IsEditable="True">
-            <ComboBoxItem Content="300"/>
-            <ComboBoxItem Content="400"/>
-            <ComboBoxItem Content="500"/>
-            <ComboBoxItem Content="600"/>
-            <ComboBoxItem Content="800"/>
-          </ComboBox>
-          <TextBlock x:Name="RelCutoffLabel" Grid.Row="4" Grid.Column="2" Text="Rel Cutoff"/>
-          <ComboBox x:Name="RelCutoffBox" Grid.Row="4" Grid.Column="3" IsEditable="True">
-            <ComboBoxItem Content="30"/>
-            <ComboBoxItem Content="40"/>
-            <ComboBoxItem Content="50"/>
-            <ComboBoxItem Content="60"/>
-          </ComboBox>
+              <TextBlock x:Name="MultiplicityLabel" Grid.Row="2" Grid.Column="0" Text="Multiplicity"/>
+              <ComboBox x:Name="MultiplicityBox" Grid.Row="2" Grid.Column="1" IsEditable="True">
+                <ComboBoxItem Content="1"/>
+                <ComboBoxItem Content="2"/>
+                <ComboBoxItem Content="3"/>
+                <ComboBoxItem Content="4"/>
+              </ComboBox>
+              <TextBlock x:Name="CutoffLabel" Grid.Row="2" Grid.Column="2" Text="Cutoff"/>
+              <ComboBox x:Name="CutoffBox" Grid.Row="2" Grid.Column="3" IsEditable="True">
+                <ComboBoxItem Content="300"/>
+                <ComboBoxItem Content="400"/>
+                <ComboBoxItem Content="500"/>
+                <ComboBoxItem Content="600"/>
+                <ComboBoxItem Content="800"/>
+              </ComboBox>
 
-          <TextBlock x:Name="MaxScfLabel" Grid.Row="5" Grid.Column="0" Text="Max SCF"/>
-          <ComboBox x:Name="MaxScfBox" Grid.Row="5" Grid.Column="1" IsEditable="True">
-            <ComboBoxItem Content="30"/>
-            <ComboBoxItem Content="50"/>
-            <ComboBoxItem Content="100"/>
-            <ComboBoxItem Content="200"/>
-          </ComboBox>
-          <TextBlock x:Name="ScfMethodLabel" Grid.Row="5" Grid.Column="2" Text="SCF Method"/>
-          <ComboBox x:Name="ScfMethodBox" Grid.Row="5" Grid.Column="3" IsEditable="True">
-            <ComboBoxItem Content="DEFAULT"/>
-            <ComboBoxItem Content="DIAGONALIZATION"/>
-            <ComboBoxItem Content="OT"/>
-          </ComboBox>
+              <TextBlock x:Name="RelCutoffLabel" Grid.Row="3" Grid.Column="0" Text="Rel Cutoff"/>
+              <ComboBox x:Name="RelCutoffBox" Grid.Row="3" Grid.Column="1" IsEditable="True">
+                <ComboBoxItem Content="30"/>
+                <ComboBoxItem Content="40"/>
+                <ComboBoxItem Content="50"/>
+                <ComboBoxItem Content="60"/>
+              </ComboBox>
+            </Grid>
+          </GroupBox>
 
-          <TextBlock x:Name="AddedMosLabel" Grid.Row="6" Grid.Column="0" Text="Added MOs"/>
-          <ComboBox x:Name="AddedMosBox" Grid.Row="6" Grid.Column="1" IsEditable="True">
-            <ComboBoxItem Content="0"/>
-            <ComboBoxItem Content="4"/>
-            <ComboBoxItem Content="8"/>
-            <ComboBoxItem Content="16"/>
-            <ComboBoxItem Content="-1"/>
-          </ComboBox>
-          <TextBlock x:Name="DiagonalizationAlgorithmLabel" Grid.Row="6" Grid.Column="2" Text="Diag Algorithm"/>
-          <ComboBox x:Name="DiagonalizationAlgorithmBox" Grid.Row="6" Grid.Column="3" IsEditable="True">
-            <ComboBoxItem Content="STANDARD"/>
-            <ComboBoxItem Content="DAVIDSON"/>
-            <ComboBoxItem Content="LANCZOS"/>
-            <ComboBoxItem Content="FILTER_MATRIX"/>
-          </ComboBox>
+          <GroupBox x:Name="TemplateScfGroup" Header="&amp;DFT / &amp;SCF" Style="{StaticResource TemplateSectionGroupBoxStyle}">
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="150"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="150"/>
+                <ColumnDefinition Width="*"/>
+              </Grid.ColumnDefinitions>
+              <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+              </Grid.RowDefinitions>
 
-          <TextBlock x:Name="OtMinimizerLabel" Grid.Row="7" Grid.Column="0" Text="OT Minimizer"/>
-          <ComboBox x:Name="OtMinimizerBox" Grid.Row="7" Grid.Column="1" IsEditable="True">
-            <ComboBoxItem Content="CG"/>
-            <ComboBoxItem Content="DIIS"/>
-            <ComboBoxItem Content="SD"/>
-            <ComboBoxItem Content="BROYDEN"/>
-          </ComboBox>
-          <TextBlock x:Name="OtPreconditionerLabel" Grid.Row="7" Grid.Column="2" Text="OT Preconditioner"/>
-          <ComboBox x:Name="OtPreconditionerBox" Grid.Row="7" Grid.Column="3" IsEditable="True">
-            <ComboBoxItem Content="FULL_KINETIC"/>
-            <ComboBoxItem Content="FULL_ALL"/>
-            <ComboBoxItem Content="FULL_SINGLE"/>
-            <ComboBoxItem Content="FULL_SINGLE_INVERSE"/>
-            <ComboBoxItem Content="FULL_S_INVERSE"/>
-            <ComboBoxItem Content="NONE"/>
-          </ComboBox>
+              <TextBlock x:Name="EpsScfLabel" Grid.Row="0" Grid.Column="0" Text="EPS SCF"/>
+              <ComboBox x:Name="EpsScfBox" Grid.Row="0" Grid.Column="1" IsEditable="True">
+                <ComboBoxItem Content="1.0E-5"/>
+                <ComboBoxItem Content="1.0E-6"/>
+                <ComboBoxItem Content="1.0E-7"/>
+                <ComboBoxItem Content="1.0E-8"/>
+              </ComboBox>
+              <TextBlock x:Name="MaxScfLabel" Grid.Row="0" Grid.Column="2" Text="Max SCF"/>
+              <ComboBox x:Name="MaxScfBox" Grid.Row="0" Grid.Column="3" IsEditable="True">
+                <ComboBoxItem Content="30"/>
+                <ComboBoxItem Content="50"/>
+                <ComboBoxItem Content="100"/>
+                <ComboBoxItem Content="200"/>
+              </ComboBox>
 
-          <CheckBox x:Name="MixingEnabledBox" Grid.Row="8" Grid.Column="0" Content="Mixing" Margin="6,4" VerticalAlignment="Center"/>
-          <TextBlock x:Name="MixingMethodLabel" Grid.Row="8" Grid.Column="2" Text="Mixing Method"/>
-          <ComboBox x:Name="MixingMethodBox" Grid.Row="8" Grid.Column="3" IsEditable="True">
-            <ComboBoxItem Content="BROYDEN_MIXING"/>
-            <ComboBoxItem Content="DIRECT_P_MIXING"/>
-            <ComboBoxItem Content="PULAY_MIXING"/>
-            <ComboBoxItem Content="KERKER_MIXING"/>
-            <ComboBoxItem Content="MULTISECANT_MIXING"/>
-            <ComboBoxItem Content="NEW_PULAY_MIXING"/>
-          </ComboBox>
+              <TextBlock x:Name="ScfMethodLabel" Grid.Row="1" Grid.Column="0" Text="SCF Method"/>
+              <ComboBox x:Name="ScfMethodBox" Grid.Row="1" Grid.Column="1" IsEditable="True">
+                <ComboBoxItem Content="DEFAULT"/>
+                <ComboBoxItem Content="DIAGONALIZATION"/>
+                <ComboBoxItem Content="OT"/>
+              </ComboBox>
+              <TextBlock x:Name="AddedMosLabel" Grid.Row="1" Grid.Column="2" Text="Added MOs"/>
+              <ComboBox x:Name="AddedMosBox" Grid.Row="1" Grid.Column="3" IsEditable="True">
+                <ComboBoxItem Content="0"/>
+                <ComboBoxItem Content="4"/>
+                <ComboBoxItem Content="8"/>
+                <ComboBoxItem Content="16"/>
+                <ComboBoxItem Content="-1"/>
+              </ComboBox>
 
-          <TextBlock x:Name="MixingAlphaLabel" Grid.Row="9" Grid.Column="0" Text="Mixing Alpha"/>
-          <ComboBox x:Name="MixingAlphaBox" Grid.Row="9" Grid.Column="1" IsEditable="True">
-            <ComboBoxItem Content="0.2"/>
-            <ComboBoxItem Content="0.3"/>
-            <ComboBoxItem Content="0.4"/>
-            <ComboBoxItem Content="0.5"/>
-          </ComboBox>
-          <TextBlock x:Name="MixingBetaLabel" Grid.Row="9" Grid.Column="2" Text="Mixing Beta"/>
-          <ComboBox x:Name="MixingBetaBox" Grid.Row="9" Grid.Column="3" IsEditable="True">
-            <ComboBoxItem Content="0.5"/>
-            <ComboBoxItem Content="1.0"/>
-            <ComboBoxItem Content="1.5"/>
-            <ComboBoxItem Content="2.0"/>
-          </ComboBox>
+              <TextBlock x:Name="DiagonalizationAlgorithmLabel" Grid.Row="2" Grid.Column="0" Text="Diag Algorithm"/>
+              <ComboBox x:Name="DiagonalizationAlgorithmBox" Grid.Row="2" Grid.Column="1" IsEditable="True">
+                <ComboBoxItem Content="STANDARD"/>
+                <ComboBoxItem Content="DAVIDSON"/>
+                <ComboBoxItem Content="LANCZOS"/>
+                <ComboBoxItem Content="FILTER_MATRIX"/>
+              </ComboBox>
+              <TextBlock x:Name="OtMinimizerLabel" Grid.Row="2" Grid.Column="2" Text="OT Minimizer"/>
+              <ComboBox x:Name="OtMinimizerBox" Grid.Row="2" Grid.Column="3" IsEditable="True">
+                <ComboBoxItem Content="CG"/>
+                <ComboBoxItem Content="DIIS"/>
+                <ComboBoxItem Content="SD"/>
+                <ComboBoxItem Content="BROYDEN"/>
+              </ComboBox>
 
-          <CheckBox x:Name="SmearingEnabledBox" Grid.Row="10" Grid.Column="0" Content="Smearing" Margin="6,4" VerticalAlignment="Center"/>
-          <TextBlock x:Name="SmearingMethodLabel" Grid.Row="10" Grid.Column="2" Text="Smearing Method"/>
-          <ComboBox x:Name="SmearingMethodBox" Grid.Row="10" Grid.Column="3" IsEditable="True">
-            <ComboBoxItem Content="FERMI_DIRAC"/>
-            <ComboBoxItem Content="ENERGY_WINDOW"/>
-            <ComboBoxItem Content="GAUSSIAN"/>
-            <ComboBoxItem Content="METHFESSEL_PAXTON"/>
-            <ComboBoxItem Content="MARZARI_VANDERBILT"/>
-          </ComboBox>
+              <TextBlock x:Name="OtPreconditionerLabel" Grid.Row="3" Grid.Column="0" Text="OT Preconditioner"/>
+              <ComboBox x:Name="OtPreconditionerBox" Grid.Row="3" Grid.Column="1" IsEditable="True">
+                <ComboBoxItem Content="FULL_KINETIC"/>
+                <ComboBoxItem Content="FULL_ALL"/>
+                <ComboBoxItem Content="FULL_SINGLE"/>
+                <ComboBoxItem Content="FULL_SINGLE_INVERSE"/>
+                <ComboBoxItem Content="FULL_S_INVERSE"/>
+                <ComboBoxItem Content="NONE"/>
+              </ComboBox>
+            </Grid>
+          </GroupBox>
 
-          <TextBlock x:Name="ElectronicTemperatureLabel" Grid.Row="11" Grid.Column="0" Text="Electronic Temp"/>
-          <ComboBox x:Name="ElectronicTemperatureBox" Grid.Row="11" Grid.Column="1" IsEditable="True">
-            <ComboBoxItem Content="300"/>
-            <ComboBoxItem Content="500"/>
-            <ComboBoxItem Content="1000"/>
-            <ComboBoxItem Content="1500"/>
-          </ComboBox>
+          <GroupBox x:Name="TemplateMixingGroup" Header="&amp;SCF / &amp;MIXING" Style="{StaticResource TemplateSectionGroupBoxStyle}">
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="150"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="150"/>
+                <ColumnDefinition Width="*"/>
+              </Grid.ColumnDefinitions>
+              <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+              </Grid.RowDefinitions>
 
-          <TextBlock x:Name="OptimizerLabel" Grid.Row="12" Grid.Column="0" Text="Optimizer"/>
-          <ComboBox x:Name="GeoOptimizerBox" Grid.Row="12" Grid.Column="1" IsEditable="True">
-            <ComboBoxItem Content="BFGS"/>
-            <ComboBoxItem Content="LBFGS"/>
-            <ComboBoxItem Content="CG"/>
-          </ComboBox>
-          <TextBlock x:Name="GeoMaxIterLabel" Grid.Row="12" Grid.Column="2" Text="GEO Max Iter"/>
-          <ComboBox x:Name="GeoMaxIterBox" Grid.Row="12" Grid.Column="3" IsEditable="True">
-            <ComboBoxItem Content="50"/>
-            <ComboBoxItem Content="100"/>
-            <ComboBoxItem Content="150"/>
-            <ComboBoxItem Content="200"/>
-          </ComboBox>
+              <CheckBox x:Name="MixingEnabledBox" Grid.Row="0" Grid.Column="0" Content="Mixing" Margin="6,4" VerticalAlignment="Center"/>
+              <TextBlock x:Name="MixingMethodLabel" Grid.Row="0" Grid.Column="2" Text="Mixing Method"/>
+              <ComboBox x:Name="MixingMethodBox" Grid.Row="0" Grid.Column="3" IsEditable="True">
+                <ComboBoxItem Content="BROYDEN_MIXING"/>
+                <ComboBoxItem Content="DIRECT_P_MIXING"/>
+                <ComboBoxItem Content="PULAY_MIXING"/>
+                <ComboBoxItem Content="KERKER_MIXING"/>
+                <ComboBoxItem Content="MULTISECANT_MIXING"/>
+                <ComboBoxItem Content="NEW_PULAY_MIXING"/>
+              </ComboBox>
 
-          <TextBlock x:Name="CellOptTypeLabel" Grid.Row="13" Grid.Column="0" Text="CELL_OPT Type"/>
-          <ComboBox x:Name="CellOptTypeBox" Grid.Row="13" Grid.Column="1" IsEditable="True">
-            <ComboBoxItem Content="DIRECT_CELL_OPT"/>
-          </ComboBox>
-          <TextBlock x:Name="CellOptMaxIterLabel" Grid.Row="13" Grid.Column="2" Text="CELL Max Iter"/>
-          <ComboBox x:Name="CellOptMaxIterBox" Grid.Row="13" Grid.Column="3" IsEditable="True">
-            <ComboBoxItem Content="20"/>
-            <ComboBoxItem Content="50"/>
-            <ComboBoxItem Content="100"/>
-            <ComboBoxItem Content="200"/>
-          </ComboBox>
+              <TextBlock x:Name="MixingAlphaLabel" Grid.Row="1" Grid.Column="0" Text="Mixing Alpha"/>
+              <ComboBox x:Name="MixingAlphaBox" Grid.Row="1" Grid.Column="1" IsEditable="True">
+                <ComboBoxItem Content="0.2"/>
+                <ComboBoxItem Content="0.3"/>
+                <ComboBoxItem Content="0.4"/>
+                <ComboBoxItem Content="0.5"/>
+              </ComboBox>
+              <TextBlock x:Name="MixingBetaLabel" Grid.Row="1" Grid.Column="2" Text="Mixing Beta"/>
+              <ComboBox x:Name="MixingBetaBox" Grid.Row="1" Grid.Column="3" IsEditable="True">
+                <ComboBoxItem Content="0.5"/>
+                <ComboBoxItem Content="1.0"/>
+                <ComboBoxItem Content="1.5"/>
+                <ComboBoxItem Content="2.0"/>
+              </ComboBox>
+            </Grid>
+          </GroupBox>
 
-          <TextBlock x:Name="CellOptOptimizerLabel" Grid.Row="14" Grid.Column="0" Text="CELL Optimizer"/>
-          <ComboBox x:Name="CellOptOptimizerBox" Grid.Row="14" Grid.Column="1" IsEditable="True">
-            <ComboBoxItem Content="BFGS"/>
-            <ComboBoxItem Content="LBFGS"/>
-            <ComboBoxItem Content="CG"/>
-          </ComboBox>
-          <TextBlock x:Name="CellOptPressureToleranceLabel" Grid.Row="14" Grid.Column="2" Text="Pressure Tol"/>
-          <ComboBox x:Name="CellOptPressureToleranceBox" Grid.Row="14" Grid.Column="3" IsEditable="True">
-            <ComboBoxItem Content="50"/>
-            <ComboBoxItem Content="100"/>
-            <ComboBoxItem Content="200"/>
-            <ComboBoxItem Content="500"/>
-          </ComboBox>
+          <GroupBox x:Name="TemplateSmearingGroup" Header="&amp;SCF / &amp;SMEAR" Style="{StaticResource TemplateSectionGroupBoxStyle}">
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="150"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="150"/>
+                <ColumnDefinition Width="*"/>
+              </Grid.ColumnDefinitions>
+              <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+              </Grid.RowDefinitions>
 
-          <CheckBox x:Name="CellOptKeepAnglesBox" Grid.Row="15" Grid.Column="0"
-                    Content="Keep Angles" Margin="6,4" VerticalAlignment="Center"/>
-          <CheckBox x:Name="CellOptKeepSymmetryBox" Grid.Row="15" Grid.Column="1"
-                    Content="Keep Symmetry" Margin="6,4" VerticalAlignment="Center"/>
+              <CheckBox x:Name="SmearingEnabledBox" Grid.Row="0" Grid.Column="0" Content="Smearing" Margin="6,4" VerticalAlignment="Center"/>
+              <TextBlock x:Name="SmearingMethodLabel" Grid.Row="0" Grid.Column="2" Text="Smearing Method"/>
+              <ComboBox x:Name="SmearingMethodBox" Grid.Row="0" Grid.Column="3" IsEditable="True">
+                <ComboBoxItem Content="FERMI_DIRAC"/>
+                <ComboBoxItem Content="ENERGY_WINDOW"/>
+                <ComboBoxItem Content="GAUSSIAN"/>
+                <ComboBoxItem Content="METHFESSEL_PAXTON"/>
+                <ComboBoxItem Content="MARZARI_VANDERBILT"/>
+              </ComboBox>
 
-          <TextBlock x:Name="FallbackPeriodicLabel" Grid.Row="16" Grid.Column="0" Text="Fallback Periodic"/>
-          <ComboBox x:Name="FallbackPeriodicBox" Grid.Row="16" Grid.Column="1" IsEditable="True">
-            <ComboBoxItem Content="XYZ"/>
-            <ComboBoxItem Content="NONE"/>
-            <ComboBoxItem Content="X"/>
-            <ComboBoxItem Content="Y"/>
-            <ComboBoxItem Content="Z"/>
-            <ComboBoxItem Content="XY"/>
-            <ComboBoxItem Content="XZ"/>
-            <ComboBoxItem Content="YZ"/>
-          </ComboBox>
-          <TextBlock x:Name="FallbackCellALabel" Grid.Row="16" Grid.Column="2" Text="Fallback Cell A"/>
-          <ComboBox x:Name="FallbackCellABox" Grid.Row="16" Grid.Column="3" IsEditable="True">
-            <ComboBoxItem Content="10 0 0"/>
-            <ComboBoxItem Content="12 0 0"/>
-            <ComboBoxItem Content="15 0 0"/>
-            <ComboBoxItem Content="20 0 0"/>
-            <ComboBoxItem Content="5.43 0 0"/>
-          </ComboBox>
+              <TextBlock x:Name="ElectronicTemperatureLabel" Grid.Row="1" Grid.Column="0" Text="Electronic Temp"/>
+              <ComboBox x:Name="ElectronicTemperatureBox" Grid.Row="1" Grid.Column="1" IsEditable="True">
+                <ComboBoxItem Content="300"/>
+                <ComboBoxItem Content="500"/>
+                <ComboBoxItem Content="1000"/>
+                <ComboBoxItem Content="1500"/>
+              </ComboBox>
+            </Grid>
+          </GroupBox>
 
-          <TextBlock x:Name="FallbackCellBLabel" Grid.Row="17" Grid.Column="0" Text="Fallback Cell B"/>
-          <ComboBox x:Name="FallbackCellBBox" Grid.Row="17" Grid.Column="1" IsEditable="True">
-            <ComboBoxItem Content="0 10 0"/>
-            <ComboBoxItem Content="0 12 0"/>
-            <ComboBoxItem Content="0 15 0"/>
-            <ComboBoxItem Content="0 20 0"/>
-            <ComboBoxItem Content="0 5.43 0"/>
-          </ComboBox>
-          <TextBlock x:Name="FallbackCellCLabel" Grid.Row="17" Grid.Column="2" Text="Fallback Cell C"/>
-          <ComboBox x:Name="FallbackCellCBox" Grid.Row="17" Grid.Column="3" IsEditable="True">
-            <ComboBoxItem Content="0 0 10"/>
-            <ComboBoxItem Content="0 0 12"/>
-            <ComboBoxItem Content="0 0 15"/>
-            <ComboBoxItem Content="0 0 20"/>
-            <ComboBoxItem Content="0 0 5.43"/>
-          </ComboBox>
-          <TextBlock x:Name="KpointsSchemeLabel" Grid.Row="18" Grid.Column="0" Text="KPOINTS Scheme"/>
-          <ComboBox x:Name="KpointsSchemeBox" Grid.Row="18" Grid.Column="1" IsEditable="True">
-            <ComboBoxItem Content="NONE"/>
-            <ComboBoxItem Content="GAMMA"/>
-            <ComboBoxItem Content="MONKHORST-PACK"/>
-          </ComboBox>
-          <TextBlock x:Name="KpointsGridLabel" Grid.Row="18" Grid.Column="2" Text="KPOINTS Grid"/>
-          <ComboBox x:Name="KpointsGridBox" Grid.Row="18" Grid.Column="3" IsEditable="True">
-            <ComboBoxItem Content="1 1 1"/>
-            <ComboBoxItem Content="2 2 2"/>
-            <ComboBoxItem Content="3 3 3"/>
-            <ComboBoxItem Content="4 4 4"/>
-            <ComboBoxItem Content="6 6 6"/>
-          </ComboBox>
+          <GroupBox x:Name="TemplateGeoOptGroup" Header="&amp;MOTION / &amp;GEO_OPT" Style="{StaticResource TemplateSectionGroupBoxStyle}">
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="150"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="150"/>
+                <ColumnDefinition Width="*"/>
+              </Grid.ColumnDefinitions>
+              <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+              </Grid.RowDefinitions>
 
-          <CheckBox x:Name="KpointsFullGridBox" Grid.Row="19" Grid.Column="0"
-                    Content="Full K Grid" Margin="6,4" VerticalAlignment="Center"/>
-          <CheckBox x:Name="KpointsSymmetryBox" Grid.Row="19" Grid.Column="1"
-                    Content="KPOINTS Symmetry" Margin="6,4" VerticalAlignment="Center"/>
-          <TextBlock x:Name="KpointsWavefunctionsLabel" Grid.Row="19" Grid.Column="2" Text="Wavefunctions"/>
-          <ComboBox x:Name="KpointsWavefunctionsBox" Grid.Row="19" Grid.Column="3" IsEditable="True">
-            <ComboBoxItem Content="COMPLEX"/>
-            <ComboBoxItem Content="REAL"/>
-          </ComboBox>
+              <TextBlock x:Name="OptimizerLabel" Grid.Row="0" Grid.Column="0" Text="Optimizer"/>
+              <ComboBox x:Name="GeoOptimizerBox" Grid.Row="0" Grid.Column="1" IsEditable="True">
+                <ComboBoxItem Content="BFGS"/>
+                <ComboBoxItem Content="LBFGS"/>
+                <ComboBoxItem Content="CG"/>
+              </ComboBox>
+              <TextBlock x:Name="GeoMaxIterLabel" Grid.Row="0" Grid.Column="2" Text="GEO Max Iter"/>
+              <ComboBox x:Name="GeoMaxIterBox" Grid.Row="0" Grid.Column="3" IsEditable="True">
+                <ComboBoxItem Content="50"/>
+                <ComboBoxItem Content="100"/>
+                <ComboBoxItem Content="150"/>
+                <ComboBoxItem Content="200"/>
+              </ComboBox>
+            </Grid>
+          </GroupBox>
 
-          <CheckBox x:Name="CenterAtomsBox" Grid.Row="20" Grid.Column="0" Grid.ColumnSpan="2"
-                    Content="Center Atoms" Margin="6,4" VerticalAlignment="Center"/>
+          <GroupBox x:Name="TemplateCellOptGroup" Header="&amp;MOTION / &amp;CELL_OPT" Style="{StaticResource TemplateSectionGroupBoxStyle}">
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="150"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="150"/>
+                <ColumnDefinition Width="*"/>
+              </Grid.ColumnDefinitions>
+              <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+              </Grid.RowDefinitions>
 
-          <DataGrid x:Name="KindEntriesGrid" Grid.Row="21" Grid.Column="0" Grid.ColumnSpan="4"
-                    AutoGenerateColumns="False" CanUserAddRows="True" CanUserDeleteRows="True"
-                    SelectionMode="Single" HeadersVisibility="Column" GridLinesVisibility="Horizontal" FontSize="12">
-            <DataGrid.Columns>
-              <DataGridTextColumn Header="Element" Binding="{Binding element, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="70"/>
-              <DataGridTextColumn Header="Basis Set" Binding="{Binding basis_set, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="*"/>
-              <DataGridTextColumn Header="Potential" Binding="{Binding potential, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="*"/>
-            </DataGrid.Columns>
-          </DataGrid>
-          <TextBox x:Name="KindsText" Grid.Row="21" Grid.Column="0" Grid.ColumnSpan="4" Visibility="Collapsed"
-                   FontFamily="Cascadia Mono, Consolas, Microsoft YaHei UI, Microsoft YaHei, SimSun"
-                   FontSize="12" AcceptsReturn="True" AcceptsTab="True" TextWrapping="NoWrap"
-                   HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"/>
+              <TextBlock x:Name="CellOptTypeLabel" Grid.Row="0" Grid.Column="0" Text="CELL_OPT Type"/>
+              <ComboBox x:Name="CellOptTypeBox" Grid.Row="0" Grid.Column="1" IsEditable="True">
+                <ComboBoxItem Content="DIRECT_CELL_OPT"/>
+              </ComboBox>
+              <TextBlock x:Name="CellOptMaxIterLabel" Grid.Row="0" Grid.Column="2" Text="CELL Max Iter"/>
+              <ComboBox x:Name="CellOptMaxIterBox" Grid.Row="0" Grid.Column="3" IsEditable="True">
+                <ComboBoxItem Content="20"/>
+                <ComboBoxItem Content="50"/>
+                <ComboBoxItem Content="100"/>
+                <ComboBoxItem Content="200"/>
+              </ComboBox>
 
-          <DataGrid x:Name="DataLabelsGrid" Grid.Row="22" Grid.Column="0" Grid.ColumnSpan="4"
-                    Height="130" Visibility="Collapsed"
-                    AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single"
-                    HeadersVisibility="Column" GridLinesVisibility="Horizontal" FontSize="12">
-            <DataGrid.Columns>
-              <DataGridTextColumn Header="Element" Binding="{Binding element}" Width="70"/>
-              <DataGridTextColumn Header="Basis Sets" Binding="{Binding basis_sets}" Width="*"/>
-              <DataGridTextColumn Header="Potentials" Binding="{Binding potentials}" Width="*"/>
-            </DataGrid.Columns>
-          </DataGrid>
+              <TextBlock x:Name="CellOptOptimizerLabel" Grid.Row="1" Grid.Column="0" Text="CELL Optimizer"/>
+              <ComboBox x:Name="CellOptOptimizerBox" Grid.Row="1" Grid.Column="1" IsEditable="True">
+                <ComboBoxItem Content="BFGS"/>
+                <ComboBoxItem Content="LBFGS"/>
+                <ComboBoxItem Content="CG"/>
+              </ComboBox>
+              <TextBlock x:Name="CellOptPressureToleranceLabel" Grid.Row="1" Grid.Column="2" Text="Pressure Tol"/>
+              <ComboBox x:Name="CellOptPressureToleranceBox" Grid.Row="1" Grid.Column="3" IsEditable="True">
+                <ComboBoxItem Content="50"/>
+                <ComboBoxItem Content="100"/>
+                <ComboBoxItem Content="200"/>
+                <ComboBoxItem Content="500"/>
+              </ComboBox>
 
-          <TextBox x:Name="TemplateValidationText" Grid.Row="23" Grid.Column="0" Grid.ColumnSpan="4"
+              <CheckBox x:Name="CellOptKeepAnglesBox" Grid.Row="2" Grid.Column="0"
+                        Content="Keep Angles" Margin="6,4" VerticalAlignment="Center"/>
+              <CheckBox x:Name="CellOptKeepSymmetryBox" Grid.Row="2" Grid.Column="1"
+                        Content="Keep Symmetry" Margin="6,4" VerticalAlignment="Center"/>
+            </Grid>
+          </GroupBox>
+
+          <GroupBox x:Name="TemplateCellGroup" Header="&amp;SUBSYS / &amp;CELL" Style="{StaticResource TemplateSectionGroupBoxStyle}">
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="150"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="150"/>
+                <ColumnDefinition Width="*"/>
+              </Grid.ColumnDefinitions>
+              <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+              </Grid.RowDefinitions>
+
+              <TextBlock x:Name="FallbackPeriodicLabel" Grid.Row="0" Grid.Column="0" Text="Fallback Periodic"/>
+              <ComboBox x:Name="FallbackPeriodicBox" Grid.Row="0" Grid.Column="1" IsEditable="True">
+                <ComboBoxItem Content="XYZ"/>
+                <ComboBoxItem Content="NONE"/>
+                <ComboBoxItem Content="X"/>
+                <ComboBoxItem Content="Y"/>
+                <ComboBoxItem Content="Z"/>
+                <ComboBoxItem Content="XY"/>
+                <ComboBoxItem Content="XZ"/>
+                <ComboBoxItem Content="YZ"/>
+              </ComboBox>
+              <TextBlock x:Name="FallbackCellALabel" Grid.Row="0" Grid.Column="2" Text="Fallback Cell A"/>
+              <ComboBox x:Name="FallbackCellABox" Grid.Row="0" Grid.Column="3" IsEditable="True">
+                <ComboBoxItem Content="10 0 0"/>
+                <ComboBoxItem Content="12 0 0"/>
+                <ComboBoxItem Content="15 0 0"/>
+                <ComboBoxItem Content="20 0 0"/>
+                <ComboBoxItem Content="5.43 0 0"/>
+              </ComboBox>
+
+              <TextBlock x:Name="FallbackCellBLabel" Grid.Row="1" Grid.Column="0" Text="Fallback Cell B"/>
+              <ComboBox x:Name="FallbackCellBBox" Grid.Row="1" Grid.Column="1" IsEditable="True">
+                <ComboBoxItem Content="0 10 0"/>
+                <ComboBoxItem Content="0 12 0"/>
+                <ComboBoxItem Content="0 15 0"/>
+                <ComboBoxItem Content="0 20 0"/>
+                <ComboBoxItem Content="0 5.43 0"/>
+              </ComboBox>
+              <TextBlock x:Name="FallbackCellCLabel" Grid.Row="1" Grid.Column="2" Text="Fallback Cell C"/>
+              <ComboBox x:Name="FallbackCellCBox" Grid.Row="1" Grid.Column="3" IsEditable="True">
+                <ComboBoxItem Content="0 0 10"/>
+                <ComboBoxItem Content="0 0 12"/>
+                <ComboBoxItem Content="0 0 15"/>
+                <ComboBoxItem Content="0 0 20"/>
+                <ComboBoxItem Content="0 0 5.43"/>
+              </ComboBox>
+            </Grid>
+          </GroupBox>
+
+          <GroupBox x:Name="TemplateKpointsGroup" Header="&amp;DFT / &amp;KPOINTS" Style="{StaticResource TemplateSectionGroupBoxStyle}">
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="150"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="150"/>
+                <ColumnDefinition Width="*"/>
+              </Grid.ColumnDefinitions>
+              <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+              </Grid.RowDefinitions>
+
+              <TextBlock x:Name="KpointsSchemeLabel" Grid.Row="0" Grid.Column="0" Text="KPOINTS Scheme"/>
+              <ComboBox x:Name="KpointsSchemeBox" Grid.Row="0" Grid.Column="1" IsEditable="True">
+                <ComboBoxItem Content="NONE"/>
+                <ComboBoxItem Content="GAMMA"/>
+                <ComboBoxItem Content="MONKHORST-PACK"/>
+              </ComboBox>
+              <TextBlock x:Name="KpointsGridLabel" Grid.Row="0" Grid.Column="2" Text="KPOINTS Grid"/>
+              <ComboBox x:Name="KpointsGridBox" Grid.Row="0" Grid.Column="3" IsEditable="True">
+                <ComboBoxItem Content="1 1 1"/>
+                <ComboBoxItem Content="2 2 2"/>
+                <ComboBoxItem Content="3 3 3"/>
+                <ComboBoxItem Content="4 4 4"/>
+                <ComboBoxItem Content="6 6 6"/>
+              </ComboBox>
+
+              <CheckBox x:Name="KpointsFullGridBox" Grid.Row="1" Grid.Column="0"
+                        Content="Full K Grid" Margin="6,4" VerticalAlignment="Center"/>
+              <CheckBox x:Name="KpointsSymmetryBox" Grid.Row="1" Grid.Column="1"
+                        Content="KPOINTS Symmetry" Margin="6,4" VerticalAlignment="Center"/>
+              <TextBlock x:Name="KpointsWavefunctionsLabel" Grid.Row="1" Grid.Column="2" Text="Wavefunctions"/>
+              <ComboBox x:Name="KpointsWavefunctionsBox" Grid.Row="1" Grid.Column="3" IsEditable="True">
+                <ComboBoxItem Content="COMPLEX"/>
+                <ComboBoxItem Content="REAL"/>
+              </ComboBox>
+            </Grid>
+          </GroupBox>
+
+          <CheckBox x:Name="CenterAtomsBox" Content="Center Atoms" Margin="6,8,6,6" VerticalAlignment="Center"/>
+
+          <GroupBox x:Name="TemplateKindGroup" Header="&amp;SUBSYS / &amp;KIND" Style="{StaticResource TemplateSectionGroupBoxStyle}">
+            <StackPanel>
+              <DataGrid x:Name="KindEntriesGrid" Height="170"
+                        AutoGenerateColumns="False" CanUserAddRows="True" CanUserDeleteRows="True"
+                        SelectionMode="Single" HeadersVisibility="Column" GridLinesVisibility="Horizontal" FontSize="12">
+                <DataGrid.Columns>
+                  <DataGridTextColumn Header="Element" Binding="{Binding element, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="70"/>
+                  <DataGridTextColumn Header="Basis Set" Binding="{Binding basis_set, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="*"/>
+                  <DataGridTextColumn Header="Potential" Binding="{Binding potential, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="*"/>
+                </DataGrid.Columns>
+              </DataGrid>
+              <TextBox x:Name="KindsText" Height="170" Visibility="Collapsed"
+                       FontFamily="Cascadia Mono, Consolas, Microsoft YaHei UI, Microsoft YaHei, SimSun"
+                       FontSize="12" AcceptsReturn="True" AcceptsTab="True" TextWrapping="NoWrap"
+                       HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"/>
+
+              <DataGrid x:Name="DataLabelsGrid" Height="130" Visibility="Collapsed"
+                        AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single"
+                        HeadersVisibility="Column" GridLinesVisibility="Horizontal" FontSize="12">
+                <DataGrid.Columns>
+                  <DataGridTextColumn Header="Element" Binding="{Binding element}" Width="70"/>
+                  <DataGridTextColumn Header="Basis Sets" Binding="{Binding basis_sets}" Width="*"/>
+                  <DataGridTextColumn Header="Potentials" Binding="{Binding potentials}" Width="*"/>
+                </DataGrid.Columns>
+              </DataGrid>
+            </StackPanel>
+          </GroupBox>
+
+          <TextBox x:Name="TemplateValidationText" Height="90" Margin="6,6,6,0"
                    FontFamily="Cascadia Mono, Consolas, Microsoft YaHei UI, Microsoft YaHei, SimSun"
                    FontSize="12" AcceptsReturn="True" TextWrapping="Wrap"
                    HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
                    IsReadOnly="True"/>
-        </Grid>
+        </StackPanel>
       </TabItem>
       <TabItem x:Name="InputPreviewTab" Header="Input Preview">
         <TextBox x:Name="PreviewText" FontFamily="Cascadia Mono, Consolas, Microsoft YaHei UI, Microsoft YaHei, SimSun" FontSize="12"

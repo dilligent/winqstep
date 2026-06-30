@@ -11,6 +11,27 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class GuiPrototypeTests(unittest.TestCase):
+    @staticmethod
+    def _example_config_language() -> str:
+        payload = json.loads((ROOT / "examples" / "winqstep.config.json").read_text(encoding="utf-8"))
+        return str(payload.get("ui_language") or "")
+
+    @staticmethod
+    def _language_option_text(tag: str, ui_language: str) -> str:
+        labels = {
+            "en-US": {
+                "": "System default",
+                "en-US": "English (en-US)",
+                "zh-CN": "Chinese (zh-CN)",
+            },
+            "zh-CN": {
+                "": "系统默认",
+                "en-US": "英语 (en-US)",
+                "zh-CN": "中文 (zh-CN)",
+            },
+        }
+        return labels[ui_language].get(tag, tag)
+
     def test_run_button_is_wired_to_async_job_launcher(self) -> None:
         script_text = (ROOT / "scripts" / "start_gui.ps1").read_text(encoding="utf-8").replace("\r\n", "\n")
         helper_text = (ROOT / "scripts" / "gui" / "WinQStep.GuiHost.ps1").read_text(encoding="utf-8").replace("\r\n", "\n")
@@ -30,6 +51,16 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn('VerticalScrollBarVisibility="Auto"', xaml_text)
         self.assertIn('HorizontalScrollBarVisibility="Disabled"', xaml_text)
         self.assertIn('TabControl x:Name="MainTabs"', xaml_text)
+        self.assertIn('x:Key="TemplateSectionGroupBoxStyle"', xaml_text)
+        self.assertIn('x:Name="TemplateDftGroup" Header="&amp;FORCE_EVAL / &amp;DFT"', xaml_text)
+        self.assertIn('x:Name="TemplateScfGroup" Header="&amp;DFT / &amp;SCF"', xaml_text)
+        self.assertIn('x:Name="TemplateMixingGroup" Header="&amp;SCF / &amp;MIXING"', xaml_text)
+        self.assertIn('x:Name="TemplateSmearingGroup" Header="&amp;SCF / &amp;SMEAR"', xaml_text)
+        self.assertIn('x:Name="TemplateGeoOptGroup" Header="&amp;MOTION / &amp;GEO_OPT"', xaml_text)
+        self.assertIn('x:Name="TemplateCellOptGroup" Header="&amp;MOTION / &amp;CELL_OPT"', xaml_text)
+        self.assertIn('x:Name="TemplateCellGroup" Header="&amp;SUBSYS / &amp;CELL"', xaml_text)
+        self.assertIn('x:Name="TemplateKpointsGroup" Header="&amp;DFT / &amp;KPOINTS"', xaml_text)
+        self.assertIn('x:Name="TemplateKindGroup" Header="&amp;SUBSYS / &amp;KIND"', xaml_text)
         self.assertEqual(
             re.findall(r'<TabItem x:Name="([^"]+)"', xaml_text),
             [
@@ -51,39 +82,39 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn('<ComboBoxItem Content="BFGS"/>', xaml_text)
         self.assertIn('<ComboBoxItem Content="LBFGS"/>', xaml_text)
         self.assertIn('<ComboBoxItem Content="CG"/>', xaml_text)
-        self.assertIn('x:Name="CellOptTypeBox" Grid.Row="13" Grid.Column="1" IsEditable="True"', xaml_text)
+        self.assertIn('x:Name="CellOptTypeBox" Grid.Row="0" Grid.Column="1" IsEditable="True"', xaml_text)
         self.assertIn('<ComboBoxItem Content="DIRECT_CELL_OPT"/>', xaml_text)
-        self.assertIn('x:Name="CellOptOptimizerBox" Grid.Row="14" Grid.Column="1" IsEditable="True"', xaml_text)
-        self.assertIn('x:Name="CellOptMaxIterBox" Grid.Row="13" Grid.Column="3" IsEditable="True"', xaml_text)
-        self.assertIn('x:Name="CellOptPressureToleranceBox" Grid.Row="14" Grid.Column="3" IsEditable="True"', xaml_text)
+        self.assertIn('x:Name="CellOptOptimizerBox" Grid.Row="1" Grid.Column="1" IsEditable="True"', xaml_text)
+        self.assertIn('x:Name="CellOptMaxIterBox" Grid.Row="0" Grid.Column="3" IsEditable="True"', xaml_text)
+        self.assertIn('x:Name="CellOptPressureToleranceBox" Grid.Row="1" Grid.Column="3" IsEditable="True"', xaml_text)
         self.assertIn('x:Name="CellOptKeepAnglesBox"', xaml_text)
         self.assertIn('x:Name="CellOptKeepSymmetryBox"', xaml_text)
-        self.assertIn('x:Name="ScfMethodBox" Grid.Row="5" Grid.Column="3" IsEditable="True"', xaml_text)
+        self.assertIn('x:Name="ScfMethodBox" Grid.Row="1" Grid.Column="1" IsEditable="True"', xaml_text)
         self.assertIn('<ComboBoxItem Content="DIAGONALIZATION"/>', xaml_text)
         self.assertIn('<ComboBoxItem Content="OT"/>', xaml_text)
-        self.assertIn('x:Name="AddedMosBox" Grid.Row="6" Grid.Column="1" IsEditable="True"', xaml_text)
-        self.assertIn('x:Name="DiagonalizationAlgorithmBox" Grid.Row="6" Grid.Column="3" IsEditable="True"', xaml_text)
-        self.assertIn('x:Name="OtMinimizerBox" Grid.Row="7" Grid.Column="1" IsEditable="True"', xaml_text)
-        self.assertIn('x:Name="OtPreconditionerBox" Grid.Row="7" Grid.Column="3" IsEditable="True"', xaml_text)
+        self.assertIn('x:Name="AddedMosBox" Grid.Row="1" Grid.Column="3" IsEditable="True"', xaml_text)
+        self.assertIn('x:Name="DiagonalizationAlgorithmBox" Grid.Row="2" Grid.Column="1" IsEditable="True"', xaml_text)
+        self.assertIn('x:Name="OtMinimizerBox" Grid.Row="2" Grid.Column="3" IsEditable="True"', xaml_text)
+        self.assertIn('x:Name="OtPreconditionerBox" Grid.Row="3" Grid.Column="1" IsEditable="True"', xaml_text)
         self.assertIn('x:Name="MixingEnabledBox"', xaml_text)
         self.assertIn('x:Name="SmearingEnabledBox"', xaml_text)
-        self.assertIn('x:Name="KpointsSchemeBox" Grid.Row="18" Grid.Column="1" IsEditable="True"', xaml_text)
+        self.assertIn('x:Name="KpointsSchemeBox" Grid.Row="0" Grid.Column="1" IsEditable="True"', xaml_text)
         self.assertIn('<ComboBoxItem Content="GAMMA"/>', xaml_text)
         self.assertIn('<ComboBoxItem Content="MONKHORST-PACK"/>', xaml_text)
-        self.assertIn('x:Name="KpointsGridBox" Grid.Row="18" Grid.Column="3" IsEditable="True"', xaml_text)
+        self.assertIn('x:Name="KpointsGridBox" Grid.Row="0" Grid.Column="3" IsEditable="True"', xaml_text)
         self.assertIn('x:Name="KpointsFullGridBox"', xaml_text)
         self.assertIn('x:Name="KpointsSymmetryBox"', xaml_text)
-        self.assertIn('x:Name="KpointsWavefunctionsBox" Grid.Row="19" Grid.Column="3" IsEditable="True"', xaml_text)
+        self.assertIn('x:Name="KpointsWavefunctionsBox" Grid.Row="1" Grid.Column="3" IsEditable="True"', xaml_text)
         self.assertIn('<ComboBoxItem Content="REAL"/>', xaml_text)
-        self.assertIn('x:Name="FallbackPeriodicBox" Grid.Row="16" Grid.Column="1" IsEditable="True"', xaml_text)
+        self.assertIn('x:Name="FallbackPeriodicBox" Grid.Row="0" Grid.Column="1" IsEditable="True"', xaml_text)
         self.assertIn('<ComboBoxItem Content="NONE"/>', xaml_text)
-        self.assertIn('x:Name="FallbackCellABox" Grid.Row="16" Grid.Column="3" IsEditable="True"', xaml_text)
-        self.assertIn('x:Name="FallbackCellBBox" Grid.Row="17" Grid.Column="1" IsEditable="True"', xaml_text)
-        self.assertIn('x:Name="FallbackCellCBox" Grid.Row="17" Grid.Column="3" IsEditable="True"', xaml_text)
+        self.assertIn('x:Name="FallbackCellABox" Grid.Row="0" Grid.Column="3" IsEditable="True"', xaml_text)
+        self.assertIn('x:Name="FallbackCellBBox" Grid.Row="1" Grid.Column="1" IsEditable="True"', xaml_text)
+        self.assertIn('x:Name="FallbackCellCBox" Grid.Row="1" Grid.Column="3" IsEditable="True"', xaml_text)
         self.assertIn('x:Name="CenterAtomsBox"', xaml_text)
         self.assertIn('x:Name="KindEntriesGrid"', xaml_text)
-        self.assertIn('x:Name="KindsText" Grid.Row="21" Grid.Column="0" Grid.ColumnSpan="4" Visibility="Collapsed"', xaml_text)
-        self.assertIn('x:Name="DataLabelsGrid" Grid.Row="22" Grid.Column="0" Grid.ColumnSpan="4"', xaml_text)
+        self.assertIn('x:Name="KindsText" Height="170" Visibility="Collapsed"', xaml_text)
+        self.assertIn('x:Name="DataLabelsGrid" Height="130" Visibility="Collapsed"', xaml_text)
         self.assertIn('Height="130" Visibility="Collapsed"', xaml_text)
         self.assertIn("ui_language", script_text)
         self.assertIn('"button.preview": "Preview"', english_text)
@@ -109,6 +140,7 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn('"button.results": "Results"', english_text)
         self.assertIn('"button.results": "结果"', chinese_text)
         self.assertIn("scripts\\validate_job_inputs.py", script_text)
+        self.assertIn("template_section_groups_loaded", script_text)
         self.assertIn("scripts\\check_startup.py", helper_text)
         self.assertIn("scripts\\build_release.py", helper_text)
         self.assertIn("scripts\\smoke_release_install.py", helper_text)
@@ -220,11 +252,27 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertEqual(report["config_distro"], "Ubuntu")
         self.assertTrue(report["config_cp2k_command"].endswith("cp2k.ssmp"))
         self.assertEqual(report["config_data_dir"], "/home/teng/cp2k/data")
-        self.assertEqual(report["config_ui_language"], "")
-        self.assertEqual(report["config_ui_language_text"], "System default")
+        expected_config_language = self._example_config_language()
+        self.assertEqual(report["config_ui_language"], expected_config_language)
+        self.assertEqual(report["config_ui_language_text"], self._language_option_text(expected_config_language, "en-US"))
         self.assertTrue(report["config_workspace_encoding_ok"], report["config_workspace_path"])
         self.assertIn("Config valid", report["config_validation_text"])
         self.assertTrue(report["template_tab_loaded"])
+        self.assertEqual(report["template_section_groups_loaded"], 9)
+        self.assertEqual(
+            report["template_section_group_headers"],
+            [
+                "&FORCE_EVAL / &DFT",
+                "&DFT / &SCF",
+                "&SCF / &MIXING",
+                "&SCF / &SMEAR",
+                "&MOTION / &GEO_OPT",
+                "&MOTION / &CELL_OPT",
+                "&SUBSYS / &CELL",
+                "&DFT / &KPOINTS",
+                "&SUBSYS / &KIND",
+            ],
+        )
         self.assertEqual(report["template_combo_fields_loaded"], 34)
         self.assertEqual(report["template_combo_fields_editable"], 34)
         self.assertEqual(report["template_run_type_options"], ["ENERGY", "ENERGY_FORCE", "GEO_OPT", "CELL_OPT"])
@@ -322,8 +370,9 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertEqual(report["preview_button_text"], "预览")
         self.assertEqual(report["config_tab_header"], "配置")
         self.assertEqual(report["status_text_initial"], "就绪")
-        self.assertEqual(report["config_ui_language"], "")
-        self.assertEqual(report["config_ui_language_text"], "系统默认")
+        expected_config_language = self._example_config_language()
+        self.assertEqual(report["config_ui_language"], expected_config_language)
+        self.assertEqual(report["config_ui_language_text"], self._language_option_text(expected_config_language, "zh-CN"))
 
     @unittest.skipUnless(platform.system() == "Windows", "WPF prototype is Windows-only")
     def test_lifecycle_smoke_can_stop_background_process(self) -> None:
