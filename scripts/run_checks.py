@@ -175,7 +175,7 @@ def build_check_plan(
                         profile,
                         powershell,
                         ["-AsyncRunSmokeTest", "-Language", "zh-CN"],
-                        timeout=300,
+                        timeout=480,
                     ),
                 ]
             )

@@ -50,10 +50,12 @@ class Cp2kDataTests(unittest.TestCase):
         self.assertIn("test -d /home/teng/cp2k/data", command)
         self.assertIn("find /home/teng/cp2k/data -maxdepth 1 -type f", command)
         self.assertIn("-iname '*dftd3*'", command)
-        self.assertIn("head -z -n 7", command)
-        self.assertIn("while IFS= read -r -d '' file_path", command)
+        self.assertIn("head -n 7", command)
+        self.assertIn("while IFS= read -r file_path", command)
+        self.assertIn('[ -n "\\$file_path" ] || continue', command)
+        self.assertIn("file_name=\\${file_path##*/}", command)
         self.assertIn("__WINQSTEP_CP2K_DATA_FILE__", command)
-        self.assertIn("cat -- \"$file_path\"", command)
+        self.assertIn('cat -- "\\$file_path"', command)
         self.assertNotIn("rm ", command)
 
     def test_wsl_dump_command_rejects_invalid_file_limit(self) -> None:

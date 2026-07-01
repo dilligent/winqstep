@@ -6,7 +6,7 @@ mechanics in more detail.
 
 ## Candidate Scope
 
-Current package version: `0.2.0`.
+Current package version: `0.3.0`.
 
 This is a local Windows prototype, not an installer or PyPI release. The
 candidate supports:
@@ -23,6 +23,12 @@ candidate supports:
   structure preview with rotate/zoom/pan/reset, localized UI improvements,
   UTF-8 live job-log tails, a thin double-click `WinQStep.exe` launcher, and
   clearer first-run requirements.
+- Existing-input batch workflow support with separate directory, multi-file,
+  and input-list selectors, batch preview/result summaries, resume, result
+  export, and queue actions.
+- Additional QuickStep Template coverage added after `0.2.0`, including
+  DFT PRINT Band Structure output and tighter GUI dependency hints for
+  periodicity-sensitive KPOINTS, POISSON, CELL_OPT, and Band Structure choices.
 - Source-release zip packaging and unpacked release smoke testing.
 
 ## Required Handoff Commands
@@ -35,7 +41,7 @@ python .\scripts\run_checks.py --profile all --compact
 python .\scripts\release_candidate_walkthrough.py --compact
 python .\scripts\build_launcher.py --compact
 python .\scripts\build_release.py --compact
-python .\scripts\smoke_release_install.py --archive .\dist\winqstep-0.2.0.zip --compact
+python .\scripts\smoke_release_install.py --archive .\dist\winqstep-0.3.0.zip --compact
 ```
 
 Expected minimum result:
@@ -45,8 +51,8 @@ Expected minimum result:
 - `release_candidate_walkthrough.py` reports `valid: true` with 9 offline
   steps passed.
 - `build_launcher.py` writes `WinQStep.exe`.
-- `build_release.py` writes `dist/winqstep-0.2.0.zip` and
-  `dist/winqstep-0.2.0.manifest.json`.
+- `build_release.py` writes `dist/winqstep-0.3.0.zip` and
+  `dist/winqstep-0.3.0.manifest.json`.
 - `smoke_release_install.py --archive ...` reports `valid: true`.
 
 When WSL2 and the configured CP2K installation are available, also run:
@@ -63,8 +69,8 @@ The live walkthrough must complete a real `ENERGY_FORCE` CP2K run and parse
 
 For a source-release handoff, provide:
 
-- `dist/winqstep-0.2.0.zip`
-- `dist/winqstep-0.2.0.manifest.json`
+- `dist/winqstep-0.3.0.zip`
+- `dist/winqstep-0.3.0.manifest.json`
 - the SHA-256 value from the manifest or `build_release.py` output
 - this handoff note, `docs/release.md`, and `docs/release-notes.md`
 
@@ -104,6 +110,28 @@ If `WinQStep.exe` is not present in a source-only handoff, run
   of truth for scientific interpretation.
 
 ## Current Verification Baseline
+
+Round 84 prepares the `0.3.0` source-release candidate after the post-`0.2.0`
+batch, Band Structure, GUI dependency, and documentation updates:
+
+- `python .\scripts\run_checks.py --profile all --compact`: 13/13 checks
+  passed, including 201 unit tests.
+- `python .\scripts\release_candidate_walkthrough.py --compact`: 9/9 offline
+  steps passed.
+- `python .\scripts\build_launcher.py --compact`: wrote `WinQStep.exe`.
+- `python .\scripts\build_release.py --compact`: wrote
+  `dist/winqstep-0.3.0.zip` and `dist/winqstep-0.3.0.manifest.json`, with 116
+  planned source files plus archive `RELEASE-MANIFEST.json`.
+- `python .\scripts\smoke_release_install.py --archive .\dist\winqstep-0.3.0.zip --compact`:
+  valid unpacked diagnostics.
+- `python .\scripts\run_checks.py --profile live --compact`: 3/3 live checks
+  passed on the maintainer workstation with WSL2 `Ubuntu` and
+  `/home/teng/cp2k/exe/local/cp2k.ssmp`.
+- The live validation also covers WSL CP2K data inspection, GUI button smoke,
+  and a real GUI async `Run` CP2K `ENERGY` job.
+- The authoritative archive SHA-256 is the value in
+  `dist/winqstep-0.3.0.manifest.json`; do not duplicate it in packaged docs,
+  because this handoff note is itself included in the archive.
 
 Round 57 adds QuickStep XC/PBE parametrization and opt-in DFT-D3 support. The
 local checks for this round were:

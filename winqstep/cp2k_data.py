@@ -141,12 +141,13 @@ def build_wsl_data_dump_command(
             (
                 f"find {quoted_dir} -maxdepth 1 -type f "
                 "\\( -name '*BASIS*' -o -name '*POTENTIAL*' -o -iname '*dftd3*' \\) "
-                f"-print0 | sort -z | head -z -n {normalized_limit} | "
-                "while IFS= read -r -d '' file_path; do "
-                "file_name=${file_path##*/}; "
-                f"printf '{DATA_FILE_START}%s\\n' \"$file_name\"; "
-                "cat -- \"$file_path\"; "
-                f"printf '\\n{DATA_FILE_END}%s\\n' \"$file_name\"; "
+                f"-printf '%p\\n' | sort | head -n {normalized_limit} | "
+                "while IFS= read -r file_path; do "
+                "[ -n \"\\$file_path\" ] || continue; "
+                "file_name=\\${file_path##*/}; "
+                f"printf '{DATA_FILE_START}%s\\n' \"\\$file_name\"; "
+                "cat -- \"\\$file_path\"; "
+                f"printf '\\n{DATA_FILE_END}%s\\n' \"\\$file_name\"; "
                 "done"
             ),
         ]

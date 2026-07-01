@@ -339,6 +339,10 @@ function Start-WinQStepPythonProcess {
     $process.StartInfo = $startInfo
 
     [void]$process.Start()
+    $stdoutTask = $process.StandardOutput.ReadToEndAsync()
+    $stderrTask = $process.StandardError.ReadToEndAsync()
+    $process | Add-Member -NotePropertyName WinQStepStdoutTask -NotePropertyValue $stdoutTask -Force
+    $process | Add-Member -NotePropertyName WinQStepStderrTask -NotePropertyValue $stderrTask -Force
     return $process
 }
 
@@ -352,22 +356,47 @@ function Save-WinQStepProcessOutput {
     $stdout = ""
     $stderr = ""
     try {
-        $stdout = $Process.StandardOutput.ReadToEnd()
-    }
-    catch {
-        $stdout = ""
-    }
-    try {
-        $stderr = $Process.StandardError.ReadToEnd()
-    }
-    catch {
-        $stderr = ""
-    }
-    try {
         $Process.WaitForExit()
     }
     catch {
     }
+
+    $stdoutTaskProperty = $Process.PSObject.Properties["WinQStepStdoutTask"]
+    if ($null -ne $stdoutTaskProperty) {
+        try {
+            $stdout = [string]$stdoutTaskProperty.Value.GetAwaiter().GetResult()
+        }
+        catch {
+            $stdout = ""
+        }
+    }
+    else {
+        try {
+            $stdout = $Process.StandardOutput.ReadToEnd()
+        }
+        catch {
+            $stdout = ""
+        }
+    }
+
+    $stderrTaskProperty = $Process.PSObject.Properties["WinQStepStderrTask"]
+    if ($null -ne $stderrTaskProperty) {
+        try {
+            $stderr = [string]$stderrTaskProperty.Value.GetAwaiter().GetResult()
+        }
+        catch {
+            $stderr = ""
+        }
+    }
+    else {
+        try {
+            $stderr = $Process.StandardError.ReadToEnd()
+        }
+        catch {
+            $stderr = ""
+        }
+    }
+
     [System.IO.File]::WriteAllText($StdoutPath, $stdout, $Script:Utf8NoBomEncoding)
     [System.IO.File]::WriteAllText($StderrPath, $stderr, $Script:Utf8NoBomEncoding)
     return [pscustomobject]@{

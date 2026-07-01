@@ -2933,3 +2933,42 @@ Acceptance:
 Commit boundary:
 
 - One commit for dependency logic, GUI hints, tests, and documentation.
+
+## Round 84 - 0.3.0 Release Candidate Preparation
+
+Status: implemented.
+
+Scope:
+
+- Bump the project package version from `0.2.0` to `0.3.0`.
+- Update release notes and handoff commands for the new source-release
+  candidate.
+- Run the standard offline release-candidate verification path.
+- Build the thin launcher and the `dist/winqstep-0.3.0.zip` source-release
+  archive, then smoke-test the unpacked archive.
+- Keep the GUI async run smoke isolated from stale output by using a fresh
+  scratch directory for each run.
+- Fix release-blocking live profile issues found during validation: WSL data
+  inspection variable escaping, GUI async process stdout/stderr draining, and
+  process status refresh before `HasExited` checks.
+
+Acceptance:
+
+- `docs/release-notes.md` describes the user-visible changes since `0.2.0`.
+- `docs/release-candidate-handoff.md` tracks the current project version and
+  expected `0.3.0` artifact names.
+- `python .\scripts\run_checks.py --profile all --compact` passes.
+- `python .\scripts\build_launcher.py --compact` passes.
+- `python .\scripts\build_release.py --compact` writes the `0.3.0` archive and
+  manifest.
+- `python .\scripts\smoke_release_install.py --archive .\dist\winqstep-0.3.0.zip --compact`
+  passes.
+- GUI async run smoke output is written into a unique temporary output
+  directory instead of reusing a fixed previous-run path.
+- `python .\scripts\run_checks.py --profile live --compact` passes on a
+  machine with the configured WSL2/CP2K installation.
+
+Commit boundary:
+
+- One commit for the version bump, release docs, verification baseline, and
+  local release-candidate preparation notes.

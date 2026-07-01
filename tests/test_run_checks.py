@@ -74,6 +74,7 @@ class RunChecksTests(unittest.TestCase):
         self.assertIn("-Diagnostics", plan[0]["command"])
         self.assertIn("-ButtonSmokeTest", plan[1]["command"])
         self.assertIn("-AsyncRunSmokeTest", plan[2]["command"])
+        self.assertGreaterEqual(plan[2]["timeout"], 480)
         self.assertIsNone(plan[0]["skip_reason"])
 
     def test_list_cli_reports_plan_without_running_checks(self) -> None:

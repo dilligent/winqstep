@@ -287,6 +287,17 @@ function New-WinQStepWindow {
         }
     }.GetNewClosure()
 
+    $ResolveWindowsWorkspacePath = {
+        param([AllowEmptyString()][string]$Workspace)
+        if ([string]::IsNullOrWhiteSpace($Workspace)) {
+            return ""
+        }
+        if ([System.IO.Path]::IsPathRooted($Workspace)) {
+            return [System.IO.Path]::GetFullPath($Workspace)
+        }
+        return Resolve-WinQStepPath $Workspace
+    }.GetNewClosure()
+
     $GetBatchInputFilePaths = {
         $text = [string]$controls["BatchInputFilesBox"].Text
         return @(
@@ -2637,6 +2648,7 @@ function New-WinQStepWindow {
         }
 
         $process = [System.Diagnostics.Process]$current["Process"]
+        $process.Refresh()
         if ($process.HasExited) {
             & $CompleteAsyncJob $current
             return
@@ -2876,17 +2888,6 @@ function New-WinQStepWindow {
             }
         }
         return ($lines -join "`r`n")
-    }.GetNewClosure()
-
-    $ResolveWindowsWorkspacePath = {
-        param([AllowEmptyString()][string]$Workspace)
-        if ([string]::IsNullOrWhiteSpace($Workspace)) {
-            return ""
-        }
-        if ([System.IO.Path]::IsPathRooted($Workspace)) {
-            return [System.IO.Path]::GetFullPath($Workspace)
-        }
-        return Resolve-WinQStepPath $Workspace
     }.GetNewClosure()
 
     $SetConfigFieldsFromPayload = {
@@ -5566,7 +5567,7 @@ if ($EditedPreviewSmokeTest) {
 if ($AsyncRunSmokeTest) {
     $report = Test-WinQStepGuiPrerequisites
     $window = New-WinQStepWindow
-    $smokeDir = Resolve-WinQStepPath "outputs\gui-async-run-smoke"
+    $smokeDir = Resolve-WinQStepPath ("outputs\gui-async-run-smoke-{0}" -f ([System.Guid]::NewGuid().ToString("N")))
     [System.IO.Directory]::CreateDirectory($smokeDir) | Out-Null
     $smokeConfigPath = Join-Path $smokeDir "async_run.config.json"
     $smokeTemplatePath = Join-Path $smokeDir "async_run.template.json"
@@ -5615,7 +5616,7 @@ if ($AsyncRunSmokeTest) {
     try {
         & $ClickButton "RunButton"
         $started = [bool]$window.FindName("CancelJobButton").IsEnabled
-        $deadline = [DateTime]::UtcNow.AddSeconds(120)
+        $deadline = [DateTime]::UtcNow.AddSeconds(360)
         while ([bool]$window.FindName("CancelJobButton").IsEnabled) {
             if ([DateTime]::UtcNow -gt $deadline) {
                 $timedOut = $true

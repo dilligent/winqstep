@@ -424,6 +424,10 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn("[System.Windows.Threading.DispatcherTimer]::new()", script_text)
         self.assertIn("Start-WinQStepPythonProcess", helper_text)
         self.assertIn("Save-WinQStepProcessOutput", helper_text)
+        self.assertIn("ReadToEndAsync()", helper_text)
+        self.assertIn("WinQStepStdoutTask", helper_text)
+        self.assertIn("WinQStepStderrTask", helper_text)
+        self.assertIn("GetAwaiter().GetResult()", helper_text)
         self.assertIn("Stop-WinQStepProcessTree", helper_text)
         self.assertIn("$startInfo.StandardOutputEncoding = $Script:Utf8NoBomEncoding", helper_text)
         self.assertIn("$startInfo.StandardErrorEncoding = $Script:Utf8NoBomEncoding", helper_text)
@@ -522,6 +526,7 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn("$ButtonSmokeTest", script_text)
         self.assertIn("$EditedPreviewSmokeTest", script_text)
         self.assertIn("$AsyncRunSmokeTest", script_text)
+        self.assertIn("[DateTime]::UtcNow.AddSeconds(360)", script_text)
         self.assertIn("$PythonInvokeSmokeTest", script_text)
         self.assertIn("$GuiStressSmokeTest", script_text)
         self.assertIn("$BatchSmokeTest", script_text)
@@ -556,6 +561,18 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn("InvokeBatchQueueAction", script_text)
         self.assertIn("StartExistingInputBatchResumeJob", script_text)
         self.assertIn("UpdateBatchQueueControls", script_text)
+        self.assertLess(
+            script_text.index("$ResolveWindowsWorkspacePath = {"),
+            script_text.index("$GetCurrentBatchSummaryPath = {"),
+        )
+        self.assertLess(
+            script_text.index("$ResolveWindowsWorkspacePath = {"),
+            script_text.index("$SetAsyncJobRunning = {"),
+        )
+        refresh_block = script_text[
+            script_text.index("$RefreshAsyncJob = {") : script_text.index("$jobTimer.Add_Tick({")
+        ]
+        self.assertLess(refresh_block.index("$process.Refresh()"), refresh_block.index("if ($process.HasExited)"))
         self.assertIn("scripts\\manage_existing_input_batch.py", helper_text)
         self.assertIn("scripts\\run_existing_input_batch.py", helper_text)
         self.assertIn("button.resume_batch", english_text)
