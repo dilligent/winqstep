@@ -478,6 +478,20 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn("NewCylinderMesh", script_text)
         self.assertIn("--include-preview", script_text)
         self.assertIn("Imported structure", script_text)
+
+        dft_print_group = re.search(
+            r'<GroupBox x:Name="TemplateDftPrintGroup"[\s\S]*?'
+            r"<Grid.RowDefinitions>(?P<rows>[\s\S]*?)</Grid.RowDefinitions>"
+            r"(?P<body>[\s\S]*?)</Grid>\s*</GroupBox>",
+            xaml_text,
+        )
+        self.assertIsNotNone(dft_print_group)
+        dft_print_rows = len(re.findall(r"<RowDefinition\b", dft_print_group.group("rows")))
+        dft_print_max_row = max(
+            int(match.group(1))
+            for match in re.finditer(r'Grid\.Row="(\d+)"', dft_print_group.group("body"))
+        )
+        self.assertGreaterEqual(dft_print_rows, dft_print_max_row + 1)
         self.assertIn("Atoms (cartesian coordinates, Angstrom)", script_text)
         self.assertIn("$SetKindEntriesFromText", script_text)
         self.assertIn("$SyncKindsTextFromGrid", script_text)
