@@ -475,6 +475,7 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn("$EditedPreviewSmokeTest", script_text)
         self.assertIn("$AsyncRunSmokeTest", script_text)
         self.assertIn("$PythonInvokeSmokeTest", script_text)
+        self.assertIn("$GuiStressSmokeTest", script_text)
         self.assertIn("$BatchSmokeTest", script_text)
         self.assertIn("$BatchRunSmokeTest", script_text)
         self.assertIn("Add_DispatcherUnhandledException", script_text)
@@ -517,6 +518,11 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn("label.batch_stop_on_failure", english_text)
         self.assertIn("status.preparing_existing_input_batch_preview", english_text)
         self.assertIn("async_run_smoke", script_text)
+        self.assertIn("gui_stress_smoke", script_text)
+        self.assertIn("rapid_mode_tab_language_switching", script_text)
+        self.assertIn("empty_existing_input_preview_recovers", script_text)
+        self.assertIn("invalid_mixed_batch_preview_recovers", script_text)
+        self.assertIn("Existing input path is empty.", script_text)
         self.assertIn("run_completed", script_text)
         self.assertIn("HistoryGridDoubleClick", script_text)
         self.assertIn("[System.Windows.MessageBoxImage]::Error", script_text)
@@ -1006,6 +1012,55 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertTrue(report["workflow_run_enabled_after_batch"])
         self.assertTrue(report["existing_run_enabled_after_batch"])
         self.assertTrue(report["batch_run_enabled_after_batch"])
+
+    @unittest.skipUnless(platform.system() == "Windows", "WPF prototype is Windows-only")
+    def test_gui_stress_smoke_recovers_from_unusual_user_actions(self) -> None:
+        powershell = shutil.which("powershell") or shutil.which("pwsh")
+        if not powershell:
+            self.skipTest("PowerShell is not available")
+
+        completed = subprocess.run(
+            [
+                powershell,
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                str(ROOT / "scripts" / "start_gui.ps1"),
+                "-GuiStressSmokeTest",
+                "-Language",
+                "en-US",
+            ],
+            capture_output=True,
+            check=False,
+        )
+
+        stderr = completed.stderr.decode("utf-8", errors="replace")
+        stdout = completed.stdout.decode("utf-8-sig", errors="replace")
+        self.assertEqual(completed.returncode, 0, stderr)
+        report = json.loads(stdout)
+        self.assertEqual(report["mode"], "gui_stress_smoke")
+        self.assertGreaterEqual(report["operation_count"], 13)
+        self.assertTrue(report["message_boxes_suppressed"])
+        self.assertTrue(report["all_operations_ok"], report["operations"])
+        self.assertEqual(report["unexpected_failures"], [])
+        for name, details in report["operations"].items():
+            self.assertTrue(details["ok"], name)
+            self.assertTrue(details["run_enabled"], name)
+            self.assertTrue(details["preview_enabled"], name)
+            self.assertTrue(details["clear_enabled"], name)
+        self.assertTrue(report["invalid_structure_reported"])
+        self.assertTrue(report["existing_preview_recovered"])
+        self.assertTrue(report["empty_batch_count_zero"])
+        self.assertTrue(report["invalid_batch_target_has_selection"])
+        self.assertTrue(report["valid_batch_preview_has_two"])
+        self.assertTrue(report["valid_batch_target_has_two"])
+        self.assertTrue(report["clear_emptied_text_fields"])
+        self.assertTrue(report["clear_disabled_artifact_buttons"])
+        self.assertTrue(report["final_run_button_enabled"])
+        self.assertTrue(report["final_preview_button_enabled"])
+        self.assertTrue(report["final_cancel_button_disabled"])
+        self.assertTrue(report["final_status_ready"])
 
     @unittest.skipUnless(platform.system() == "Windows", "WPF prototype is Windows-only")
     def test_edited_preview_smoke_runs_saved_input_copy(self) -> None:

@@ -311,3 +311,9 @@ wiring are present.
 `-LifecycleSmokeTest` starts and stops a controlled background process through
 the same lifecycle helpers used by `Run` and `Stop`. CP2K data inspection is
 covered by unit tests with fixture data and by manual/local WSL smoke runs.
+
+`-GuiStressSmokeTest` runs an offline stress pass for unusual user actions:
+rapid mode and language switching, missing paths, empty existing-input and batch
+inputs, invalid mixed batch selectors, huge pasted text, and empty history
+interactions. Expected errors must leave the GUI responsive with the main action
+buttons re-enabled.

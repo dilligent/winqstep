@@ -8,6 +8,7 @@ param(
     [switch]$AsyncRunSmokeTest,
     [switch]$PythonInvokeSmokeTest,
     [switch]$EnvironmentDisplaySmokeTest,
+    [switch]$GuiStressSmokeTest,
     [switch]$BatchSmokeTest,
     [switch]$BatchRunSmokeTest,
     [switch]$Diagnostics,
@@ -22,7 +23,7 @@ $Script:RepoRoot = Split-Path -Parent $PSScriptRoot
 $Script:PythonCommand = "python"
 $Script:Utf8NoBomEncoding = New-Object System.Text.UTF8Encoding($false)
 $Script:RequestedLanguage = $Language
-$SuppressGuiMessageBoxes = [bool]($ButtonSmokeTest -or $EditedPreviewSmokeTest -or $AsyncRunSmokeTest -or $BatchSmokeTest -or $BatchRunSmokeTest)
+$SuppressGuiMessageBoxes = [bool]($ButtonSmokeTest -or $EditedPreviewSmokeTest -or $AsyncRunSmokeTest -or $GuiStressSmokeTest -or $BatchSmokeTest -or $BatchRunSmokeTest)
 $EditedPreviewSmokeTestEnabled = [bool]$EditedPreviewSmokeTest
 $BatchRunSmokeTestEnabled = [bool]$BatchRunSmokeTest
 $EditedPreviewSmokeState = @{
@@ -382,7 +383,7 @@ function New-WinQStepWindow {
     }.GetNewClosure()
 
     $GetRunTargetBatchInputCount = {
-        param([Parameter(Mandatory = $true)][string]$PathText)
+        param([Parameter(Mandatory = $true)][AllowEmptyString()][string]$PathText)
         $resolved = & $ResolveRunTargetPath $PathText
         if ([string]::IsNullOrWhiteSpace($resolved)) {
             return 0
@@ -800,9 +801,12 @@ function New-WinQStepWindow {
 
     $GetExistingInputArgumentsForPath = {
         param(
-            [Parameter(Mandatory = $true)][string]$InputPath,
+            [Parameter(Mandatory = $true)][AllowEmptyString()][string]$InputPath,
             [bool]$PrepareOnly
         )
+        if ([string]::IsNullOrWhiteSpace($InputPath)) {
+            throw "Existing input path is empty."
+        }
         $arguments = @(
             "scripts\run_existing_input.py",
             "--config", $controls["ConfigPathBox"].Text,
@@ -2910,6 +2914,12 @@ function New-WinQStepWindow {
             }
             throw "Command did not return JSON. Raw output:`n$raw"
         }
+        if ($null -eq $payload) {
+            if ($Result.ExitCode -ne 0 -and -not [string]::IsNullOrWhiteSpace([string]$Result.Error)) {
+                throw $Result.Error
+            }
+            throw "Config command did not return JSON."
+        }
         if ($null -ne $payload.config) {
             & $SetConfigFieldsFromPayload $payload $UpdateJobDirFromWorkspace
         }
@@ -3334,6 +3344,12 @@ function New-WinQStepWindow {
             }
             throw "Command did not return JSON. Raw output:`n$raw"
         }
+        if ($null -eq $payload) {
+            if ($Result.ExitCode -ne 0 -and -not [string]::IsNullOrWhiteSpace([string]$Result.Error)) {
+                throw $Result.Error
+            }
+            throw "Template command did not return JSON."
+        }
         if ($null -ne $payload.template) {
             & $SetTemplateFieldsFromPayload $payload
         }
@@ -3568,6 +3584,9 @@ function New-WinQStepWindow {
         $null = & $SaveConfigFields $true $false
         $cachePath = & $GetDataInspectionCachePath
         if (& $TestIsExistingInputMode) {
+            if ([string]::IsNullOrWhiteSpace([string]$controls["ExistingInputPathBox"].Text)) {
+                throw "Existing input path is empty."
+            }
             $arguments = @(
                 "scripts\validate_job_inputs.py",
                 "--mode", "existing_input",
@@ -4682,6 +4701,282 @@ if ($EnvironmentDisplaySmokeTest) {
         $report["environment_text_has_warning"] -and
         $report["environment_text_has_command_status"] -and
         $report["environment_text_is_not_raw_json"]
+    ) {
+        exit 0
+    }
+    exit 1
+}
+
+if ($GuiStressSmokeTest) {
+    $report = Test-WinQStepGuiPrerequisites
+    $window = New-WinQStepWindow
+    $operationReports = [ordered]@{}
+    $unexpectedFailures = New-Object System.Collections.ArrayList
+
+    $stressDir = Resolve-WinQStepPath ("outputs\gui-stress-smoke-{0}" -f ([System.Guid]::NewGuid().ToString("N")))
+    $batchDir = Join-Path $stressDir "batch-inputs"
+    $jobDir = Join-Path $stressDir "jobs"
+    [System.IO.Directory]::CreateDirectory($batchDir) | Out-Null
+    [System.IO.Directory]::CreateDirectory($jobDir) | Out-Null
+
+    $validConfigPath = Join-Path $stressDir "stress.config.json"
+    $validTemplatePath = Join-Path $stressDir "stress.template.json"
+    $validInputPath = Resolve-WinQStepPath "tests\fixtures\quickstep_energy.inp"
+    $validStructurePath = Resolve-WinQStepPath "tests\fixtures\structures\water.xyz"
+    [System.IO.File]::Copy((Resolve-WinQStepPath "examples\winqstep.config.example.json"), $validConfigPath, $true)
+    [System.IO.File]::Copy((Resolve-WinQStepPath "examples\templates\energy_pbe.example.json"), $validTemplatePath, $true)
+
+    $batchOnePath = Join-Path $batchDir "stress_one.inp"
+    $batchTwoPath = Join-Path $batchDir "stress_two.inp"
+    $batchListPath = Join-Path $batchDir "stress-list.txt"
+    [System.IO.File]::Copy($validInputPath, $batchOnePath, $true)
+    [System.IO.File]::Copy($validInputPath, $batchTwoPath, $true)
+    [System.IO.File]::WriteAllText($batchListPath, "# duplicate path smoke`nstress_two.inp`n", $Script:Utf8NoBomEncoding)
+
+    $missingConfigPath = Join-Path $stressDir "missing.config.json"
+    $missingTemplatePath = Join-Path $stressDir "missing.template.json"
+    $missingStructurePath = Join-Path $stressDir "missing.xyz"
+    $missingInputPath = Join-Path $stressDir "missing.inp"
+    $missingListPath = Join-Path $stressDir "missing-list.txt"
+
+    $window.FindName("ConfigPathBox").Text = $validConfigPath
+    $window.FindName("TemplatePathBox").Text = $validTemplatePath
+    $window.FindName("StructurePathBox").Text = $validStructurePath
+    $window.FindName("ExistingInputPathBox").Text = $validInputPath
+    $window.FindName("JobDirBox").Text = $jobDir
+    $window.FindName("ProjectNameBox").Text = "stress_smoke"
+    [System.Windows.Forms.Application]::DoEvents()
+
+    $ClickButton = {
+        param([Parameter(Mandatory = $true)][string]$Name)
+        $button = $window.FindName($Name)
+        if ($null -eq $button) {
+            throw "Button was not found: $Name"
+        }
+        if (-not [bool]$button.IsEnabled) {
+            throw "Button is disabled: $Name"
+        }
+        $eventArgs = [System.Windows.RoutedEventArgs]::new([System.Windows.Controls.Button]::ClickEvent)
+        $button.RaiseEvent($eventArgs)
+        [System.Windows.Forms.Application]::DoEvents()
+    }.GetNewClosure()
+
+    $RecordOperation = {
+        param(
+            [Parameter(Mandatory = $true)][string]$Name,
+            [Parameter(Mandatory = $true)][bool]$ExpectError,
+            [Parameter(Mandatory = $true)][scriptblock]$Action
+        )
+        $caughtError = ""
+        $ok = $false
+        try {
+            & $Action
+            [System.Windows.Forms.Application]::DoEvents()
+            if ($ExpectError) {
+                $caughtError = "Expected an error, but the operation succeeded."
+                $ok = $false
+            }
+            else {
+                $ok = $true
+            }
+        }
+        catch {
+            $caughtError = $_.Exception.Message
+            $ok = $ExpectError
+        }
+        [System.Windows.Forms.Application]::DoEvents()
+
+        $stateRecovered = (
+            [bool]$window.FindName("RunButton").IsEnabled -and
+            [bool]$window.FindName("PreviewButton").IsEnabled -and
+            [bool]$window.FindName("ClearButton").IsEnabled -and
+            $null -eq $window.Cursor
+        )
+        if (-not $stateRecovered) {
+            $ok = $false
+            if ([string]::IsNullOrWhiteSpace($caughtError)) {
+                $caughtError = "GUI did not recover to an enabled, non-busy state."
+            }
+            else {
+                $caughtError = "$caughtError | GUI did not recover to an enabled, non-busy state."
+            }
+        }
+        $operationReports[$Name] = [ordered]@{
+            ok = $ok
+            expected_error = $ExpectError
+            caught_error = $caughtError
+            run_enabled = [bool]$window.FindName("RunButton").IsEnabled
+            preview_enabled = [bool]$window.FindName("PreviewButton").IsEnabled
+            clear_enabled = [bool]$window.FindName("ClearButton").IsEnabled
+        }
+        if (-not $ok) {
+            [void]$unexpectedFailures.Add($Name)
+        }
+    }.GetNewClosure()
+
+    & $RecordOperation "rapid_mode_tab_language_switching" $false {
+        for ($index = 0; $index -lt 12; $index++) {
+            $window.FindName("WorkflowModeRadio").IsChecked = $true
+            [System.Windows.Forms.Application]::DoEvents()
+            $window.FindName("ExistingInputModeRadio").IsChecked = $true
+            [System.Windows.Forms.Application]::DoEvents()
+            $window.FindName("ExistingInputBatchModeRadio").IsChecked = $true
+            [System.Windows.Forms.Application]::DoEvents()
+            $window.FindName("MainTabs").SelectedIndex = $index % $window.FindName("MainTabs").Items.Count
+            [System.Windows.Forms.Application]::DoEvents()
+        }
+        $window.FindName("UiLanguageBox").SelectedIndex = 2
+        & $ClickButton "ApplyLanguageButton"
+        $window.FindName("UiLanguageBox").SelectedIndex = 1
+        & $ClickButton "ApplyLanguageButton"
+    }
+
+    & $RecordOperation "missing_config_load_recovers" $true {
+        $window.FindName("ConfigPathBox").Text = $missingConfigPath
+        & $ClickButton "LoadConfigButton"
+    }
+
+    & $RecordOperation "valid_config_load_after_error" $false {
+        $window.FindName("ConfigPathBox").Text = $validConfigPath
+        & $ClickButton "LoadConfigButton"
+    }
+
+    & $RecordOperation "missing_template_load_recovers" $true {
+        $window.FindName("TemplatePathBox").Text = $missingTemplatePath
+        & $ClickButton "LoadTemplateButton"
+    }
+
+    & $RecordOperation "valid_template_load_after_error" $false {
+        $window.FindName("TemplatePathBox").Text = $validTemplatePath
+        & $ClickButton "LoadTemplateButton"
+    }
+
+    & $RecordOperation "invalid_structure_import_reports_error" $false {
+        $window.FindName("WorkflowModeRadio").IsChecked = $true
+        $window.FindName("StructurePathBox").Text = $missingStructurePath
+        & $ClickButton "ImportButton"
+    }
+    $invalidStructureText = [string]$window.FindName("StructureText").Text
+
+    & $RecordOperation "valid_structure_import_after_error" $false {
+        $window.FindName("StructurePathBox").Text = $validStructurePath
+        & $ClickButton "ImportButton"
+    }
+
+    & $RecordOperation "empty_existing_input_preview_recovers" $true {
+        $window.FindName("ExistingInputModeRadio").IsChecked = $true
+        $window.FindName("ExistingInputPathBox").Text = ""
+        & $ClickButton "PreviewButton"
+    }
+
+    & $RecordOperation "valid_existing_input_preview_after_error" $false {
+        $window.FindName("ExistingInputPathBox").Text = $validInputPath
+        & $ClickButton "PreviewButton"
+    }
+    $existingPreviewText = [string]$window.FindName("PreviewText").Text
+
+    & $RecordOperation "empty_batch_preview_recovers" $true {
+        $window.FindName("ExistingInputBatchModeRadio").IsChecked = $true
+        $window.FindName("ExistingInputPathBox").Text = ""
+        $window.FindName("BatchInputDirBox").Text = ""
+        $window.FindName("BatchInputFilesBox").Text = ""
+        $window.FindName("BatchInputListBox").Text = ""
+        & $ClickButton "PreviewButton"
+    }
+    $emptyBatchCountText = [string]$window.FindName("BatchInputCountText").Text
+
+    & $RecordOperation "invalid_mixed_batch_preview_recovers" $true {
+        $window.FindName("BatchInputDirBox").Text = Join-Path $stressDir "missing-dir"
+        $window.FindName("BatchInputFilesBox").Text = "$missingInputPath`r`n$validInputPath"
+        $window.FindName("BatchInputListBox").Text = $missingListPath
+        & $ClickButton "PreviewButton"
+    }
+    $invalidBatchRunTargetText = [string]$window.FindName("RunTargetText").Text
+
+    & $RecordOperation "valid_deduped_batch_preview_after_errors" $false {
+        $window.FindName("BatchInputDirBox").Text = $batchDir
+        $window.FindName("BatchInputFilesBox").Text = $batchOnePath
+        $window.FindName("BatchInputListBox").Text = $batchListPath
+        & $ClickButton "PreviewButton"
+    }
+    $validBatchPreviewText = [string]$window.FindName("PreviewText").Text
+    $validBatchRunTargetText = [string]$window.FindName("RunTargetText").Text
+    $validBatchCountText = [string]$window.FindName("BatchInputCountText").Text
+
+    & $RecordOperation "huge_text_then_clear_recovers" $false {
+        $window.FindName("PreviewText").Text = [string]::new([char]"X", 50000)
+        $window.FindName("StructureText").Text = [string]::new([char]"Y", 50000)
+        $window.FindName("LogText").Text = [string]::new([char]"Z", 50000)
+        [System.Windows.Forms.Application]::DoEvents()
+        & $ClickButton "ClearButton"
+    }
+
+    & $RecordOperation "empty_history_double_click_noop" $false {
+        $grid = $window.FindName("HistoryGrid")
+        $grid.SelectedItem = $null
+        $mouseArgs = [System.Windows.Input.MouseButtonEventArgs]::new(
+            [System.Windows.Input.Mouse]::PrimaryDevice,
+            0,
+            [System.Windows.Input.MouseButton]::Left
+        )
+        $mouseArgs.RoutedEvent = [System.Windows.Controls.Control]::MouseDoubleClickEvent
+        $grid.RaiseEvent($mouseArgs)
+        [System.Windows.Forms.Application]::DoEvents()
+    }
+
+    $allOperationsOk = -not @($operationReports.Values | Where-Object { -not [bool]$_.ok }).Count
+    $textFieldsCleared = @(
+        "EnvironmentText", "StructureText", "PreviewText", "LogText", "ArtifactSummaryText", "ArtifactText"
+    ).Where({ -not [string]::IsNullOrWhiteSpace([string]$window.FindName($_).Text) }).Count -eq 0
+    $artifactButtonsDisabled = @(
+        "ViewResultsButton", "SaveResultsButton",
+        "ViewInputButton", "ViewOutputButton", "ViewMetadataButton", "ViewStdoutButton", "ViewStderrButton"
+    ).Where({ [bool]$window.FindName($_).IsEnabled }).Count -eq 0
+
+    $report["mode"] = "gui_stress_smoke"
+    $report["operation_count"] = $operationReports.Count
+    $report["operations"] = $operationReports
+    $report["unexpected_failures"] = @($unexpectedFailures)
+    $report["all_operations_ok"] = $allOperationsOk
+    $report["message_boxes_suppressed"] = [bool]$Script:SuppressGuiMessageBoxes
+    $report["invalid_structure_reported"] = (
+        $invalidStructureText.Contains("No such file") -or
+        $invalidStructureText.Contains("not found") -or
+        $invalidStructureText.Contains("error")
+    )
+    $report["existing_preview_recovered"] = $existingPreviewText.Contains("&GLOBAL")
+    $report["empty_batch_count_zero"] = $emptyBatchCountText.Contains("0")
+    $report["invalid_batch_target_has_selection"] = $invalidBatchRunTargetText.Contains("2")
+    $report["valid_batch_preview_has_two"] = (
+        $validBatchPreviewText.Contains("inputs=2") -and
+        $validBatchPreviewText.Contains("#1: status=prepared") -and
+        $validBatchPreviewText.Contains("#2: status=prepared")
+    )
+    $report["valid_batch_target_has_two"] = ($validBatchRunTargetText.Contains("2") -and $validBatchCountText.Contains("2"))
+    $report["clear_emptied_text_fields"] = $textFieldsCleared
+    $report["clear_disabled_artifact_buttons"] = $artifactButtonsDisabled
+    $report["final_run_button_enabled"] = [bool]$window.FindName("RunButton").IsEnabled
+    $report["final_preview_button_enabled"] = [bool]$window.FindName("PreviewButton").IsEnabled
+    $report["final_cancel_button_disabled"] = (-not [bool]$window.FindName("CancelJobButton").IsEnabled)
+    $report["final_status_ready"] = ([string]$window.FindName("StatusText").Text -eq (Get-WinQStepText "status.ready"))
+    $report | ConvertTo-Json -Depth 8
+
+    if (
+        $report["message_boxes_suppressed"] -and
+        $report["all_operations_ok"] -and
+        $report["operation_count"] -ge 13 -and
+        $report["invalid_structure_reported"] -and
+        $report["existing_preview_recovered"] -and
+        $report["empty_batch_count_zero"] -and
+        $report["invalid_batch_target_has_selection"] -and
+        $report["valid_batch_preview_has_two"] -and
+        $report["valid_batch_target_has_two"] -and
+        $report["clear_emptied_text_fields"] -and
+        $report["clear_disabled_artifact_buttons"] -and
+        $report["final_run_button_enabled"] -and
+        $report["final_preview_button_enabled"] -and
+        $report["final_cancel_button_disabled"] -and
+        $report["final_status_ready"]
     ) {
         exit 0
     }

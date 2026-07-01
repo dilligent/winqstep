@@ -39,6 +39,7 @@ class RunChecksTests(unittest.TestCase):
         self.assertIn("gui-button-smoke-offline", names)
         self.assertIn("gui-batch-smoke-offline", names)
         self.assertIn("gui-batch-run-smoke-offline", names)
+        self.assertIn("gui-stress-smoke-offline", names)
         self.assertIn("launcher-plan", names)
         self.assertIn("release-install-smoke", names)
         self.assertIn("release-candidate-walkthrough", names)

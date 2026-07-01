@@ -2812,9 +2812,39 @@ Commit boundary:
 - One commit for batch entry GUI, run-target counting, localization, docs, and
   tests.
 
+## Round 81 - GUI Stress and Recovery Smoke
+
+Status: completed.
+
+Scope:
+
+- Add a repeatable `-GuiStressSmokeTest` path for heavy, unusual GUI
+  interaction testing.
+- Exercise rapid mode/tab/language switching, missing config/template files,
+  invalid and recovered structure import, empty existing-input Preview, empty
+  batch Preview, invalid mixed batch selectors, deduplicated valid batch
+  Preview, huge text paste followed by Clear, and empty History double-click.
+- Treat expected errors as successful only if the GUI recovers to an enabled,
+  non-busy state after each operation.
+- Improve empty-path handling for existing input and batch run-target counting,
+  so user-cleared fields produce controlled errors instead of PowerShell
+  binding failures.
+
+Acceptance:
+
+- `-GuiStressSmokeTest` reports all stress operations as recovered and leaves
+  Run/Preview enabled with Stop disabled.
+- The standard `gui` check profile includes the stress smoke.
+- Fast and GUI profiles pass.
+
+Commit boundary:
+
+- One commit for the stress smoke, edge-case fixes, run-check integration, and
+  tests.
+
 ## QuickStep Feature Backlog
 
-Status: planned queue after Round 80.
+Status: planned queue after Round 81.
 
 Priority order:
 

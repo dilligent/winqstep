@@ -93,6 +93,13 @@ def build_check_plan(
                         timeout=120,
                     ),
                     powershell_check(
+                        "gui-stress-smoke-offline",
+                        profile,
+                        powershell,
+                        ["-GuiStressSmokeTest", "-Language", "zh-CN"],
+                        timeout=180,
+                    ),
+                    powershell_check(
                         "gui-lifecycle-smoke",
                         profile,
                         powershell,
