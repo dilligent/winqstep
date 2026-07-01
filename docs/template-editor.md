@@ -91,8 +91,12 @@ remaining editable.
 POISSON fields expose an optional `POISSON_SOLVER` selector. Leaving it blank
 preserves the historical generated input; explicit choices are normalized and
 validated by the same template and QuickStep model code as other DFT fields.
+The GUI warns when an explicit solver is incompatible with the visible Cell
+Periodic value.
 KPOINTS fields expose `NONE`, `GAMMA`, and `MONKHORST-PACK`, common
 Monkhorst-Pack grids, `FULL_GRID`, `SYMMETRY`, and `WAVEFUNCTIONS` choices.
+The GUI disables KPOINTS and resets its dependent options when the visible Cell
+Periodic value is `NONE`.
 DFT PRINT fields expose Mulliken, Lowdin, PDOS, electron-density cube,
 Hartree-potential cube, and Band Structure checkboxes; leaving them unchecked
 omits `DFT/&PRINT` entirely. Enabling Band Structure expands fields for
@@ -155,7 +159,8 @@ Fixed atom constraints are rejected unless the run type is `GEO_OPT` or
 `CELL_OPT`; their atom indices must be positive and unique, and the renderer
 also rejects indices outside the resolved structure atom count.
 CELL_OPT inputs reject nonperiodic cells and currently support the
-`DIRECT_CELL_OPT` path. When a CP2K data inspection cache is available, the GUI
+`DIRECT_CELL_OPT` path. The GUI warns when `Run Type` is `CELL_OPT` while the
+visible Cell Periodic value is `NONE`. When a CP2K data inspection cache is available, the GUI
 preflight step also compares template data-file names and KIND basis/potential
 labels against the cached CP2K data labels before `Preview` or `Run`.
 When DFT-D3 is enabled, preflight also checks the configured D3 parameter file

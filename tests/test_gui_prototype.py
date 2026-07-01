@@ -214,8 +214,10 @@ class GuiPrototypeTests(unittest.TestCase):
             "OuterScfHintText",
             "MixingHintText",
             "SmearingHintText",
+            "PoissonHintText",
             "KpointsHintText",
             "DftPrintHintText",
+            "CellOptHintText",
         ]:
             self.assertIn(f'x:Name="{hint_name}"', xaml_text)
             self.assertIn(hint_name, controls_text)
@@ -226,21 +228,30 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn("SyncTemplateDependencyState", script_text)
         self.assertIn("SetTemplateDependentControls", script_text)
         self.assertIn("template.hint.kpoints_none", script_text)
+        self.assertIn("template.hint.kpoints_nonperiodic", script_text)
+        self.assertIn("template.hint.poisson_incompatible", script_text)
         self.assertIn("template.hint.print_selected", script_text)
         self.assertIn("template.hint.print_band_nonperiodic", script_text)
+        self.assertIn("template.hint.cell_opt_nonperiodic", script_text)
         self.assertIn("TemplateDependencySmokeSync", script_text)
         self.assertIn('"tab.template_core": "Core"', english_text)
         self.assertIn('"tab.template_subsystem": "Subsystem"', english_text)
         self.assertIn('"template.hint.dispersion_disabled"', english_text)
         self.assertIn('"template.hint.kpoints_unknown"', english_text)
+        self.assertIn('"template.hint.kpoints_nonperiodic"', english_text)
+        self.assertIn('"template.hint.poisson_incompatible"', english_text)
         self.assertIn('"template.hint.print_selected"', english_text)
         self.assertIn('"template.hint.print_band_nonperiodic"', english_text)
+        self.assertIn('"template.hint.cell_opt_nonperiodic"', english_text)
         self.assertIn('"tab.template_core": "核心"', chinese_text)
         self.assertIn('"tab.template_subsystem": "子系统"', chinese_text)
         self.assertIn('"template.hint.dispersion_disabled"', chinese_text)
         self.assertIn('"template.hint.kpoints_unknown"', chinese_text)
+        self.assertIn('"template.hint.kpoints_nonperiodic"', chinese_text)
+        self.assertIn('"template.hint.poisson_incompatible"', chinese_text)
         self.assertIn('"template.hint.print_selected"', chinese_text)
         self.assertIn('"template.hint.print_band_nonperiodic"', chinese_text)
+        self.assertIn('"template.hint.cell_opt_nonperiodic"', chinese_text)
         self.assertIn('x:Key="TemplateSectionGroupBoxStyle"', xaml_text)
         self.assertIn('x:Key="TemplateSectionLevel1GroupBoxStyle"', xaml_text)
         self.assertIn('x:Key="TemplateSectionLevel2GroupBoxStyle"', xaml_text)
@@ -689,7 +700,7 @@ class GuiPrototypeTests(unittest.TestCase):
             ],
         )
         self.assertEqual(report["template_section_group_left_margins"], [0, 18, 36, 36, 36, 54, 54, 54, 36, 36, 36, 36, 54, 18, 18])
-        self.assertEqual(report["template_dependency_hints_loaded"], 6)
+        self.assertEqual(report["template_dependency_hints_loaded"], 8)
         self.assertTrue(report["template_dependency_smoke_sync_loaded"])
         self.assertTrue(report["template_dispersion_details_hidden_when_disabled"])
         self.assertTrue(report["template_outer_scf_details_hidden_when_disabled"])
@@ -699,10 +710,26 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertTrue(report["template_kpoints_wavefunctions_hidden_when_none"])
         self.assertTrue(report["template_print_group_dimmed_when_none"])
         self.assertTrue(report["template_band_details_hidden_when_disabled"])
+        self.assertEqual(
+            report["template_poisson_hint_when_nonperiodic_periodic_solver"],
+            "Selected POISSON_SOLVER is not compatible with the visible Cell Periodic value.",
+        )
+        self.assertTrue(report["template_kpoints_scheme_disabled_when_nonperiodic"])
+        self.assertTrue(report["template_kpoints_reset_when_nonperiodic"])
+        self.assertEqual(report["template_kpoints_hint_when_nonperiodic"], "KPOINTS are disabled because Cell Periodic is NONE.")
         self.assertTrue(report["template_band_checkbox_disabled_when_nonperiodic"])
         self.assertTrue(report["template_band_unchecked_when_nonperiodic"])
         self.assertEqual(report["template_band_hint_when_nonperiodic"], "Band Structure is disabled because Cell Periodic is NONE.")
+        self.assertEqual(
+            report["template_cell_opt_hint_when_nonperiodic"],
+            "CELL_OPT requires a periodic cell; Cell Periodic NONE will fail for nonperiodic or fallback-cell structures.",
+        )
+        self.assertEqual(
+            report["template_poisson_hint_text"],
+            "No explicit POISSON_SOLVER is selected; CP2K default is used with the resolved periodicity.",
+        )
         self.assertEqual(report["template_print_hint_text"], "No DFT PRINT outputs are selected.")
+        self.assertEqual(report["template_cell_opt_hint_text"], "CELL_OPT controls are ignored unless Run Type is CELL_OPT.")
         self.assertEqual(report["template_combo_fields_loaded"], 50)
         self.assertEqual(report["template_combo_fields_editable"], 50)
         self.assertEqual(report["template_run_type_options"], ["ENERGY", "ENERGY_FORCE", "GEO_OPT", "CELL_OPT"])

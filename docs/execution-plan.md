@@ -2904,3 +2904,32 @@ Acceptance:
 Commit boundary:
 
 - One commit for Band Structure model/template/GUI/artifact/docs support.
+
+## Round 83 - QuickStep Scientific Dependency Audit
+
+Status: completed.
+
+Scope:
+
+- Compare renderer/preflight scientific validation rules against GUI dependency
+  behavior.
+- Keep renderer validation as the final source of truth, but make obvious
+  invalid GUI combinations visible before preview/run.
+- Address periodicity-sensitive controls first: KPOINTS, Band Structure,
+  explicit POISSON_SOLVER, and CELL_OPT.
+
+Acceptance:
+
+- When the visible Cell Periodic value is `NONE`, KPOINTS is disabled and its
+  dependent options reset to the non-rendering defaults.
+- Band Structure remains disabled and unchecked for visible nonperiodic cell
+  settings.
+- Explicit POISSON_SOLVER choices warn when incompatible with the visible Cell
+  Periodic value.
+- CELL_OPT warns when selected together with visible nonperiodic cell settings.
+- GUI smoke tests exercise the invalid combinations and confirm recovery to the
+  original template state.
+
+Commit boundary:
+
+- One commit for dependency logic, GUI hints, tests, and documentation.

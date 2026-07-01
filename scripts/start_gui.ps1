@@ -3132,7 +3132,30 @@ function New-WinQStepWindow {
         }
     }.GetNewClosure()
 
+    $TestPoissonSolverSupportedForPeriodic = {
+        param(
+            [string]$Solver,
+            [string]$Periodic
+        )
+        $solverValue = $Solver.ToUpperInvariant()
+        $periodicValue = $Periodic.ToUpperInvariant()
+        switch ($solverValue) {
+            "" { return $true }
+            "PERIODIC" { return ($periodicValue -eq "XYZ") }
+            "MULTIPOLE" { return ($periodicValue -eq "NONE") }
+            "MT" { return @("NONE", "XY", "XZ", "YZ").Contains($periodicValue) }
+            "ANALYTIC" { return @("NONE", "X", "Y", "Z", "XY", "XZ", "YZ").Contains($periodicValue) }
+            "WAVELET" { return @("NONE", "XY", "XZ", "YZ", "XYZ").Contains($periodicValue) }
+            "IMPLICIT" { return @("NONE", "X", "Y", "Z", "XY", "XZ", "YZ", "XYZ").Contains($periodicValue) }
+            default { return $false }
+        }
+    }.GetNewClosure()
+
     $SyncTemplateDependencyState = {
+        $templatePeriodic = (& $GetTemplateControlText "FallbackPeriodicBox").ToUpperInvariant()
+        $templatePeriodicKnown = @("NONE", "X", "Y", "Z", "XY", "XZ", "YZ", "XYZ").Contains($templatePeriodic)
+        $templateHasPeriodicCell = ($templatePeriodicKnown -and $templatePeriodic -ne "NONE")
+        $runType = (& $GetTemplateControlText "TemplateRunTypeBox").ToUpperInvariant()
         $scfMethod = (& $GetTemplateControlText "ScfMethodBox").ToUpperInvariant()
         $dispersionEnabled = & $GetTemplateControlChecked "DispersionEnabledBox"
         & $SetTemplateDependentControls -Names @(
@@ -3224,7 +3247,33 @@ function New-WinQStepWindow {
             & $SetTemplateHint "SmearingHintText" "template.hint.smearing_enabled" "active"
         }
 
+        $poissonSolver = (& $GetTemplateControlText "PoissonSolverBox").ToUpperInvariant()
+        $poissonSelected = -not [string]::IsNullOrWhiteSpace($poissonSolver)
+        $poissonSupported = (& $TestPoissonSolverSupportedForPeriodic $poissonSolver $templatePeriodic)
+        & $SetTemplateSectionTone "TemplatePoissonGroup" $poissonSelected
+        if (-not $poissonSelected) {
+            & $SetTemplateHint "PoissonHintText" "template.hint.poisson_default"
+        }
+        elseif (-not $poissonSupported) {
+            & $SetTemplateHint "PoissonHintText" "template.hint.poisson_incompatible" "warning"
+        }
+        else {
+            & $SetTemplateHint "PoissonHintText" "template.hint.poisson_selected" "active"
+        }
+
         $kpointsScheme = (& $GetTemplateControlText "KpointsSchemeBox").ToUpperInvariant()
+        if (-not $templateHasPeriodicCell -and $kpointsScheme -ne "NONE") {
+            $controls["KpointsSchemeBox"].Text = "NONE"
+            $kpointsScheme = "NONE"
+        }
+        & $SetTemplateDependentControls -Names @(
+            "KpointsSchemeLabel", "KpointsSchemeBox"
+        ) -Active $templateHasPeriodicCell -Visible $true
+        if (-not $templateHasPeriodicCell) {
+            $controls["KpointsFullGridBox"].IsChecked = $false
+            $controls["KpointsSymmetryBox"].IsChecked = $false
+            $controls["KpointsWavefunctionsBox"].Text = "COMPLEX"
+        }
         $kpointsKnown = @("NONE", "GAMMA", "MONKHORST-PACK").Contains($kpointsScheme)
         $kpointsEnabled = ($kpointsKnown -and $kpointsScheme -ne "NONE")
         $kpointsMonkhorstPack = ($kpointsScheme -eq "MONKHORST-PACK")
@@ -3234,7 +3283,10 @@ function New-WinQStepWindow {
             "KpointsFullGridBox", "KpointsSymmetryBox",
             "KpointsWavefunctionsLabel", "KpointsWavefunctionsBox"
         ) -Active $kpointsEnabled -Visible $kpointsEnabled
-        if (-not $kpointsKnown) {
+        if (-not $templateHasPeriodicCell) {
+            & $SetTemplateHint "KpointsHintText" "template.hint.kpoints_nonperiodic" "warning"
+        }
+        elseif (-not $kpointsKnown) {
             & $SetTemplateHint "KpointsHintText" "template.hint.kpoints_unknown" "warning"
         }
         elseif (-not $kpointsEnabled) {
@@ -3250,14 +3302,12 @@ function New-WinQStepWindow {
             & $SetTemplateHint "KpointsHintText" "template.hint.kpoints_gamma" "active"
         }
 
-        $fallbackPeriodic = (& $GetTemplateControlText "FallbackPeriodicBox").ToUpperInvariant()
-        $bandCellPeriodic = (-not [string]::IsNullOrWhiteSpace($fallbackPeriodic) -and $fallbackPeriodic -ne "NONE")
-        if (-not $bandCellPeriodic -and (& $GetTemplateControlChecked "PrintBandStructureBox")) {
+        if (-not $templateHasPeriodicCell -and (& $GetTemplateControlChecked "PrintBandStructureBox")) {
             $controls["PrintBandStructureBox"].IsChecked = $false
         }
-        $controls["PrintBandStructureBox"].IsEnabled = $bandCellPeriodic
-        $controls["PrintBandStructureBox"].Opacity = if ($bandCellPeriodic) { 1.0 } else { 0.45 }
-        $bandStructureEnabled = ($bandCellPeriodic -and (& $GetTemplateControlChecked "PrintBandStructureBox"))
+        $controls["PrintBandStructureBox"].IsEnabled = $templateHasPeriodicCell
+        $controls["PrintBandStructureBox"].Opacity = if ($templateHasPeriodicCell) { 1.0 } else { 0.45 }
+        $bandStructureEnabled = ($templateHasPeriodicCell -and (& $GetTemplateControlChecked "PrintBandStructureBox"))
         & $SetTemplateDependentControls -Names @(
             "BandFileNameLabel", "BandFileNameBox",
             "BandAddedMosLabel", "BandAddedMosBox",
@@ -3271,7 +3321,7 @@ function New-WinQStepWindow {
             "PrintEDensityCubeBox", "PrintVHartreeCubeBox", "PrintBandStructureBox"
         ).Where({ & $GetTemplateControlChecked $_ }).Count -gt 0
         & $SetTemplateSectionTone "TemplateDftPrintGroup" $printSelected
-        if (-not $bandCellPeriodic) {
+        if (-not $templateHasPeriodicCell) {
             & $SetTemplateHint "DftPrintHintText" "template.hint.print_band_nonperiodic" "warning"
         }
         elseif (
@@ -3289,6 +3339,18 @@ function New-WinQStepWindow {
         }
         else {
             & $SetTemplateHint "DftPrintHintText" "template.hint.print_none"
+        }
+
+        $cellOptRunType = ($runType -eq "CELL_OPT")
+        & $SetTemplateSectionTone "TemplateCellOptGroup" $cellOptRunType
+        if (-not $cellOptRunType) {
+            & $SetTemplateHint "CellOptHintText" "template.hint.cell_opt_inactive"
+        }
+        elseif (-not $templateHasPeriodicCell) {
+            & $SetTemplateHint "CellOptHintText" "template.hint.cell_opt_nonperiodic" "warning"
+        }
+        else {
+            & $SetTemplateHint "CellOptHintText" "template.hint.cell_opt_active" "active"
         }
     }.GetNewClosure()
     $Script:TemplateDependencySmokeSync = $SyncTemplateDependencyState
@@ -4285,6 +4347,8 @@ function New-WinQStepWindow {
         $controls[$name].Add_Unchecked({ & $SyncTemplateDependencyState }.GetNewClosure())
     }
     foreach ($name in @(
+        "TemplateRunTypeBox",
+        "PoissonSolverBox",
         "DispersionTypeBox", "DispersionParameterFileBox", "DispersionReferenceFunctionalBox",
         "OuterScfEpsScfBox", "OuterScfMaxScfBox",
         "ScfMethodBox", "AddedMosBox",
@@ -6310,7 +6374,8 @@ if ($SmokeTest) {
         "TemplateCoreTab", "TemplateDftTab", "TemplateSubsystemTab", "TemplateMotionTab"
     )
     $templateDependencyHintNames = @(
-        "DispersionHintText", "OuterScfHintText", "MixingHintText", "SmearingHintText", "KpointsHintText", "DftPrintHintText"
+        "DispersionHintText", "OuterScfHintText", "MixingHintText", "SmearingHintText",
+        "PoissonHintText", "KpointsHintText", "DftPrintHintText", "CellOptHintText"
     )
     $GetTemplateSectionHeaderText = {
         param([Parameter(Mandatory = $true)][string]$Name)
@@ -6343,18 +6408,48 @@ if ($SmokeTest) {
     $report["template_kpoints_wavefunctions_hidden_when_none"] = ($window.FindName("KpointsWavefunctionsBox").Visibility -eq [System.Windows.Visibility]::Collapsed)
     $report["template_print_group_dimmed_when_none"] = ([double]$window.FindName("TemplateDftPrintGroup").Opacity -lt 1.0)
     $report["template_band_details_hidden_when_disabled"] = ($window.FindName("BandFileNameBox").Visibility -eq [System.Windows.Visibility]::Collapsed)
-    $bandSmokeInitialPeriodic = [string]$window.FindName("FallbackPeriodicBox").Text
-    $bandSmokeInitialChecked = [bool]$window.FindName("PrintBandStructureBox").IsChecked
+    $dependencySmokeInitialPeriodic = [string]$window.FindName("FallbackPeriodicBox").Text
+    $dependencySmokeInitialRunType = [string]$window.FindName("TemplateRunTypeBox").Text
+    $dependencySmokeInitialPoissonSolver = [string]$window.FindName("PoissonSolverBox").Text
+    $dependencySmokeInitialKpointsScheme = [string]$window.FindName("KpointsSchemeBox").Text
+    $dependencySmokeInitialKpointsFullGrid = [bool]$window.FindName("KpointsFullGridBox").IsChecked
+    $dependencySmokeInitialKpointsSymmetry = [bool]$window.FindName("KpointsSymmetryBox").IsChecked
+    $dependencySmokeInitialKpointsWavefunctions = [string]$window.FindName("KpointsWavefunctionsBox").Text
+    $dependencySmokeInitialBandChecked = [bool]$window.FindName("PrintBandStructureBox").IsChecked
     $window.FindName("FallbackPeriodicBox").Text = "NONE"
+    $window.FindName("TemplateRunTypeBox").Text = "CELL_OPT"
+    $window.FindName("PoissonSolverBox").Text = "PERIODIC"
+    $window.FindName("KpointsSchemeBox").Text = "GAMMA"
+    $window.FindName("KpointsFullGridBox").IsChecked = $true
+    $window.FindName("KpointsSymmetryBox").IsChecked = $true
+    $window.FindName("KpointsWavefunctionsBox").Text = "REAL"
     $window.FindName("PrintBandStructureBox").IsChecked = $true
     & $Script:TemplateDependencySmokeSync
+    $report["template_poisson_hint_when_nonperiodic_periodic_solver"] = [string]$window.FindName("PoissonHintText").Text
+    $report["template_kpoints_scheme_disabled_when_nonperiodic"] = (-not [bool]$window.FindName("KpointsSchemeBox").IsEnabled)
+    $report["template_kpoints_reset_when_nonperiodic"] = (
+        [string]$window.FindName("KpointsSchemeBox").Text -eq "NONE" -and
+        -not [bool]$window.FindName("KpointsFullGridBox").IsChecked -and
+        -not [bool]$window.FindName("KpointsSymmetryBox").IsChecked -and
+        [string]$window.FindName("KpointsWavefunctionsBox").Text -eq "COMPLEX"
+    )
+    $report["template_kpoints_hint_when_nonperiodic"] = [string]$window.FindName("KpointsHintText").Text
     $report["template_band_checkbox_disabled_when_nonperiodic"] = (-not [bool]$window.FindName("PrintBandStructureBox").IsEnabled)
     $report["template_band_unchecked_when_nonperiodic"] = (-not [bool]$window.FindName("PrintBandStructureBox").IsChecked)
     $report["template_band_hint_when_nonperiodic"] = [string]$window.FindName("DftPrintHintText").Text
-    $window.FindName("FallbackPeriodicBox").Text = $bandSmokeInitialPeriodic
-    $window.FindName("PrintBandStructureBox").IsChecked = $bandSmokeInitialChecked
+    $report["template_cell_opt_hint_when_nonperiodic"] = [string]$window.FindName("CellOptHintText").Text
+    $window.FindName("FallbackPeriodicBox").Text = $dependencySmokeInitialPeriodic
+    $window.FindName("TemplateRunTypeBox").Text = $dependencySmokeInitialRunType
+    $window.FindName("PoissonSolverBox").Text = $dependencySmokeInitialPoissonSolver
+    $window.FindName("KpointsSchemeBox").Text = $dependencySmokeInitialKpointsScheme
+    $window.FindName("KpointsFullGridBox").IsChecked = $dependencySmokeInitialKpointsFullGrid
+    $window.FindName("KpointsSymmetryBox").IsChecked = $dependencySmokeInitialKpointsSymmetry
+    $window.FindName("KpointsWavefunctionsBox").Text = $dependencySmokeInitialKpointsWavefunctions
+    $window.FindName("PrintBandStructureBox").IsChecked = $dependencySmokeInitialBandChecked
     & $Script:TemplateDependencySmokeSync
+    $report["template_poisson_hint_text"] = [string]$window.FindName("PoissonHintText").Text
     $report["template_print_hint_text"] = [string]$window.FindName("DftPrintHintText").Text
+    $report["template_cell_opt_hint_text"] = [string]$window.FindName("CellOptHintText").Text
     $report["template_combo_fields_loaded"] = $templateComboNames.Where({ $window.FindName($_) -is [System.Windows.Controls.ComboBox] }).Count
     $report["template_combo_fields_editable"] = $templateComboNames.Where({ [bool]$window.FindName($_).IsEditable }).Count
     $report["template_run_type_options"] = @($window.FindName("TemplateRunTypeBox").Items | ForEach-Object { [string]$_.Content })

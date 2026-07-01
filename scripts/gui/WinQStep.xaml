@@ -410,6 +410,7 @@
               </Grid.ColumnDefinitions>
               <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
               </Grid.RowDefinitions>
 
               <TextBlock x:Name="PoissonSolverLabel" Grid.Row="0" Grid.Column="0" Text="Poisson Solver"/>
@@ -422,6 +423,8 @@
                 <ComboBoxItem Content="WAVELET"/>
                 <ComboBoxItem Content="IMPLICIT"/>
               </ComboBox>
+              <TextBlock x:Name="PoissonHintText" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="4"
+                         Margin="6,4,6,0" TextWrapping="Wrap" FontSize="11"/>
             </Grid>
           </GroupBox>
 
@@ -618,6 +621,7 @@
                 <ColumnDefinition Width="*"/>
               </Grid.ColumnDefinitions>
               <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
@@ -1002,6 +1006,8 @@
                         Content="Keep Angles" Margin="6,4" VerticalAlignment="Center"/>
               <CheckBox x:Name="CellOptKeepSymmetryBox" Grid.Row="2" Grid.Column="1"
                         Content="Keep Symmetry" Margin="6,4" VerticalAlignment="Center"/>
+              <TextBlock x:Name="CellOptHintText" Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="4"
+                         Margin="6,4,6,0" TextWrapping="Wrap" FontSize="11"/>
             </Grid>
           </GroupBox>
 
