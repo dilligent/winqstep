@@ -871,7 +871,10 @@
             <StackPanel>
               <DataGrid x:Name="KindEntriesGrid" Height="170"
                         AutoGenerateColumns="False" CanUserAddRows="True" CanUserDeleteRows="True"
-                        SelectionMode="Single" HeadersVisibility="Column" GridLinesVisibility="Horizontal" FontSize="12">
+                        SelectionMode="Single" HeadersVisibility="Column" GridLinesVisibility="Horizontal" FontSize="12"
+                        EnableRowVirtualization="True" EnableColumnVirtualization="True"
+                        VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
+                        ScrollViewer.CanContentScroll="True">
                 <DataGrid.Columns>
                   <DataGridTextColumn Header="Element" Binding="{Binding element, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="70"/>
                   <DataGridTextColumn Header="Basis Set" Binding="{Binding basis_set, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="*"/>
@@ -885,7 +888,10 @@
 
               <DataGrid x:Name="DataLabelsGrid" Height="130" Visibility="Collapsed"
                         AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single"
-                        HeadersVisibility="Column" GridLinesVisibility="Horizontal" FontSize="12">
+                        HeadersVisibility="Column" GridLinesVisibility="Horizontal" FontSize="12"
+                        EnableRowVirtualization="True" EnableColumnVirtualization="True"
+                        VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
+                        ScrollViewer.CanContentScroll="True">
                 <DataGrid.Columns>
                   <DataGridTextColumn Header="Element" Binding="{Binding element}" Width="70"/>
                   <DataGridTextColumn Header="Basis Sets" Binding="{Binding basis_sets}" Width="*"/>
@@ -1066,7 +1072,10 @@
           <DataGrid x:Name="BatchResultsGrid" Grid.Row="2" Height="170" Margin="0,6,0,6"
                     AutoGenerateColumns="False" IsReadOnly="True" Visibility="Collapsed"
                     SelectionMode="Single" HeadersVisibility="Column" GridLinesVisibility="Horizontal"
-                    FontSize="12">
+                    FontSize="12"
+                    EnableRowVirtualization="True" EnableColumnVirtualization="True"
+                    VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
+                    ScrollViewer.CanContentScroll="True">
             <DataGrid.Columns>
               <DataGridTextColumn Header="#" Binding="{Binding index}" Width="45"/>
               <DataGridTextColumn Header="Status" Binding="{Binding status}" Width="90"/>
@@ -1088,7 +1097,10 @@
       <TabItem x:Name="HistoryTab" Header="History">
         <DataGrid x:Name="HistoryGrid" AutoGenerateColumns="False" IsReadOnly="True"
                   SelectionMode="Single" HeadersVisibility="Column" GridLinesVisibility="Horizontal"
-                  FontSize="12">
+                  FontSize="12"
+                  EnableRowVirtualization="True" EnableColumnVirtualization="True"
+                  VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
+                  ScrollViewer.CanContentScroll="True">
           <DataGrid.Columns>
             <DataGridTextColumn Header="Completed" Binding="{Binding completed_at}" Width="155"/>
             <DataGridTextColumn Header="Mode" Binding="{Binding mode}" Width="115"/>

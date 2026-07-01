@@ -442,6 +442,15 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn("SkipBatchItemButton", xaml_text)
         self.assertIn("RerunBatchItemButton", xaml_text)
         self.assertIn("CancelBatchItemButton", xaml_text)
+        for data_grid_name in ("KindEntriesGrid", "DataLabelsGrid", "BatchResultsGrid", "HistoryGrid"):
+            match = re.search(rf'<DataGrid x:Name="{data_grid_name}"(?P<attrs>[^>]*)>', xaml_text)
+            self.assertIsNotNone(match, data_grid_name)
+            attrs = match.group("attrs")
+            self.assertIn('EnableRowVirtualization="True"', attrs)
+            self.assertIn('EnableColumnVirtualization="True"', attrs)
+            self.assertIn('VirtualizingPanel.IsVirtualizing="True"', attrs)
+            self.assertIn('VirtualizingPanel.VirtualizationMode="Recycling"', attrs)
+            self.assertIn('ScrollViewer.CanContentScroll="True"', attrs)
         self.assertIn("ViewResultsButton", xaml_text)
         self.assertIn("SaveResultsButton", xaml_text)
         self.assertIn("ViewInputButton", xaml_text)
@@ -696,6 +705,11 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertTrue(report["artifact_view_buttons_initially_disabled"])
         self.assertEqual(report["artifact_text_mode_buttons_loaded"], 2)
         self.assertTrue(report["artifact_text_mode_buttons_initially_disabled"])
+        self.assertTrue(report["datagrid_virtualization_enabled"])
+        self.assertEqual(
+            sorted(report["datagrid_virtualization_names"]),
+            ["BatchResultsGrid", "DataLabelsGrid", "HistoryGrid", "KindEntriesGrid"],
+        )
         self.assertTrue(report["config_tab_loaded"])
         self.assertEqual(report["config_distro"], "Ubuntu")
         self.assertTrue(report["config_cp2k_command"].endswith("cp2k.ssmp"))

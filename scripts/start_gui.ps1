@@ -6442,6 +6442,21 @@ if ($SmokeTest) {
     $batchModeLabelText = [string]$window.FindName("ExistingInputPathLabel").Text
     $batchRunTargetText = [string]$window.FindName("RunTargetText").Text
     $configWorkspace = [string]$window.FindName("DefaultWorkspaceBox").Text
+    $dataGridNames = @("KindEntriesGrid", "DataLabelsGrid", "BatchResultsGrid", "HistoryGrid")
+    $virtualizedDataGridNames = @()
+    foreach ($dataGridName in $dataGridNames) {
+        $dataGrid = $window.FindName($dataGridName)
+        if (
+            $dataGrid -is [System.Windows.Controls.DataGrid] -and
+            [bool]$dataGrid.EnableRowVirtualization -and
+            [bool]$dataGrid.EnableColumnVirtualization -and
+            [System.Windows.Controls.VirtualizingPanel]::GetIsVirtualizing($dataGrid) -and
+            [System.Windows.Controls.VirtualizingPanel]::GetVirtualizationMode($dataGrid) -eq [System.Windows.Controls.VirtualizationMode]::Recycling -and
+            [System.Windows.Controls.ScrollViewer]::GetCanContentScroll($dataGrid)
+        ) {
+            $virtualizedDataGridNames += $dataGridName
+        }
+    }
     $report["xaml_loaded"] = ($window -is [System.Windows.Window])
     $report["title"] = $window.Title
     $report["ui_language"] = Get-WinQStepLanguage
@@ -6503,6 +6518,8 @@ if ($SmokeTest) {
     $report["artifact_text_mode_buttons_initially_disabled"] = @(
         "ViewArtifactTailButton", "ViewArtifactFullButton"
     ).Where({ [bool]$window.FindName($_).IsEnabled }).Count -eq 0
+    $report["datagrid_virtualization_enabled"] = ($virtualizedDataGridNames.Count -eq $dataGridNames.Count)
+    $report["datagrid_virtualization_names"] = $virtualizedDataGridNames
     $report["config_tab_loaded"] = ($window.FindName("DistroBox") -is [System.Windows.Controls.TextBox])
     $report["config_distro"] = [string]$window.FindName("DistroBox").Text
     $report["config_cp2k_command"] = [string]$window.FindName("Cp2kCommandBox").Text
