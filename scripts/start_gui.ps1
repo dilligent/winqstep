@@ -3250,7 +3250,14 @@ function New-WinQStepWindow {
             & $SetTemplateHint "KpointsHintText" "template.hint.kpoints_gamma" "active"
         }
 
-        $bandStructureEnabled = & $GetTemplateControlChecked "PrintBandStructureBox"
+        $fallbackPeriodic = (& $GetTemplateControlText "FallbackPeriodicBox").ToUpperInvariant()
+        $bandCellPeriodic = (-not [string]::IsNullOrWhiteSpace($fallbackPeriodic) -and $fallbackPeriodic -ne "NONE")
+        if (-not $bandCellPeriodic -and (& $GetTemplateControlChecked "PrintBandStructureBox")) {
+            $controls["PrintBandStructureBox"].IsChecked = $false
+        }
+        $controls["PrintBandStructureBox"].IsEnabled = $bandCellPeriodic
+        $controls["PrintBandStructureBox"].Opacity = if ($bandCellPeriodic) { 1.0 } else { 0.45 }
+        $bandStructureEnabled = ($bandCellPeriodic -and (& $GetTemplateControlChecked "PrintBandStructureBox"))
         & $SetTemplateDependentControls -Names @(
             "BandFileNameLabel", "BandFileNameBox",
             "BandAddedMosLabel", "BandAddedMosBox",
@@ -3264,7 +3271,10 @@ function New-WinQStepWindow {
             "PrintEDensityCubeBox", "PrintVHartreeCubeBox", "PrintBandStructureBox"
         ).Where({ & $GetTemplateControlChecked $_ }).Count -gt 0
         & $SetTemplateSectionTone "TemplateDftPrintGroup" $printSelected
-        if (
+        if (-not $bandCellPeriodic) {
+            & $SetTemplateHint "DftPrintHintText" "template.hint.print_band_nonperiodic" "warning"
+        }
+        elseif (
             $bandStructureEnabled -and (
                 [string]::IsNullOrWhiteSpace((& $GetTemplateControlText "BandFileNameBox")) -or
                 [string]::IsNullOrWhiteSpace((& $GetTemplateControlText "BandNpointsBox")) -or
@@ -4281,7 +4291,8 @@ function New-WinQStepWindow {
         "MixingMethodBox", "MixingAlphaBox", "MixingBetaBox",
         "SmearingMethodBox", "ElectronicTemperatureBox",
         "KpointsSchemeBox", "KpointsGridBox", "KpointsWavefunctionsBox",
-        "BandFileNameBox", "BandAddedMosBox", "BandNpointsBox", "BandKpointUnitsBox"
+        "BandFileNameBox", "BandAddedMosBox", "BandNpointsBox", "BandKpointUnitsBox",
+        "FallbackPeriodicBox"
     )) {
         $controls[$name].Add_SelectionChanged({ & $SyncTemplateDependencyState }.GetNewClosure())
         $controls[$name].Add_DropDownClosed({ & $SyncTemplateDependencyState }.GetNewClosure())
@@ -6332,6 +6343,17 @@ if ($SmokeTest) {
     $report["template_kpoints_wavefunctions_hidden_when_none"] = ($window.FindName("KpointsWavefunctionsBox").Visibility -eq [System.Windows.Visibility]::Collapsed)
     $report["template_print_group_dimmed_when_none"] = ([double]$window.FindName("TemplateDftPrintGroup").Opacity -lt 1.0)
     $report["template_band_details_hidden_when_disabled"] = ($window.FindName("BandFileNameBox").Visibility -eq [System.Windows.Visibility]::Collapsed)
+    $bandSmokeInitialPeriodic = [string]$window.FindName("FallbackPeriodicBox").Text
+    $bandSmokeInitialChecked = [bool]$window.FindName("PrintBandStructureBox").IsChecked
+    $window.FindName("FallbackPeriodicBox").Text = "NONE"
+    $window.FindName("PrintBandStructureBox").IsChecked = $true
+    & $Script:TemplateDependencySmokeSync
+    $report["template_band_checkbox_disabled_when_nonperiodic"] = (-not [bool]$window.FindName("PrintBandStructureBox").IsEnabled)
+    $report["template_band_unchecked_when_nonperiodic"] = (-not [bool]$window.FindName("PrintBandStructureBox").IsChecked)
+    $report["template_band_hint_when_nonperiodic"] = [string]$window.FindName("DftPrintHintText").Text
+    $window.FindName("FallbackPeriodicBox").Text = $bandSmokeInitialPeriodic
+    $window.FindName("PrintBandStructureBox").IsChecked = $bandSmokeInitialChecked
+    & $Script:TemplateDependencySmokeSync
     $report["template_print_hint_text"] = [string]$window.FindName("DftPrintHintText").Text
     $report["template_combo_fields_loaded"] = $templateComboNames.Where({ $window.FindName($_) -is [System.Windows.Controls.ComboBox] }).Count
     $report["template_combo_fields_editable"] = $templateComboNames.Where({ [bool]$window.FindName($_).IsEditable }).Count

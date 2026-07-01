@@ -98,7 +98,9 @@ Hartree-potential cube, and Band Structure checkboxes; leaving them unchecked
 omits `DFT/&PRINT` entirely. Enabling Band Structure expands fields for
 `FILE_NAME`, `ADDED_MOS`, `NPOINTS`, `UNITS`, and editable `SPECIAL_POINT`
 lines. WinQStep supplies a simple Gamma-X-Gamma default path for convenience,
-but users should edit the special k-points for their material and cell.
+but users should edit the special k-points for their material and cell. The GUI
+disables Band Structure when the visible Cell Periodic selector is `NONE`, and
+the renderer still validates the final resolved cell before writing input.
 Fixed-atom constraint fields expose a space- or comma-separated list of
 1-based atom indices and a `COMPONENTS_TO_FIX` selector. They only save a
 `motion` template object when the atom list is non-empty. The Structure tab's

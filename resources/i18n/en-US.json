@@ -157,6 +157,7 @@
   "template.hint.print_none": "No DFT PRINT outputs are selected.",
   "template.hint.print_selected": "Selected DFT PRINT sections will be rendered and collected as artifacts when CP2K writes files.",
   "template.hint.print_band_missing": "Band Structure is enabled; fill the output file, NPOINTS, units, and at least two special k-points.",
+  "template.hint.print_band_nonperiodic": "Band Structure is disabled because Cell Periodic is NONE.",
   "run_target.workflow": "Run target: generated workflow input",
   "run_target.edited_preview": "Run target: edited preview",
   "run_target.existing_input": "Run target: existing input: {0}",
