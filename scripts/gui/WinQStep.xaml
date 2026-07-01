@@ -401,6 +401,7 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
               </Grid.RowDefinitions>
 
               <TextBlock x:Name="XcFunctionalLabel" Grid.Row="0" Grid.Column="0" Text="XC Functional"/>
@@ -439,6 +440,8 @@
                 <ComboBoxItem Content="BP"/>
                 <ComboBoxItem Content="TPSS"/>
               </ComboBox>
+              <TextBlock x:Name="DispersionHintText" Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="4"
+                         Margin="6,4,6,0" TextWrapping="Wrap" FontSize="11"/>
             </Grid>
           </GroupBox>
 
@@ -544,6 +547,7 @@
               <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
               </Grid.RowDefinitions>
 
               <CheckBox x:Name="OuterScfEnabledBox" Grid.Row="0" Grid.Column="0" Content="Outer SCF" Margin="6,4" VerticalAlignment="Center"/>
@@ -561,6 +565,8 @@
                 <ComboBoxItem Content="50"/>
                 <ComboBoxItem Content="100"/>
               </ComboBox>
+              <TextBlock x:Name="OuterScfHintText" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="4"
+                         Margin="6,4,6,0" TextWrapping="Wrap" FontSize="11"/>
             </Grid>
           </GroupBox>
 
@@ -573,6 +579,7 @@
                 <ColumnDefinition Width="*"/>
               </Grid.ColumnDefinitions>
               <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
               </Grid.RowDefinitions>
@@ -602,6 +609,8 @@
                 <ComboBoxItem Content="1.5"/>
                 <ComboBoxItem Content="2.0"/>
               </ComboBox>
+              <TextBlock x:Name="MixingHintText" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="4"
+                         Margin="6,4,6,0" TextWrapping="Wrap" FontSize="11"/>
             </Grid>
           </GroupBox>
 
@@ -614,6 +623,7 @@
                 <ColumnDefinition Width="*"/>
               </Grid.ColumnDefinitions>
               <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
               </Grid.RowDefinitions>
@@ -635,6 +645,8 @@
                 <ComboBoxItem Content="1000"/>
                 <ComboBoxItem Content="1500"/>
               </ComboBox>
+              <TextBlock x:Name="SmearingHintText" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="4"
+                         Margin="6,4,6,0" TextWrapping="Wrap" FontSize="11"/>
             </Grid>
           </GroupBox>
 
@@ -647,6 +659,7 @@
                 <ColumnDefinition Width="*"/>
               </Grid.ColumnDefinitions>
               <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
               </Grid.RowDefinitions>
@@ -675,6 +688,8 @@
                 <ComboBoxItem Content="COMPLEX"/>
                 <ComboBoxItem Content="REAL"/>
               </ComboBox>
+              <TextBlock x:Name="KpointsHintText" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="4"
+                         Margin="6,4,6,0" TextWrapping="Wrap" FontSize="11"/>
             </Grid>
           </GroupBox>
 
@@ -689,6 +704,7 @@
               <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
               </Grid.RowDefinitions>
 
               <CheckBox x:Name="PrintMullikenBox" Grid.Row="0" Grid.Column="0"
@@ -701,6 +717,8 @@
                         Content="Electron Density Cube" Margin="6,4" VerticalAlignment="Center"/>
               <CheckBox x:Name="PrintVHartreeCubeBox" Grid.Row="1" Grid.Column="1"
                         Content="Hartree Potential Cube" Margin="6,4" VerticalAlignment="Center"/>
+              <TextBlock x:Name="DftPrintHintText" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="4"
+                         Margin="6,4,6,0" TextWrapping="Wrap" FontSize="11"/>
             </Grid>
           </GroupBox>
 

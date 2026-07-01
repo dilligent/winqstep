@@ -2720,6 +2720,37 @@ Commit boundary:
 
 - One commit for Template section navigation, localization, tests, and docs.
 
+## Round 78 - Template Dependency Hints
+
+Status: completed.
+
+Scope:
+
+- Add GUI-only dependency state handling for Template options whose child fields
+  only matter when their parent switch or scheme is active.
+- Collapse and disable DFT-D3, OUTER_SCF, MIXING, SMEAR, and KPOINTS child
+  controls when they will not be rendered.
+- Dim inactive optional sections and add inline hint/validation text for
+  DFT-D3, OUTER_SCF, MIXING, SMEAR, KPOINTS, and DFT PRINT.
+- Keep user-entered values intact when a section is disabled so re-enabling the
+  section restores the previous fields.
+- Localize the new dependency hints in the existing English and Chinese UI
+  resources.
+
+Acceptance:
+
+- Loading a template and changing related checkboxes or KPOINTS scheme updates
+  field visibility and inline hints immediately.
+- The GUI does not change saved Template JSON semantics or QuickStep renderer
+  behavior.
+- GUI smoke tests verify default dependency visibility for disabled and enabled
+  sections.
+- GUI and fast check profiles pass.
+
+Commit boundary:
+
+- One commit for Template dependency hints, localization, tests, and docs.
+
 ## QuickStep Feature Backlog
 
 Status: planned queue after Round 76.

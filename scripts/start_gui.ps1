@@ -192,6 +192,9 @@ function New-WinQStepWindow {
         }
         $null = Initialize-WinQStepLocalization $Language
         & $ApplyLocalizationToControls
+        if ($null -ne $SyncTemplateDependencyState) {
+            & $SyncTemplateDependencyState
+        }
     }.GetNewClosure()
 
     $ApplySelectedLanguage = {
@@ -204,6 +207,9 @@ function New-WinQStepWindow {
         }
         if ($null -ne $UpdateModeControls) {
             & $UpdateModeControls
+        }
+        if ($null -ne $SyncTemplateDependencyState) {
+            & $SyncTemplateDependencyState
         }
     }.GetNewClosure()
 
@@ -2664,6 +2670,202 @@ function New-WinQStepWindow {
         return $text
     }.GetNewClosure()
 
+    $GetTemplateControlText = {
+        param([Parameter(Mandatory = $true)][string]$Name)
+        if ($null -eq $controls[$Name]) {
+            return ""
+        }
+        return ([string]$controls[$Name].Text).Trim()
+    }.GetNewClosure()
+
+    $GetTemplateControlChecked = {
+        param([Parameter(Mandatory = $true)][string]$Name)
+        return ($null -ne $controls[$Name] -and [bool]$controls[$Name].IsChecked)
+    }.GetNewClosure()
+
+    $SetTemplateDependentControls = {
+        param(
+            [Parameter(Mandatory = $true)][string[]]$Names,
+            [Parameter(Mandatory = $true)][bool]$Active,
+            [Parameter(Mandatory = $true)][bool]$Visible
+        )
+        $visibility = if ($Visible) { [System.Windows.Visibility]::Visible } else { [System.Windows.Visibility]::Collapsed }
+        $opacity = if ($Active) { 1.0 } else { 0.45 }
+        foreach ($name in $Names) {
+            $control = $controls[$name]
+            if ($null -eq $control) {
+                continue
+            }
+            $control.Visibility = $visibility
+            $control.IsEnabled = $Active
+            $control.Opacity = $opacity
+        }
+    }.GetNewClosure()
+
+    $SetTemplateSectionTone = {
+        param(
+            [Parameter(Mandatory = $true)][string]$Name,
+            [Parameter(Mandatory = $true)][bool]$Active
+        )
+        $control = $controls[$Name]
+        if ($null -eq $control) {
+            $control = $window.FindName($Name)
+        }
+        if ($null -ne $control) {
+            $control.Opacity = if ($Active) { 1.0 } else { 0.68 }
+        }
+    }.GetNewClosure()
+
+    $SetTemplateHint = {
+        param(
+            [Parameter(Mandatory = $true)][string]$Name,
+            [Parameter(Mandatory = $true)][string]$Key,
+            [string]$State = "neutral"
+        )
+        $control = $controls[$Name]
+        if ($null -eq $control) {
+            return
+        }
+        $control.Text = Get-WinQStepText $Key
+        $control.Foreground = switch ($State) {
+            "active" { [System.Windows.Media.Brushes]::ForestGreen }
+            "warning" { [System.Windows.Media.Brushes]::DarkOrange }
+            default { [System.Windows.Media.Brushes]::DimGray }
+        }
+    }.GetNewClosure()
+
+    $SyncTemplateDependencyState = {
+        $scfMethod = (& $GetTemplateControlText "ScfMethodBox").ToUpperInvariant()
+        $dispersionEnabled = & $GetTemplateControlChecked "DispersionEnabledBox"
+        & $SetTemplateDependentControls -Names @(
+            "DispersionTypeLabel", "DispersionTypeBox",
+            "DispersionParameterFileLabel", "DispersionParameterFileBox",
+            "DispersionReferenceFunctionalLabel", "DispersionReferenceFunctionalBox"
+        ) -Active $dispersionEnabled -Visible $dispersionEnabled
+        if (-not $dispersionEnabled) {
+            & $SetTemplateHint "DispersionHintText" "template.hint.dispersion_disabled"
+        }
+        elseif (
+            [string]::IsNullOrWhiteSpace((& $GetTemplateControlText "DispersionTypeBox")) -or
+            [string]::IsNullOrWhiteSpace((& $GetTemplateControlText "DispersionParameterFileBox")) -or
+            [string]::IsNullOrWhiteSpace((& $GetTemplateControlText "DispersionReferenceFunctionalBox"))
+        ) {
+            & $SetTemplateHint "DispersionHintText" "template.hint.dispersion_missing" "warning"
+        }
+        else {
+            & $SetTemplateHint "DispersionHintText" "template.hint.dispersion_enabled" "active"
+        }
+
+        $outerScfEnabled = & $GetTemplateControlChecked "OuterScfEnabledBox"
+        & $SetTemplateSectionTone "TemplateOuterScfGroup" $outerScfEnabled
+        & $SetTemplateDependentControls -Names @(
+            "OuterScfEpsScfLabel", "OuterScfEpsScfBox",
+            "OuterScfMaxScfLabel", "OuterScfMaxScfBox"
+        ) -Active $outerScfEnabled -Visible $outerScfEnabled
+        if (-not $outerScfEnabled) {
+            & $SetTemplateHint "OuterScfHintText" "template.hint.outer_scf_disabled"
+        }
+        elseif (
+            [string]::IsNullOrWhiteSpace((& $GetTemplateControlText "OuterScfEpsScfBox")) -or
+            [string]::IsNullOrWhiteSpace((& $GetTemplateControlText "OuterScfMaxScfBox"))
+        ) {
+            & $SetTemplateHint "OuterScfHintText" "template.hint.outer_scf_missing" "warning"
+        }
+        else {
+            & $SetTemplateHint "OuterScfHintText" "template.hint.outer_scf_enabled" "active"
+        }
+
+        $mixingEnabled = & $GetTemplateControlChecked "MixingEnabledBox"
+        & $SetTemplateSectionTone "TemplateMixingGroup" $mixingEnabled
+        & $SetTemplateDependentControls -Names @(
+            "MixingMethodLabel", "MixingMethodBox",
+            "MixingAlphaLabel", "MixingAlphaBox",
+            "MixingBetaLabel", "MixingBetaBox"
+        ) -Active $mixingEnabled -Visible $mixingEnabled
+        if (-not $mixingEnabled) {
+            & $SetTemplateHint "MixingHintText" "template.hint.mixing_disabled"
+        }
+        elseif ($scfMethod -ne "DIAGONALIZATION") {
+            & $SetTemplateHint "MixingHintText" "template.hint.mixing_scf_method" "warning"
+        }
+        elseif (
+            [string]::IsNullOrWhiteSpace((& $GetTemplateControlText "MixingMethodBox")) -or
+            [string]::IsNullOrWhiteSpace((& $GetTemplateControlText "MixingAlphaBox")) -or
+            [string]::IsNullOrWhiteSpace((& $GetTemplateControlText "MixingBetaBox"))
+        ) {
+            & $SetTemplateHint "MixingHintText" "template.hint.mixing_missing" "warning"
+        }
+        else {
+            & $SetTemplateHint "MixingHintText" "template.hint.mixing_enabled" "active"
+        }
+
+        $smearingEnabled = & $GetTemplateControlChecked "SmearingEnabledBox"
+        & $SetTemplateSectionTone "TemplateSmearingGroup" $smearingEnabled
+        & $SetTemplateDependentControls -Names @(
+            "SmearingMethodLabel", "SmearingMethodBox",
+            "ElectronicTemperatureLabel", "ElectronicTemperatureBox"
+        ) -Active $smearingEnabled -Visible $smearingEnabled
+        $addedMosValue = 0
+        $hasAddedMosNumber = [int]::TryParse((& $GetTemplateControlText "AddedMosBox"), [ref]$addedMosValue)
+        if (-not $smearingEnabled) {
+            & $SetTemplateHint "SmearingHintText" "template.hint.smearing_disabled"
+        }
+        elseif ($scfMethod -ne "DIAGONALIZATION") {
+            & $SetTemplateHint "SmearingHintText" "template.hint.smearing_scf_method" "warning"
+        }
+        elseif (-not $hasAddedMosNumber -or $addedMosValue -le 0) {
+            & $SetTemplateHint "SmearingHintText" "template.hint.smearing_added_mos" "warning"
+        }
+        elseif (
+            [string]::IsNullOrWhiteSpace((& $GetTemplateControlText "SmearingMethodBox")) -or
+            [string]::IsNullOrWhiteSpace((& $GetTemplateControlText "ElectronicTemperatureBox"))
+        ) {
+            & $SetTemplateHint "SmearingHintText" "template.hint.smearing_missing" "warning"
+        }
+        else {
+            & $SetTemplateHint "SmearingHintText" "template.hint.smearing_enabled" "active"
+        }
+
+        $kpointsScheme = (& $GetTemplateControlText "KpointsSchemeBox").ToUpperInvariant()
+        $kpointsKnown = @("NONE", "GAMMA", "MONKHORST-PACK").Contains($kpointsScheme)
+        $kpointsEnabled = ($kpointsKnown -and $kpointsScheme -ne "NONE")
+        $kpointsMonkhorstPack = ($kpointsScheme -eq "MONKHORST-PACK")
+        & $SetTemplateSectionTone "TemplateKpointsGroup" $kpointsEnabled
+        & $SetTemplateDependentControls -Names @("KpointsGridLabel", "KpointsGridBox") -Active $kpointsMonkhorstPack -Visible $kpointsMonkhorstPack
+        & $SetTemplateDependentControls -Names @(
+            "KpointsFullGridBox", "KpointsSymmetryBox",
+            "KpointsWavefunctionsLabel", "KpointsWavefunctionsBox"
+        ) -Active $kpointsEnabled -Visible $kpointsEnabled
+        if (-not $kpointsKnown) {
+            & $SetTemplateHint "KpointsHintText" "template.hint.kpoints_unknown" "warning"
+        }
+        elseif (-not $kpointsEnabled) {
+            & $SetTemplateHint "KpointsHintText" "template.hint.kpoints_none"
+        }
+        elseif ($kpointsMonkhorstPack -and [string]::IsNullOrWhiteSpace((& $GetTemplateControlText "KpointsGridBox"))) {
+            & $SetTemplateHint "KpointsHintText" "template.hint.kpoints_missing_grid" "warning"
+        }
+        elseif ($kpointsMonkhorstPack) {
+            & $SetTemplateHint "KpointsHintText" "template.hint.kpoints_monkhorst_pack" "active"
+        }
+        else {
+            & $SetTemplateHint "KpointsHintText" "template.hint.kpoints_gamma" "active"
+        }
+
+        $printSelected = @(
+            "PrintMullikenBox", "PrintLowdinBox", "PrintPdosBox",
+            "PrintEDensityCubeBox", "PrintVHartreeCubeBox"
+        ).Where({ & $GetTemplateControlChecked $_ }).Count -gt 0
+        & $SetTemplateSectionTone "TemplateDftPrintGroup" $printSelected
+        if ($printSelected) {
+            & $SetTemplateHint "DftPrintHintText" "template.hint.print_selected" "active"
+        }
+        else {
+            & $SetTemplateHint "DftPrintHintText" "template.hint.print_none"
+        }
+    }.GetNewClosure()
+    $Script:TemplateDependencySmokeSync = $SyncTemplateDependencyState
+
     $SetTemplateFieldsFromPayload = {
         param([Parameter(Mandatory = $true)]$Payload)
         $template = $Payload.template
@@ -2742,6 +2944,7 @@ function New-WinQStepWindow {
         $controls["KindsText"].Text = $kindsText
         & $SetKindEntriesFromText $kindsText
         $controls["TemplateValidationText"].Text = & $FormatTemplateValidation $Payload
+        & $SyncTemplateDependencyState
     }.GetNewClosure()
 
     $ReadTemplateManagerResult = {
@@ -3616,6 +3819,26 @@ function New-WinQStepWindow {
     $controls["ExistingInputModeRadio"].Add_Checked({ & $UpdateModeControls }.GetNewClosure())
     $controls["ExistingInputBatchModeRadio"].Add_Checked({ & $UpdateModeControls }.GetNewClosure())
 
+    foreach ($name in @(
+        "DispersionEnabledBox", "OuterScfEnabledBox", "MixingEnabledBox", "SmearingEnabledBox",
+        "PrintMullikenBox", "PrintLowdinBox", "PrintPdosBox", "PrintEDensityCubeBox", "PrintVHartreeCubeBox"
+    )) {
+        $controls[$name].Add_Checked({ & $SyncTemplateDependencyState }.GetNewClosure())
+        $controls[$name].Add_Unchecked({ & $SyncTemplateDependencyState }.GetNewClosure())
+    }
+    foreach ($name in @(
+        "DispersionTypeBox", "DispersionParameterFileBox", "DispersionReferenceFunctionalBox",
+        "OuterScfEpsScfBox", "OuterScfMaxScfBox",
+        "ScfMethodBox", "AddedMosBox",
+        "MixingMethodBox", "MixingAlphaBox", "MixingBetaBox",
+        "SmearingMethodBox", "ElectronicTemperatureBox",
+        "KpointsSchemeBox", "KpointsGridBox", "KpointsWavefunctionsBox"
+    )) {
+        $controls[$name].Add_SelectionChanged({ & $SyncTemplateDependencyState }.GetNewClosure())
+        $controls[$name].Add_DropDownClosed({ & $SyncTemplateDependencyState }.GetNewClosure())
+        $controls[$name].Add_LostFocus({ & $SyncTemplateDependencyState }.GetNewClosure())
+    }
+
     $controls["DetectButton"].Add_Click({
         & $InvokeGuiAction -Status (Get-WinQStepText "status.detecting_environment") -Action {
             $null = & $SaveConfigFields $false $false
@@ -3967,6 +4190,7 @@ function New-WinQStepWindow {
     }
     & $UpdateModeControls
     & $UpdateArtifactControls
+    & $SyncTemplateDependencyState
     return $window
 }
 
@@ -5302,6 +5526,9 @@ if ($SmokeTest) {
     $templateSectionTabNames = @(
         "TemplateCoreTab", "TemplateDftTab", "TemplateSubsystemTab", "TemplateMotionTab"
     )
+    $templateDependencyHintNames = @(
+        "DispersionHintText", "OuterScfHintText", "MixingHintText", "SmearingHintText", "KpointsHintText", "DftPrintHintText"
+    )
     $GetTemplateSectionHeaderText = {
         param([Parameter(Mandatory = $true)][string]$Name)
         $header = $window.FindName($Name).Header
@@ -5323,6 +5550,16 @@ if ($SmokeTest) {
     $report["template_section_groups_loaded"] = $templateSectionGroupNames.Where({ $window.FindName($_) -is [System.Windows.Controls.GroupBox] }).Count
     $report["template_section_group_headers"] = @($templateSectionGroupNames | ForEach-Object { & $GetTemplateSectionHeaderText $_ })
     $report["template_section_group_left_margins"] = @($templateSectionGroupNames | ForEach-Object { [int]$window.FindName($_).Margin.Left })
+    $report["template_dependency_hints_loaded"] = $templateDependencyHintNames.Where({ $window.FindName($_) -is [System.Windows.Controls.TextBlock] }).Count
+    $report["template_dependency_smoke_sync_loaded"] = ($null -ne $Script:TemplateDependencySmokeSync)
+    $report["template_dispersion_details_hidden_when_disabled"] = ($window.FindName("DispersionTypeBox").Visibility -eq [System.Windows.Visibility]::Collapsed)
+    $report["template_outer_scf_details_hidden_when_disabled"] = ($window.FindName("OuterScfEpsScfBox").Visibility -eq [System.Windows.Visibility]::Collapsed)
+    $report["template_mixing_details_hidden_when_disabled"] = ($window.FindName("MixingMethodBox").Visibility -eq [System.Windows.Visibility]::Collapsed)
+    $report["template_smearing_details_visible_when_enabled"] = ($window.FindName("SmearingMethodBox").Visibility -eq [System.Windows.Visibility]::Visible)
+    $report["template_kpoints_grid_hidden_when_none"] = ($window.FindName("KpointsGridBox").Visibility -eq [System.Windows.Visibility]::Collapsed)
+    $report["template_kpoints_wavefunctions_hidden_when_none"] = ($window.FindName("KpointsWavefunctionsBox").Visibility -eq [System.Windows.Visibility]::Collapsed)
+    $report["template_print_group_dimmed_when_none"] = ([double]$window.FindName("TemplateDftPrintGroup").Opacity -lt 1.0)
+    $report["template_print_hint_text"] = [string]$window.FindName("DftPrintHintText").Text
     $report["template_combo_fields_loaded"] = $templateComboNames.Where({ $window.FindName($_) -is [System.Windows.Controls.ComboBox] }).Count
     $report["template_combo_fields_editable"] = $templateComboNames.Where({ [bool]$window.FindName($_).IsEditable }).Count
     $report["template_run_type_options"] = @($window.FindName("TemplateRunTypeBox").Items | ForEach-Object { [string]$_.Content })

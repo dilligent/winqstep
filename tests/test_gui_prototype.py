@@ -161,14 +161,35 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn('x:Name="TemplateDftTab" Header="DFT"', xaml_text)
         self.assertIn('x:Name="TemplateSubsystemTab" Header="Subsystem"', xaml_text)
         self.assertIn('x:Name="TemplateMotionTab" Header="Motion"', xaml_text)
+        for hint_name in [
+            "DispersionHintText",
+            "OuterScfHintText",
+            "MixingHintText",
+            "SmearingHintText",
+            "KpointsHintText",
+            "DftPrintHintText",
+        ]:
+            self.assertIn(f'x:Name="{hint_name}"', xaml_text)
+            self.assertIn(hint_name, controls_text)
         self.assertIn('TemplateCoreTab = "tab.template_core"', controls_text)
         self.assertIn('TemplateDftTab = "tab.template_dft"', controls_text)
         self.assertIn('TemplateSubsystemTab = "tab.template_subsystem"', controls_text)
         self.assertIn('TemplateMotionTab = "tab.template_motion"', controls_text)
+        self.assertIn("SyncTemplateDependencyState", script_text)
+        self.assertIn("SetTemplateDependentControls", script_text)
+        self.assertIn("template.hint.kpoints_none", script_text)
+        self.assertIn("template.hint.print_selected", script_text)
+        self.assertIn("TemplateDependencySmokeSync", script_text)
         self.assertIn('"tab.template_core": "Core"', english_text)
         self.assertIn('"tab.template_subsystem": "Subsystem"', english_text)
+        self.assertIn('"template.hint.dispersion_disabled"', english_text)
+        self.assertIn('"template.hint.kpoints_unknown"', english_text)
+        self.assertIn('"template.hint.print_selected"', english_text)
         self.assertIn('"tab.template_core": "核心"', chinese_text)
         self.assertIn('"tab.template_subsystem": "子系统"', chinese_text)
+        self.assertIn('"template.hint.dispersion_disabled"', chinese_text)
+        self.assertIn('"template.hint.kpoints_unknown"', chinese_text)
+        self.assertIn('"template.hint.print_selected"', chinese_text)
         self.assertIn('x:Key="TemplateSectionGroupBoxStyle"', xaml_text)
         self.assertIn('x:Key="TemplateSectionLevel1GroupBoxStyle"', xaml_text)
         self.assertIn('x:Key="TemplateSectionLevel2GroupBoxStyle"', xaml_text)
@@ -588,6 +609,16 @@ class GuiPrototypeTests(unittest.TestCase):
             ],
         )
         self.assertEqual(report["template_section_group_left_margins"], [0, 18, 36, 36, 36, 54, 54, 54, 36, 36, 36, 36, 54, 18, 18])
+        self.assertEqual(report["template_dependency_hints_loaded"], 6)
+        self.assertTrue(report["template_dependency_smoke_sync_loaded"])
+        self.assertTrue(report["template_dispersion_details_hidden_when_disabled"])
+        self.assertTrue(report["template_outer_scf_details_hidden_when_disabled"])
+        self.assertTrue(report["template_mixing_details_hidden_when_disabled"])
+        self.assertTrue(report["template_smearing_details_visible_when_enabled"])
+        self.assertTrue(report["template_kpoints_grid_hidden_when_none"])
+        self.assertTrue(report["template_kpoints_wavefunctions_hidden_when_none"])
+        self.assertTrue(report["template_print_group_dimmed_when_none"])
+        self.assertEqual(report["template_print_hint_text"], "No DFT PRINT outputs are selected.")
         self.assertEqual(report["template_combo_fields_loaded"], 46)
         self.assertEqual(report["template_combo_fields_editable"], 46)
         self.assertEqual(report["template_run_type_options"], ["ENERGY", "ENERGY_FORCE", "GEO_OPT", "CELL_OPT"])
