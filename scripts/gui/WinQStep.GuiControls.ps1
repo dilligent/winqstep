@@ -5,6 +5,7 @@ function Get-WinQStepGuiControlNames {
         "JobInputsGroup",
         "ModeLabel", "ConfigPathLabel", "TemplatePathLabel", "StructurePathLabel",
         "ExistingInputPathLabel", "JobFolderLabel", "ProjectLabel",
+        "RunTargetLabel", "RunTargetText",
         "ConfigPathBox", "TemplatePathBox", "StructurePathBox", "ExistingInputPathBox",
         "JobDirBox", "ProjectNameBox",
         "ConfigTab", "TemplateTab", "EnvironmentTab", "StructureTab",
@@ -166,6 +167,7 @@ function Set-WinQStepLocalizedControls {
     ExistingInputPathLabel = "label.existing_input"
     JobFolderLabel = "label.job_folder"
     ProjectLabel = "label.project"
+    RunTargetLabel = "label.run_target"
     DistroLabel = "label.distro"
     Cp2kCommandLabel = "label.cp2k_command"
     Cp2kDataDirLabel = "label.cp2k_data_dir"

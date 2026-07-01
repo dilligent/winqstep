@@ -192,6 +192,9 @@ function New-WinQStepWindow {
         }
         $null = Initialize-WinQStepLocalization $Language
         & $ApplyLocalizationToControls
+        if ($null -ne $UpdateRunTargetStatus) {
+            & $UpdateRunTargetStatus
+        }
         if ($null -ne $SyncTemplateDependencyState) {
             & $SyncTemplateDependencyState
         }
@@ -207,6 +210,9 @@ function New-WinQStepWindow {
         }
         if ($null -ne $UpdateModeControls) {
             & $UpdateModeControls
+        }
+        if ($null -ne $UpdateRunTargetStatus) {
+            & $UpdateRunTargetStatus
         }
         if ($null -ne $SyncTemplateDependencyState) {
             & $SyncTemplateDependencyState
@@ -224,6 +230,139 @@ function New-WinQStepWindow {
     $TestUsesExistingInputPath = {
         return ((& $TestIsExistingInputMode) -or (& $TestIsExistingInputBatchMode))
     }.GetNewClosure()
+
+    $NormalizeRunTargetPreviewText = {
+        param([AllowEmptyString()][string]$Text)
+        return (($Text -replace "`r`n", "`n") -replace "`r", "`n")
+    }.GetNewClosure()
+
+    $TestPreviewHasManualEdits = {
+        $current = $previewState["Current"]
+        if ($null -eq $current) {
+            return $false
+        }
+        $previewText = [string]$controls["PreviewText"].Text
+        if ([string]::IsNullOrWhiteSpace($previewText)) {
+            return $false
+        }
+        $originalText = [string]$current["Text"]
+        return ((& $NormalizeRunTargetPreviewText $previewText) -ne (& $NormalizeRunTargetPreviewText $originalText))
+    }.GetNewClosure()
+
+    $GetRunTargetDisplayPath = {
+        param([AllowEmptyString()][string]$PathText)
+        $trimmed = ([string]$PathText).Trim()
+        if ([string]::IsNullOrWhiteSpace($trimmed)) {
+            return ""
+        }
+        try {
+            if ([System.IO.Path]::IsPathRooted($trimmed)) {
+                return [System.IO.Path]::GetFileName($trimmed)
+            }
+        }
+        catch {
+        }
+        return $trimmed
+    }.GetNewClosure()
+
+    $ResolveRunTargetPath = {
+        param([AllowEmptyString()][string]$PathText)
+        $trimmed = ([string]$PathText).Trim()
+        if ([string]::IsNullOrWhiteSpace($trimmed)) {
+            return ""
+        }
+        try {
+            if ([System.IO.Path]::IsPathRooted($trimmed)) {
+                return [System.IO.Path]::GetFullPath($trimmed)
+            }
+            return Resolve-WinQStepPath $trimmed
+        }
+        catch {
+            return $trimmed
+        }
+    }.GetNewClosure()
+
+    $GetRunTargetBatchInputCount = {
+        param([Parameter(Mandatory = $true)][string]$PathText)
+        $resolved = & $ResolveRunTargetPath $PathText
+        if ([string]::IsNullOrWhiteSpace($resolved)) {
+            return 0
+        }
+        if ([System.IO.Directory]::Exists($resolved)) {
+            return @([System.IO.Directory]::EnumerateFiles($resolved, "*.inp")).Count
+        }
+        if ([System.IO.File]::Exists($resolved)) {
+            $extension = [System.IO.Path]::GetExtension($resolved)
+            if ($extension.Equals(".inp", [System.StringComparison]::OrdinalIgnoreCase)) {
+                return 1
+            }
+            $seen = @{}
+            foreach ($line in [System.IO.File]::ReadLines($resolved, [System.Text.Encoding]::UTF8)) {
+                $trimmed = ([string]$line).Trim()
+                if ([string]::IsNullOrWhiteSpace($trimmed) -or $trimmed.StartsWith("#")) {
+                    continue
+                }
+                $key = $trimmed.ToLowerInvariant()
+                if (-not $seen.ContainsKey($key)) {
+                    $seen[$key] = $true
+                }
+            }
+            return $seen.Count
+        }
+        return 0
+    }.GetNewClosure()
+
+    $SetRunTargetText = {
+        param(
+            [Parameter(Mandatory = $true)][string]$Key,
+            [object[]]$Arguments = @(),
+            [AllowEmptyString()][string]$ToolTip = ""
+        )
+        $text = Format-WinQStepText $Key $Arguments
+        $controls["RunTargetText"].Text = $text
+        $controls["RunTargetText"].ToolTip = if ([string]::IsNullOrWhiteSpace($ToolTip)) { $text } else { $ToolTip }
+    }.GetNewClosure()
+
+    $UpdateRunTargetStatus = {
+        if ($null -eq $controls["RunTargetText"]) {
+            return
+        }
+        if ((& $TestPreviewHasManualEdits) -and -not (& $TestIsExistingInputBatchMode)) {
+            $current = $previewState["Current"]
+            $toolTip = if ($null -ne $current) { [string]$current["InputPath"] } else { "" }
+            & $SetRunTargetText "run_target.edited_preview" @() $toolTip
+            return
+        }
+        if (& $TestIsExistingInputBatchMode) {
+            $pathText = ([string]$controls["ExistingInputPathBox"].Text).Trim()
+            $resolved = & $ResolveRunTargetPath $pathText
+            $count = & $GetRunTargetBatchInputCount $pathText
+            if ([System.IO.Directory]::Exists($resolved)) {
+                & $SetRunTargetText "run_target.batch_directory" @($count) $resolved
+            }
+            elseif ([System.IO.File]::Exists($resolved)) {
+                $extension = [System.IO.Path]::GetExtension($resolved)
+                if ($extension.Equals(".inp", [System.StringComparison]::OrdinalIgnoreCase)) {
+                    & $SetRunTargetText "run_target.batch_input" @((& $GetRunTargetDisplayPath $pathText)) $resolved
+                }
+                else {
+                    & $SetRunTargetText "run_target.batch_list" @($count) $resolved
+                }
+            }
+            else {
+                & $SetRunTargetText "run_target.batch_path" @($pathText) $resolved
+            }
+            return
+        }
+        if (& $TestIsExistingInputMode) {
+            $pathText = ([string]$controls["ExistingInputPathBox"].Text).Trim()
+            $resolved = & $ResolveRunTargetPath $pathText
+            & $SetRunTargetText "run_target.existing_input" @((& $GetRunTargetDisplayPath $pathText)) $resolved
+            return
+        }
+        & $SetRunTargetText "run_target.workflow"
+    }.GetNewClosure()
+    $Script:RunTargetSmokeUpdate = $UpdateRunTargetStatus
 
     $UpdateExistingInputPathLabel = {
         if (& $TestIsExistingInputBatchMode) {
@@ -246,6 +385,7 @@ function New-WinQStepWindow {
         $controls["BatchStopOnFailureBox"].IsEnabled = $isBatchMode
         $controls["ImportButton"].IsEnabled = -not $usesExistingInputPath
         & $UpdateExistingInputPathLabel
+        & $UpdateRunTargetStatus
     }.GetNewClosure()
 
     $UpdateArtifactControls = {
@@ -525,6 +665,9 @@ function New-WinQStepWindow {
 
     $ClearInputPreviewState = {
         $previewState["Current"] = $null
+        if ($null -ne $UpdateRunTargetStatus) {
+            & $UpdateRunTargetStatus
+        }
     }.GetNewClosure()
 
     $SetInputPreviewState = {
@@ -538,6 +681,7 @@ function New-WinQStepWindow {
             Text = $Text
             SourceMode = $SourceMode
         }
+        & $UpdateRunTargetStatus
     }.GetNewClosure()
 
     $FormatLogWithSummary = {
@@ -2457,6 +2601,7 @@ function New-WinQStepWindow {
                 Text = $text
                 SourceMode = "artifact_input"
             }
+            & $UpdateRunTargetStatus
         }
         elseif ($Key -ne "output") {
             $controls["LogText"].Text = $text
@@ -3818,6 +3963,8 @@ function New-WinQStepWindow {
     $controls["WorkflowModeRadio"].Add_Checked({ & $UpdateModeControls }.GetNewClosure())
     $controls["ExistingInputModeRadio"].Add_Checked({ & $UpdateModeControls }.GetNewClosure())
     $controls["ExistingInputBatchModeRadio"].Add_Checked({ & $UpdateModeControls }.GetNewClosure())
+    $controls["ExistingInputPathBox"].Add_TextChanged({ & $UpdateRunTargetStatus }.GetNewClosure())
+    $controls["PreviewText"].Add_TextChanged({ & $UpdateRunTargetStatus }.GetNewClosure())
 
     foreach ($name in @(
         "DispersionEnabledBox", "OuterScfEnabledBox", "MixingEnabledBox", "SmearingEnabledBox",
@@ -4696,6 +4843,8 @@ if ($EditedPreviewSmokeTest) {
     $window.FindName("ProjectNameBox").Text = "edited_preview_smoke"
     $originalPreviewText = [string]$window.FindName("PreviewText").Text
     $window.FindName("PreviewText").Text = "$originalPreviewText`r`n$marker`r`n"
+    [System.Windows.Forms.Application]::DoEvents()
+    $editedRunTargetBeforeRun = [string]$window.FindName("RunTargetText").Text
     $startAsyncJob = $Script:EditedPreviewSmokeStartAsyncJob
     if ($null -eq $startAsyncJob) {
         throw "StartAsyncJob smoke hook was not found."
@@ -4715,6 +4864,7 @@ if ($EditedPreviewSmokeTest) {
     }
 
     $report["mode"] = "edited_preview_smoke"
+    $report["edited_run_target_before_run"] = $editedRunTargetBeforeRun
     $report["preview_original_has_global"] = $originalPreviewText.Contains("&GLOBAL")
     $report["edited_preview_reported"] = ($null -ne $runReport)
     $report["edited_preview_used"] = if ($null -ne $runReport) { [bool]$runReport["edited_preview_used"] } else { $false }
@@ -4738,6 +4888,7 @@ if ($EditedPreviewSmokeTest) {
     if (
         $report["preview_original_has_global"] -and
         $report["edited_preview_reported"] -and
+        $report["edited_run_target_before_run"].Contains("edited preview") -and
         $report["edited_preview_used"] -and
         $report["edited_preview_confirmation_requested"] -and
         $report["edited_preview_confirmation_suppressed"] -and
@@ -5069,12 +5220,15 @@ if ($ButtonSmokeTest) {
 
     & $RecordButtonSmokeClick "PreviewButton" "PreviewWorkflowButton"
     $workflowPreviewText = [string]$window.FindName("PreviewText").Text
+    $workflowRunTargetAfterPreview = [string]$window.FindName("RunTargetText").Text
 
     $window.FindName("ExistingInputModeRadio").IsChecked = $true
     [System.Windows.Forms.Application]::DoEvents()
     $existingModeImportDisabled = (-not [bool]$window.FindName("ImportButton").IsEnabled)
+    $existingRunTargetBeforePreview = [string]$window.FindName("RunTargetText").Text
     & $RecordButtonSmokeClick "PreviewButton" "PreviewExistingInputButton"
     $existingPreviewText = [string]$window.FindName("PreviewText").Text
+    $existingRunTargetAfterPreview = [string]$window.FindName("RunTargetText").Text
 
     $batchInputDir = Join-Path $historySmokeDir "batch-inputs"
     $batchJobDir = Join-Path $historySmokeDir "batch-jobs"
@@ -5088,8 +5242,10 @@ if ($ButtonSmokeTest) {
     [System.Windows.Forms.Application]::DoEvents()
     $batchModeImportDisabled = (-not [bool]$window.FindName("ImportButton").IsEnabled)
     $batchModeStopOnFailureEnabled = [bool]$window.FindName("BatchStopOnFailureBox").IsEnabled
+    $batchRunTargetBeforePreview = [string]$window.FindName("RunTargetText").Text
     & $RecordButtonSmokeClick "PreviewButton" "PreviewExistingInputBatchButton"
     $batchPreviewText = [string]$window.FindName("PreviewText").Text
+    $batchRunTargetAfterPreview = [string]$window.FindName("RunTargetText").Text
     $batchArtifactSummaryText = [string]$window.FindName("ArtifactSummaryText").Text
     $batchSummaryPath = Join-Path $batchJobDir "batch.winqstep-batch.json"
     $window.FindName("JobDirBox").Text = $historySmokeDir
@@ -5231,6 +5387,11 @@ if ($ButtonSmokeTest) {
     $report["existing_mode_import_disabled"] = $existingModeImportDisabled
     $report["batch_mode_import_disabled"] = $batchModeImportDisabled
     $report["batch_mode_stop_on_failure_enabled"] = $batchModeStopOnFailureEnabled
+    $report["workflow_run_target_after_preview"] = $workflowRunTargetAfterPreview
+    $report["existing_run_target_before_preview"] = $existingRunTargetBeforePreview
+    $report["existing_run_target_after_preview"] = $existingRunTargetAfterPreview
+    $report["batch_run_target_before_preview"] = $batchRunTargetBeforePreview
+    $report["batch_run_target_after_preview"] = $batchRunTargetAfterPreview
     $report["batch_preview_has_summary"] = $batchPreviewText.Contains("Existing input batch: status=prepared")
     $report["batch_preview_has_items"] = ($batchPreviewText.Contains("inputs=2") -and $batchPreviewText.Contains("#1: status=prepared") -and $batchPreviewText.Contains("#2: status=prepared"))
     $report["batch_artifact_summary_has_batch"] = ($batchArtifactSummaryText.Contains("mode=existing_input_batch") -and $batchArtifactSummaryText.Contains("summary=[exists]"))
@@ -5290,6 +5451,11 @@ if ($ButtonSmokeTest) {
         $report["existing_mode_import_disabled"] -and
         $report["batch_mode_import_disabled"] -and
         $report["batch_mode_stop_on_failure_enabled"] -and
+        $report["workflow_run_target_after_preview"].Contains("Run target:") -and
+        $report["existing_run_target_before_preview"].Contains("quickstep_energy.inp") -and
+        $report["existing_run_target_after_preview"].Contains("quickstep_energy.inp") -and
+        $report["batch_run_target_before_preview"].Contains("2") -and
+        $report["batch_run_target_after_preview"].Contains("2") -and
         $report["batch_preview_has_summary"] -and
         $report["batch_preview_has_items"] -and
         $report["batch_artifact_summary_has_batch"] -and
@@ -5332,6 +5498,7 @@ if ($SmokeTest) {
         $window.FindName($buttonName).RaiseEvent($eventArgs)
         [System.Windows.Forms.Application]::DoEvents()
     }
+    $workflowRunTargetText = [string]$window.FindName("RunTargetText").Text
     $expectedEncodingText = "$([char]0x4e2d)$([char]0x6587)$([char]0x8def)$([char]0x5f84):D:\Library\$([char]0x81ea)$([char]0x5236)$([char]0x54c1)"
     $chineseFolderName = "$([char]0x81ea)$([char]0x5236)$([char]0x54c1)"
     $encodingProbeResult = Invoke-WinQStepPython @(
@@ -5420,12 +5587,14 @@ if ($SmokeTest) {
     [System.Windows.Forms.Application]::DoEvents()
     $existingModeInputEnabled = [bool]$window.FindName("ExistingInputPathBox").IsEnabled
     $existingModeImportEnabled = [bool]$window.FindName("ImportButton").IsEnabled
+    $existingRunTargetText = [string]$window.FindName("RunTargetText").Text
     $window.FindName("ExistingInputBatchModeRadio").IsChecked = $true
     [System.Windows.Forms.Application]::DoEvents()
     $batchModeInputEnabled = [bool]$window.FindName("ExistingInputPathBox").IsEnabled
     $batchModeImportEnabled = [bool]$window.FindName("ImportButton").IsEnabled
     $batchModeStopOnFailureEnabled = [bool]$window.FindName("BatchStopOnFailureBox").IsEnabled
     $batchModeLabelText = [string]$window.FindName("ExistingInputPathLabel").Text
+    $batchRunTargetText = [string]$window.FindName("RunTargetText").Text
     $configWorkspace = [string]$window.FindName("DefaultWorkspaceBox").Text
     $report["xaml_loaded"] = ($window -is [System.Windows.Window])
     $report["title"] = $window.Title
@@ -5447,6 +5616,11 @@ if ($SmokeTest) {
     $report["cancel_button_initially_disabled"] = (-not [bool]$window.FindName("CancelJobButton").IsEnabled)
     $report["job_status_text_loaded"] = ($window.FindName("JobStatusText") -is [System.Windows.Controls.TextBlock])
     $report["job_status_text_initial"] = [string]$window.FindName("JobStatusText").Text
+    $report["run_target_loaded"] = ($window.FindName("RunTargetText") -is [System.Windows.Controls.TextBlock])
+    $report["run_target_label_text"] = [string]$window.FindName("RunTargetLabel").Text
+    $report["run_target_workflow_text"] = $workflowRunTargetText
+    $report["run_target_existing_text"] = $existingRunTargetText
+    $report["run_target_batch_text"] = $batchRunTargetText
     $report["structure_preview_viewport_loaded"] = ($window.FindName("StructurePreviewViewport") -is [System.Windows.Controls.Viewport3D])
     $report["structure_preview_visual_loaded"] = ($window.FindName("StructurePreviewVisual") -is [System.Windows.Media.Media3D.ModelVisual3D])
     $report["structure_preview_camera_loaded"] = ($window.FindName("StructurePreviewCamera") -is [System.Windows.Media.Media3D.PerspectiveCamera])

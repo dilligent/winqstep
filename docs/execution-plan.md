@@ -2751,6 +2751,36 @@ Commit boundary:
 
 - One commit for Template dependency hints, localization, tests, and docs.
 
+## Round 79 - Run Target Status Line
+
+Status: completed.
+
+Scope:
+
+- Add a read-only Run Target line to the Job Inputs area so the user can see
+  what the Run button will execute before pressing it.
+- Distinguish workflow-generated input, manually edited Input Preview text,
+  existing input files, batch directories, batch list files, and batch single
+  inputs.
+- Count `.inp` files for batch directories and non-empty, non-comment entries
+  for batch input lists without running preflight.
+- Refresh the Run Target line when job mode, existing input path, language, or
+  Input Preview text changes.
+- Keep run behavior unchanged; this is a GUI status/clarity feature only.
+
+Acceptance:
+
+- Workflow mode shows generated workflow input.
+- Existing input mode shows the selected input filename.
+- Existing input batch mode shows directory/list/single-input target and file
+  count when available.
+- Editing Input Preview changes the target to edited preview before Run.
+- GUI and fast check profiles pass.
+
+Commit boundary:
+
+- One commit for Run Target UI, localization, tests, and docs.
+
 ## QuickStep Feature Backlog
 
 Status: planned queue after Round 76.

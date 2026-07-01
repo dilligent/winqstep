@@ -81,6 +81,7 @@
           <RowDefinition Height="Auto"/>
           <RowDefinition Height="Auto"/>
           <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <TextBlock x:Name="ModeLabel" Grid.Row="0" Grid.Column="0" Text="Mode"/>
@@ -113,6 +114,10 @@
 
         <TextBlock x:Name="ProjectLabel" Grid.Row="6" Grid.Column="0" Text="Project"/>
         <TextBox x:Name="ProjectNameBox" Grid.Row="6" Grid.Column="1"/>
+
+        <TextBlock x:Name="RunTargetLabel" Grid.Row="7" Grid.Column="0" Text="Run Target"/>
+        <TextBlock x:Name="RunTargetText" Grid.Row="7" Grid.Column="1" Grid.ColumnSpan="2"
+                   Margin="6,4" TextWrapping="Wrap" Foreground="#44515F"/>
       </Grid>
     </GroupBox>
 
