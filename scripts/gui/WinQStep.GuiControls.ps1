@@ -78,6 +78,7 @@ function Get-WinQStepGuiControlNames {
         "PreviewButton", "RunButton", "CancelJobButton", "HistoryButton", "ClearButton",
         "ViewResultsButton", "SaveResultsButton",
         "ViewInputButton", "ViewOutputButton", "ViewMetadataButton", "ViewStdoutButton", "ViewStderrButton",
+        "ViewArtifactTailButton", "ViewArtifactFullButton",
         "ResumeBatchButton", "SkipBatchItemButton", "RerunBatchItemButton", "CancelBatchItemButton",
         "BrowseConfigButton", "BrowseTemplateButton", "BrowseStructureButton",
         "BrowseExistingInputButton", "BrowseBatchInputDirButton", "BrowseBatchInputFilesButton",
@@ -124,6 +125,8 @@ function Set-WinQStepLocalizedControls {
     ViewMetadataButton = "button.metadata"
     ViewStdoutButton = "button.stdout"
     ViewStderrButton = "button.stderr"
+    ViewArtifactTailButton = "button.tail"
+    ViewArtifactFullButton = "button.full_text"
     ResumeBatchButton = "button.resume_batch"
     SkipBatchItemButton = "button.skip_item"
     RerunBatchItemButton = "button.rerun_item"

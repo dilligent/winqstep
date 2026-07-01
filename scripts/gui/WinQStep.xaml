@@ -1050,6 +1050,9 @@
             <Button x:Name="ViewStdoutButton" Content="Stdout"/>
             <Button x:Name="ViewStderrButton" Content="Stderr"/>
             <Separator Width="8" Opacity="0"/>
+            <Button x:Name="ViewArtifactTailButton" Content="Tail"/>
+            <Button x:Name="ViewArtifactFullButton" Content="Full Text"/>
+            <Separator Width="8" Opacity="0"/>
             <Button x:Name="ResumeBatchButton" Content="Resume Batch"/>
             <Button x:Name="SkipBatchItemButton" Content="Skip Item"/>
             <Button x:Name="RerunBatchItemButton" Content="Rerun Item"/>

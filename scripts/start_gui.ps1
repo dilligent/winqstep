@@ -118,6 +118,10 @@ function New-WinQStepWindow {
         $controls["ViewResultsButton"],
         $controls["SaveResultsButton"]
     )
+    $artifactTextModeButtons = @(
+        $controls["ViewArtifactTailButton"],
+        $controls["ViewArtifactFullButton"]
+    )
     $batchQueueButtons = @(
         $controls["ResumeBatchButton"],
         $controls["SkipBatchItemButton"],
@@ -127,8 +131,16 @@ function New-WinQStepWindow {
     foreach ($button in $batchQueueButtons) {
         $button.IsEnabled = $false
     }
+    foreach ($button in $artifactTextModeButtons) {
+        $button.IsEnabled = $false
+    }
     $batchQueueSelectionOverride = @{ Index = 0 }
     $artifactState = @{ Current = $null }
+    $artifactViewState = @{
+        Key = ""
+        Path = ""
+        TailCapable = $false
+    }
     $previewState = @{ Current = $null }
     $jobState = @{ Current = $null }
     $structurePreviewState = @{
@@ -160,7 +172,8 @@ function New-WinQStepWindow {
         $controls["HistoryButton"], $controls["ClearButton"],
         $controls["ViewResultsButton"], $controls["SaveResultsButton"],
         $controls["ViewInputButton"], $controls["ViewOutputButton"], $controls["ViewMetadataButton"],
-        $controls["ViewStdoutButton"], $controls["ViewStderrButton"], $controls["BrowseConfigButton"],
+        $controls["ViewStdoutButton"], $controls["ViewStderrButton"],
+        $controls["ViewArtifactTailButton"], $controls["ViewArtifactFullButton"], $controls["BrowseConfigButton"],
         $controls["BrowseTemplateButton"], $controls["BrowseStructureButton"],
         $controls["BrowseExistingInputButton"], $controls["BrowseBatchInputDirButton"],
         $controls["BrowseBatchInputFilesButton"], $controls["BrowseBatchInputListButton"],
@@ -597,6 +610,37 @@ function New-WinQStepWindow {
         & $UpdateRunTargetStatus
     }.GetNewClosure()
 
+    $artifactTailLineCount = 500
+    $largeArtifactPreviewThresholdBytes = 65536
+    $tailCapableArtifactKeys = @{
+        output = $true
+        stdout = $true
+        stderr = $true
+    }
+
+    $TestArtifactTailCapable = {
+        param([string]$Key)
+        return ($tailCapableArtifactKeys.ContainsKey($Key) -and [bool]$tailCapableArtifactKeys[$Key])
+    }.GetNewClosure()
+
+    $UpdateArtifactTextModeControls = {
+        $enabled = (
+            [bool]$artifactViewState["TailCapable"] -and
+            -not [string]::IsNullOrWhiteSpace([string]$artifactViewState["Path"]) -and
+            [System.IO.File]::Exists([string]$artifactViewState["Path"])
+        )
+        foreach ($button in $artifactTextModeButtons) {
+            $button.IsEnabled = $enabled
+        }
+    }.GetNewClosure()
+
+    $ClearArtifactViewState = {
+        $artifactViewState["Key"] = ""
+        $artifactViewState["Path"] = ""
+        $artifactViewState["TailCapable"] = $false
+        & $UpdateArtifactTextModeControls
+    }.GetNewClosure()
+
     $UpdateArtifactControls = {
         $current = $artifactState["Current"]
         foreach ($entry in $artifactButtons.GetEnumerator()) {
@@ -618,6 +662,7 @@ function New-WinQStepWindow {
         if ($null -ne $UpdateBatchQueueControls) {
             & $UpdateBatchQueueControls
         }
+        & $UpdateArtifactTextModeControls
     }.GetNewClosure()
 
     $GetCurrentBatchSummaryPath = {
@@ -2406,6 +2451,7 @@ function New-WinQStepWindow {
         if ([string]::IsNullOrWhiteSpace([string]$artifacts["run_type"])) {
             $artifacts["run_type"] = (& $GetNestedPath $Metadata @("workflow", "template", "run_type"))
         }
+        & $ClearArtifactViewState
         $artifactState["Current"] = $artifacts
         $controls["BatchResultsGrid"].ItemsSource = $null
         $controls["BatchResultsGrid"].Visibility = [System.Windows.Visibility]::Collapsed
@@ -2443,6 +2489,7 @@ function New-WinQStepWindow {
             result_text = "$summaryText`r`n`r`n$(& $FormatBatchResultTable $Summary)"
             batch_summary = $Summary
         }
+        & $ClearArtifactViewState
         $artifactState["Current"] = $artifacts
         $controls["ArtifactSummaryText"].Text = & $BuildBatchArtifactSummary $Summary
         $controls["BatchResultsGrid"].ItemsSource = $rows
@@ -2747,6 +2794,7 @@ function New-WinQStepWindow {
             generated_artifacts = @(& $GetGeneratedArtifacts (& $GetNestedValue $Item @("generated_artifacts")))
         }
         $artifacts["result_text"] = & $BuildResultSummaryFromArtifacts $artifacts
+        & $ClearArtifactViewState
         $artifactState["Current"] = $artifacts
         $controls["BatchResultsGrid"].ItemsSource = $null
         $controls["BatchResultsGrid"].Visibility = [System.Windows.Visibility]::Collapsed
@@ -2873,7 +2921,10 @@ function New-WinQStepWindow {
     }.GetNewClosure()
 
     $ViewArtifact = {
-        param([Parameter(Mandatory = $true)][string]$Key)
+        param(
+            [Parameter(Mandatory = $true)][string]$Key,
+            [ValidateSet("auto", "tail", "full")][string]$Mode = "auto"
+        )
         $current = $artifactState["Current"]
         if ($null -eq $current -or $null -eq $current["paths"]) {
             throw "No job artifact is selected."
@@ -2882,8 +2933,29 @@ function New-WinQStepWindow {
         if ([string]::IsNullOrWhiteSpace($path) -or -not [System.IO.File]::Exists($path)) {
             throw "Artifact is not available: $Key"
         }
-        $text = [System.IO.File]::ReadAllText($path, [System.Text.Encoding]::UTF8)
-        $controls["ArtifactText"].Text = "--- ${Key}: $path ---`r`n$text"
+        $fileInfo = [System.IO.FileInfo]::new($path)
+        $tailCapable = & $TestArtifactTailCapable $Key
+        $viewMode = $Mode
+        if ($viewMode -eq "auto") {
+            $viewMode = if ($tailCapable -and $fileInfo.Length -gt $largeArtifactPreviewThresholdBytes) { "tail" } else { "full" }
+        }
+        if ($viewMode -eq "tail" -and -not $tailCapable) {
+            $viewMode = "full"
+        }
+
+        if ($viewMode -eq "tail") {
+            $text = Get-WinQStepFileTail $path $artifactTailLineCount
+            $header = "--- ${Key} tail (last $artifactTailLineCount lines, bytes=$($fileInfo.Length)): $path ---"
+        }
+        else {
+            $text = Read-WinQStepFileText $path
+            $header = "--- ${Key}: $path ---"
+        }
+        $controls["ArtifactText"].Text = "$header`r`n$text"
+        $artifactViewState["Key"] = $Key
+        $artifactViewState["Path"] = $path
+        $artifactViewState["TailCapable"] = $tailCapable
+        & $UpdateArtifactTextModeControls
         if ($Key -eq "input") {
             $controls["PreviewText"].Text = $text
             $previewState["Current"] = [ordered]@{
@@ -2896,6 +2968,15 @@ function New-WinQStepWindow {
         elseif ($Key -ne "output") {
             $null = & $SetLogText $text $true
         }
+    }.GetNewClosure()
+
+    $ViewCurrentArtifactText = {
+        param([ValidateSet("tail", "full")][string]$Mode)
+        $key = [string]$artifactViewState["Key"]
+        if ([string]::IsNullOrWhiteSpace($key)) {
+            throw "No artifact text view is selected."
+        }
+        & $ViewArtifact $key $Mode
     }.GetNewClosure()
 
     $FormatConfigValidation = {
@@ -4587,6 +4668,18 @@ function New-WinQStepWindow {
         }
     }.GetNewClosure())
 
+    $controls["ViewArtifactTailButton"].Add_Click({
+        & $InvokeGuiAction -Status (Get-WinQStepText "status.viewing_artifact_tail") -Action {
+            & $ViewCurrentArtifactText "tail"
+        }
+    }.GetNewClosure())
+
+    $controls["ViewArtifactFullButton"].Add_Click({
+        & $InvokeGuiAction -Status (Get-WinQStepText "status.viewing_artifact_full") -Action {
+            & $ViewCurrentArtifactText "full"
+        }
+    }.GetNewClosure())
+
     $controls["HistoryButton"].Add_Click({
         & $InvokeGuiAction -Status (Get-WinQStepText "status.loading_job_history") -Action {
             & $LoadHistory
@@ -4727,6 +4820,7 @@ function New-WinQStepWindow {
         $controls["DataLabelsGrid"].ItemsSource = $null
         $controls["DataLabelsGrid"].Visibility = [System.Windows.Visibility]::Collapsed
         & $ClearInputPreviewState
+        & $ClearArtifactViewState
         & $ClearStructurePreview
         $artifactState["Current"] = $null
         & $SetJobStatusText ""
@@ -5777,7 +5871,13 @@ if ($ButtonSmokeTest) {
         }
     }
     [System.IO.File]::WriteAllText($historyInputPath, "&GLOBAL`n  PROJECT button_history`n&END GLOBAL`n", $Script:Utf8NoBomEncoding)
-    [System.IO.File]::WriteAllText($historyOutputPath, "The number of warnings for this run is : 0`nPROGRAM ENDED AT                 2026-06-29 00:01:00.000`n", $Script:Utf8NoBomEncoding)
+    $historyOutputLines = @("OUTPUT START SHOULD NOT BE IN TAIL")
+    foreach ($lineIndex in 1..900) {
+        $historyOutputLines += ("large output filler {0:D4} {1}" -f $lineIndex, ([string]::new([char]"x", 100)))
+    }
+    $historyOutputLines += "The number of warnings for this run is : 0"
+    $historyOutputLines += "PROGRAM ENDED AT                 2026-06-29 00:01:00.000"
+    [System.IO.File]::WriteAllText($historyOutputPath, (($historyOutputLines -join "`n") + "`n"), $Script:Utf8NoBomEncoding)
     [System.IO.File]::WriteAllText($historyStdoutPath, "stdout smoke`n", $Script:Utf8NoBomEncoding)
     [System.IO.File]::WriteAllText($historyStderrPath, "stderr smoke`n", $Script:Utf8NoBomEncoding)
     [System.IO.File]::WriteAllText(
@@ -6002,6 +6102,12 @@ if ($ButtonSmokeTest) {
     & $RecordButtonSmokeClick "ViewOutputButton"
     $previewTextAfterViewOutput = [string]$window.FindName("PreviewText").Text
     $artifactTextAfterViewOutput = [string]$window.FindName("ArtifactText").Text
+    $artifactTailButtonEnabledAfterOutput = [bool]$window.FindName("ViewArtifactTailButton").IsEnabled
+    $artifactFullButtonEnabledAfterOutput = [bool]$window.FindName("ViewArtifactFullButton").IsEnabled
+    & $RecordButtonSmokeClick "ViewArtifactFullButton"
+    $artifactTextAfterViewOutputFull = [string]$window.FindName("ArtifactText").Text
+    & $RecordButtonSmokeClick "ViewArtifactTailButton"
+    $artifactTextAfterViewOutputTailAgain = [string]$window.FindName("ArtifactText").Text
     foreach ($buttonName in @("ViewMetadataButton", "ViewStdoutButton", "ViewStderrButton")) {
         & $RecordButtonSmokeClick $buttonName
     }
@@ -6020,7 +6126,8 @@ if ($ButtonSmokeTest) {
 
     $artifactViewButtonsDisabled = @(
         "ViewResultsButton", "SaveResultsButton",
-        "ViewInputButton", "ViewOutputButton", "ViewMetadataButton", "ViewStdoutButton", "ViewStderrButton"
+        "ViewInputButton", "ViewOutputButton", "ViewMetadataButton", "ViewStdoutButton", "ViewStderrButton",
+        "ViewArtifactTailButton", "ViewArtifactFullButton"
     ).Where({ [bool]$window.FindName($_).IsEnabled }).Count -eq 0
     $textFieldsCleared = @(
         "EnvironmentText", "StructureText", "PreviewText", "LogText", "ArtifactSummaryText", "ArtifactText"
@@ -6104,6 +6211,19 @@ if ($ButtonSmokeTest) {
     $report["result_summary_file_has_force"] = $savedResultsText.Contains("total_atomic_force=0.00148299452 hartree/bohr")
     $report["artifact_input_synced_preview"] = $previewTextAfterViewInput.Contains("&GLOBAL")
     $report["artifact_output_text_has_program_end"] = $artifactTextAfterViewOutput.Contains("PROGRAM ENDED")
+    $report["artifact_output_default_uses_tail"] = (
+        $artifactTextAfterViewOutput.Contains("output tail (last 500 lines") -and
+        -not $artifactTextAfterViewOutput.Contains("OUTPUT START SHOULD NOT BE IN TAIL")
+    )
+    $report["artifact_output_tail_buttons_enabled"] = ($artifactTailButtonEnabledAfterOutput -and $artifactFullButtonEnabledAfterOutput)
+    $report["artifact_output_full_has_start"] = (
+        $artifactTextAfterViewOutputFull.Contains("OUTPUT START SHOULD NOT BE IN TAIL") -and
+        $artifactTextAfterViewOutputFull.Contains("--- output:")
+    )
+    $report["artifact_output_tail_restored"] = (
+        $artifactTextAfterViewOutputTailAgain.Contains("output tail (last 500 lines") -and
+        -not $artifactTextAfterViewOutputTailAgain.Contains("OUTPUT START SHOULD NOT BE IN TAIL")
+    )
     $report["artifact_output_preserved_input_preview"] = (
         $previewTextAfterViewOutput -eq $previewTextAfterViewInput -and
         $previewTextAfterViewOutput.Contains("&GLOBAL") -and
@@ -6176,6 +6296,10 @@ if ($ButtonSmokeTest) {
         $report["result_summary_file_has_force"] -and
         $report["artifact_input_synced_preview"] -and
         $report["artifact_output_text_has_program_end"] -and
+        $report["artifact_output_default_uses_tail"] -and
+        $report["artifact_output_tail_buttons_enabled"] -and
+        $report["artifact_output_full_has_start"] -and
+        $report["artifact_output_tail_restored"] -and
         $report["artifact_output_preserved_input_preview"] -and
         $report["artifact_text_has_stderr"] -and
         $report["artifact_log_has_stderr"] -and
@@ -6372,6 +6496,12 @@ if ($SmokeTest) {
     ).Where({ $window.FindName($_) -is [System.Windows.Controls.Button] }).Count
     $report["artifact_view_buttons_initially_disabled"] = @(
         "ViewInputButton", "ViewOutputButton", "ViewMetadataButton", "ViewStdoutButton", "ViewStderrButton"
+    ).Where({ [bool]$window.FindName($_).IsEnabled }).Count -eq 0
+    $report["artifact_text_mode_buttons_loaded"] = @(
+        "ViewArtifactTailButton", "ViewArtifactFullButton"
+    ).Where({ $window.FindName($_) -is [System.Windows.Controls.Button] }).Count
+    $report["artifact_text_mode_buttons_initially_disabled"] = @(
+        "ViewArtifactTailButton", "ViewArtifactFullButton"
     ).Where({ [bool]$window.FindName($_).IsEnabled }).Count -eq 0
     $report["config_tab_loaded"] = ($window.FindName("DistroBox") -is [System.Windows.Controls.TextBox])
     $report["config_distro"] = [string]$window.FindName("DistroBox").Text

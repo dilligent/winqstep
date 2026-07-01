@@ -445,15 +445,24 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn("ViewResultsButton", xaml_text)
         self.assertIn("SaveResultsButton", xaml_text)
         self.assertIn("ViewInputButton", xaml_text)
+        self.assertIn("ViewOutputButton", xaml_text)
+        self.assertIn("ViewArtifactTailButton", xaml_text)
+        self.assertIn("ViewArtifactFullButton", xaml_text)
         self.assertIn("SetArtifactsFromMetadata", script_text)
         self.assertIn("SetArtifactsFromHistoryItem", script_text)
         self.assertIn("BuildResultSummaryFromMetadata", script_text)
         self.assertIn("ViewResultSummary", script_text)
         self.assertIn("SaveResultSummary", script_text)
         self.assertIn("ViewArtifact", script_text)
+        self.assertIn("ViewCurrentArtifactText", script_text)
+        self.assertIn("largeArtifactPreviewThresholdBytes", script_text)
+        self.assertIn("Get-WinQStepFileTail $path $artifactTailLineCount", script_text)
         self.assertIn('if ($Key -eq "input")', script_text)
         self.assertNotIn('$Key -in @("input", "output")', script_text)
         self.assertIn('"button.results": "Results"', english_text)
+        self.assertIn('"button.tail": "Tail"', english_text)
+        self.assertIn('"button.full_text": "Full Text"', english_text)
+        self.assertIn("status.viewing_artifact_tail", english_text)
         self.assertIn('"button.results": "结果"', chinese_text)
         self.assertIn("scripts\\validate_job_inputs.py", script_text)
         self.assertIn("template_section_groups_loaded", script_text)
@@ -685,6 +694,8 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertTrue(report["artifact_result_buttons_initially_disabled"])
         self.assertEqual(report["artifact_view_buttons_loaded"], 5)
         self.assertTrue(report["artifact_view_buttons_initially_disabled"])
+        self.assertEqual(report["artifact_text_mode_buttons_loaded"], 2)
+        self.assertTrue(report["artifact_text_mode_buttons_initially_disabled"])
         self.assertTrue(report["config_tab_loaded"])
         self.assertEqual(report["config_distro"], "Ubuntu")
         self.assertTrue(report["config_cp2k_command"].endswith("cp2k.ssmp"))
@@ -935,6 +946,8 @@ class GuiPrototypeTests(unittest.TestCase):
             "SaveResultsButton",
             "ViewInputButton",
             "ViewOutputButton",
+            "ViewArtifactFullButton",
+            "ViewArtifactTailButton",
             "ViewMetadataButton",
             "ViewStdoutButton",
             "ViewStderrButton",
@@ -993,6 +1006,10 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertTrue(report["result_summary_file_has_force"])
         self.assertTrue(report["artifact_input_synced_preview"])
         self.assertTrue(report["artifact_output_text_has_program_end"])
+        self.assertTrue(report["artifact_output_default_uses_tail"])
+        self.assertTrue(report["artifact_output_tail_buttons_enabled"])
+        self.assertTrue(report["artifact_output_full_has_start"])
+        self.assertTrue(report["artifact_output_tail_restored"])
         self.assertTrue(report["artifact_output_preserved_input_preview"])
         self.assertTrue(report["artifact_text_has_stderr"])
         self.assertTrue(report["artifact_log_has_stderr"])
