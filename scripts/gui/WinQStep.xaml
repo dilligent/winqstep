@@ -584,6 +584,9 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
               </Grid.RowDefinitions>
 
               <CheckBox x:Name="OuterScfEnabledBox" Grid.Row="0" Grid.Column="0" Content="Outer SCF" Margin="6,4" VerticalAlignment="Center"/>
@@ -753,7 +756,45 @@
                         Content="Electron Density Cube" Margin="6,4" VerticalAlignment="Center"/>
               <CheckBox x:Name="PrintVHartreeCubeBox" Grid.Row="1" Grid.Column="1"
                         Content="Hartree Potential Cube" Margin="6,4" VerticalAlignment="Center"/>
-              <TextBlock x:Name="DftPrintHintText" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="4"
+              <CheckBox x:Name="PrintBandStructureBox" Grid.Row="1" Grid.Column="2"
+                        Content="Band Structure" Margin="6,4" VerticalAlignment="Center"/>
+
+              <TextBlock x:Name="BandFileNameLabel" Grid.Row="2" Grid.Column="0" Text="Band File"/>
+              <ComboBox x:Name="BandFileNameBox" Grid.Row="2" Grid.Column="1" IsEditable="True">
+                <ComboBoxItem Content="band_structure.bs"/>
+                <ComboBoxItem Content="bands.bs"/>
+                <ComboBoxItem Content="band_structure.band"/>
+              </ComboBox>
+              <TextBlock x:Name="BandAddedMosLabel" Grid.Row="2" Grid.Column="2" Text="Band Added MOs"/>
+              <ComboBox x:Name="BandAddedMosBox" Grid.Row="2" Grid.Column="3" IsEditable="True">
+                <ComboBoxItem Content="0"/>
+                <ComboBoxItem Content="4"/>
+                <ComboBoxItem Content="8"/>
+                <ComboBoxItem Content="16"/>
+                <ComboBoxItem Content="32"/>
+              </ComboBox>
+
+              <TextBlock x:Name="BandNpointsLabel" Grid.Row="3" Grid.Column="0" Text="Band NPOINTS"/>
+              <ComboBox x:Name="BandNpointsBox" Grid.Row="3" Grid.Column="1" IsEditable="True">
+                <ComboBoxItem Content="10"/>
+                <ComboBoxItem Content="20"/>
+                <ComboBoxItem Content="40"/>
+                <ComboBoxItem Content="80"/>
+              </ComboBox>
+              <TextBlock x:Name="BandKpointUnitsLabel" Grid.Row="3" Grid.Column="2" Text="Band Units"/>
+              <ComboBox x:Name="BandKpointUnitsBox" Grid.Row="3" Grid.Column="3" IsEditable="True">
+                <ComboBoxItem Content="B_VECTOR"/>
+                <ComboBoxItem Content="CART_ANGSTROM"/>
+                <ComboBoxItem Content="CART_BOHR"/>
+              </ComboBox>
+
+              <TextBlock x:Name="BandSpecialPointsLabel" Grid.Row="4" Grid.Column="0" Text="Special Points"/>
+              <TextBox x:Name="BandSpecialPointsBox" Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="3" Height="70"
+                       FontFamily="Cascadia Mono, Consolas, Microsoft YaHei UI, Microsoft YaHei, SimSun"
+                       FontSize="12" AcceptsReturn="True" TextWrapping="NoWrap" VerticalContentAlignment="Top"
+                       HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"/>
+
+              <TextBlock x:Name="DftPrintHintText" Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="4"
                          Margin="6,4,6,0" TextWrapping="Wrap" FontSize="11"/>
             </Grid>
           </GroupBox>

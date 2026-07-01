@@ -17,7 +17,7 @@ from .jobs import build_cp2k_job_dry_run
 from .quickstep import quickstep_input_from_dict, render_quickstep_input
 
 
-GENERATED_ARTIFACT_SUFFIXES = (".pdos", ".pdos_raw", ".cube")
+GENERATED_ARTIFACT_SUFFIXES = (".pdos", ".pdos_raw", ".cube", ".bs", ".band", ".bands")
 
 
 class RunnerError(ValueError):
@@ -325,6 +325,8 @@ def _generated_artifact_type(path: Path) -> str | None:
         if "v_hartree" in name:
             return "hartree_potential_cube"
         return "cube"
+    if name.endswith((".bs", ".band", ".bands")):
+        return "band_structure"
     if any(name.endswith(suffix) for suffix in GENERATED_ARTIFACT_SUFFIXES):
         return "generated"
     return None

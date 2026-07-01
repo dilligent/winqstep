@@ -194,10 +194,11 @@ file exists and warns in the preview/log panes when referenced basis or
 potential files are obviously missing from the cached CP2K data inspection.
 
 The Template tab includes opt-in `DFT/&PRINT` controls for Mulliken, Lowdin,
-PDOS, electron-density cube, and Hartree-potential cube output. File-generating
-print controls are reflected after a run through generated artifact discovery,
-so `.pdos`, `.pdos_raw`, and `.cube` files appear in the Artifacts tab and
-result summary when CP2K creates them.
+PDOS, electron-density cube, Hartree-potential cube, and band-structure output.
+File-generating print controls are reflected after a run through generated
+artifact discovery, so `.pdos`, `.pdos_raw`, `.cube`, `.bs`, `.band`, and
+`.bands` files appear in the Artifacts tab and result summary when CP2K
+creates them.
 
 After `Preview`, the `Input Preview` pane is editable. If the text differs from
 the last generated or loaded preview when `Run` is pressed, the GUI asks for
@@ -245,10 +246,11 @@ writer before preview or run.
 KPOINTS controls include scheme, grid, full-grid, symmetry, and wavefunction
 selection. They default to `NONE` and validate through the same template writer
 and QuickStep renderer before preview or run.
-DFT PRINT controls include Mulliken, Lowdin, and PDOS checkboxes. They default
-to disabled and render `DFT/&PRINT` only when selected. PDOS is the first
-file-generating print control; completed runs list generated `.pdos` and
-`.pdos_raw` files in artifact summaries.
+DFT PRINT controls include Mulliken, Lowdin, PDOS, cube, and Band Structure
+checkboxes. They default to disabled and render `DFT/&PRINT` only when
+selected. Band Structure expands explicit file, added-MO, NPOINTS, units, and
+special k-point controls; completed runs list generated `.pdos`, `.pdos_raw`,
+`.cube`, `.bs`, `.band`, and `.bands` files in artifact summaries.
 Fixed atom controls include a 1-based atom-index list and coordinate components
 to fix. They default to an empty list and render
 `MOTION/&CONSTRAINT/&FIXED_ATOMS` only for optimization run types.

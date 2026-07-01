@@ -10,7 +10,8 @@ Highlights:
 
 - Added generated-input support and GUI controls for additional QuickStep
   options, including SCF method details, KPOINTS, CELL_OPT, GLOBAL PRINT_LEVEL,
-  and fuller CP2K section grouping in the Template tab.
+  DFT PRINT file outputs such as PDOS/cube/band-structure files, and fuller
+  CP2K section grouping in the Template tab.
 - Improved GUI reliability for asynchronous CP2K runs, live UTF-8 job-log tails,
   overflow scrolling, tab order, and language application.
 - Added confirmation before running manually edited generated input, preserving

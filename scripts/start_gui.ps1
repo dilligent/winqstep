@@ -1114,6 +1114,22 @@ function New-WinQStepWindow {
         return [string]$value
     }.GetNewClosure()
 
+    $GetJsonListText = {
+        param($Object, [Parameter(Mandatory = $true)][string]$Name, [string]$Default = "")
+        if ($null -eq $Object) {
+            return $Default
+        }
+        $property = $Object.PSObject.Properties[$Name]
+        if ($null -eq $property -or $null -eq $property.Value) {
+            return $Default
+        }
+        $value = $property.Value
+        if ($value -is [string]) {
+            return $value
+        }
+        return ((@($value) | ForEach-Object { [string]$_ }) -join "`r`n")
+    }.GetNewClosure()
+
     $GetNestedPath = {
         param($Object, [Parameter(Mandatory = $true)][string[]]$Names)
         $current = $Object
@@ -3234,12 +3250,31 @@ function New-WinQStepWindow {
             & $SetTemplateHint "KpointsHintText" "template.hint.kpoints_gamma" "active"
         }
 
+        $bandStructureEnabled = & $GetTemplateControlChecked "PrintBandStructureBox"
+        & $SetTemplateDependentControls -Names @(
+            "BandFileNameLabel", "BandFileNameBox",
+            "BandAddedMosLabel", "BandAddedMosBox",
+            "BandNpointsLabel", "BandNpointsBox",
+            "BandKpointUnitsLabel", "BandKpointUnitsBox",
+            "BandSpecialPointsLabel", "BandSpecialPointsBox"
+        ) -Active $bandStructureEnabled -Visible $bandStructureEnabled
+
         $printSelected = @(
             "PrintMullikenBox", "PrintLowdinBox", "PrintPdosBox",
-            "PrintEDensityCubeBox", "PrintVHartreeCubeBox"
+            "PrintEDensityCubeBox", "PrintVHartreeCubeBox", "PrintBandStructureBox"
         ).Where({ & $GetTemplateControlChecked $_ }).Count -gt 0
         & $SetTemplateSectionTone "TemplateDftPrintGroup" $printSelected
-        if ($printSelected) {
+        if (
+            $bandStructureEnabled -and (
+                [string]::IsNullOrWhiteSpace((& $GetTemplateControlText "BandFileNameBox")) -or
+                [string]::IsNullOrWhiteSpace((& $GetTemplateControlText "BandNpointsBox")) -or
+                [string]::IsNullOrWhiteSpace((& $GetTemplateControlText "BandKpointUnitsBox")) -or
+                [string]::IsNullOrWhiteSpace([string]$controls["BandSpecialPointsBox"].Text)
+            )
+        ) {
+            & $SetTemplateHint "DftPrintHintText" "template.hint.print_band_missing" "warning"
+        }
+        elseif ($printSelected) {
             & $SetTemplateHint "DftPrintHintText" "template.hint.print_selected" "active"
         }
         else {
@@ -3306,6 +3341,12 @@ function New-WinQStepWindow {
         $controls["PrintPdosBox"].IsChecked = @("1", "true", "yes", "on").Contains((& $GetJsonProperty $dft "print_pdos" "False").ToLowerInvariant())
         $controls["PrintEDensityCubeBox"].IsChecked = @("1", "true", "yes", "on").Contains((& $GetJsonProperty $dft "print_e_density_cube" "False").ToLowerInvariant())
         $controls["PrintVHartreeCubeBox"].IsChecked = @("1", "true", "yes", "on").Contains((& $GetJsonProperty $dft "print_v_hartree_cube" "False").ToLowerInvariant())
+        $controls["PrintBandStructureBox"].IsChecked = @("1", "true", "yes", "on").Contains((& $GetJsonProperty $dft "print_band_structure" "False").ToLowerInvariant())
+        $controls["BandFileNameBox"].Text = & $GetJsonProperty $dft "band_file_name"
+        $controls["BandAddedMosBox"].Text = & $GetJsonProperty $dft "band_added_mos"
+        $controls["BandNpointsBox"].Text = & $GetJsonProperty $dft "band_npoints"
+        $controls["BandKpointUnitsBox"].Text = & $GetJsonProperty $dft "band_kpoint_units"
+        $controls["BandSpecialPointsBox"].Text = & $GetJsonListText $dft "band_special_points"
         $controls["FixedAtomsBox"].Text = & $GetJsonVectorText $motion "fixed_atoms"
         $controls["FixedAtomComponentsBox"].Text = & $GetJsonProperty $motion "fixed_atom_components" "XYZ"
         $controls["GeoOptimizerBox"].Text = & $GetJsonProperty $geoOpt "optimizer"
@@ -3407,6 +3448,12 @@ function New-WinQStepWindow {
             print_pdos = [bool]$controls["PrintPdosBox"].IsChecked
             print_e_density_cube = [bool]$controls["PrintEDensityCubeBox"].IsChecked
             print_v_hartree_cube = [bool]$controls["PrintVHartreeCubeBox"].IsChecked
+            print_band_structure = [bool]$controls["PrintBandStructureBox"].IsChecked
+            band_file_name = $controls["BandFileNameBox"].Text
+            band_added_mos = $controls["BandAddedMosBox"].Text
+            band_npoints = $controls["BandNpointsBox"].Text
+            band_kpoint_units = $controls["BandKpointUnitsBox"].Text
+            band_special_points = $controls["BandSpecialPointsBox"].Text
             fixed_atoms = $controls["FixedAtomsBox"].Text
             fixed_atom_components = $controls["FixedAtomComponentsBox"].Text
             optimizer = $controls["GeoOptimizerBox"].Text
@@ -4221,7 +4268,8 @@ function New-WinQStepWindow {
 
     foreach ($name in @(
         "DispersionEnabledBox", "OuterScfEnabledBox", "MixingEnabledBox", "SmearingEnabledBox",
-        "PrintMullikenBox", "PrintLowdinBox", "PrintPdosBox", "PrintEDensityCubeBox", "PrintVHartreeCubeBox"
+        "PrintMullikenBox", "PrintLowdinBox", "PrintPdosBox", "PrintEDensityCubeBox", "PrintVHartreeCubeBox",
+        "PrintBandStructureBox"
     )) {
         $controls[$name].Add_Checked({ & $SyncTemplateDependencyState }.GetNewClosure())
         $controls[$name].Add_Unchecked({ & $SyncTemplateDependencyState }.GetNewClosure())
@@ -4232,12 +4280,14 @@ function New-WinQStepWindow {
         "ScfMethodBox", "AddedMosBox",
         "MixingMethodBox", "MixingAlphaBox", "MixingBetaBox",
         "SmearingMethodBox", "ElectronicTemperatureBox",
-        "KpointsSchemeBox", "KpointsGridBox", "KpointsWavefunctionsBox"
+        "KpointsSchemeBox", "KpointsGridBox", "KpointsWavefunctionsBox",
+        "BandFileNameBox", "BandAddedMosBox", "BandNpointsBox", "BandKpointUnitsBox"
     )) {
         $controls[$name].Add_SelectionChanged({ & $SyncTemplateDependencyState }.GetNewClosure())
         $controls[$name].Add_DropDownClosed({ & $SyncTemplateDependencyState }.GetNewClosure())
         $controls[$name].Add_LostFocus({ & $SyncTemplateDependencyState }.GetNewClosure())
     }
+    $controls["BandSpecialPointsBox"].Add_TextChanged({ & $SyncTemplateDependencyState }.GetNewClosure())
 
     $controls["DetectButton"].Add_Click({
         & $InvokeGuiAction -Status (Get-WinQStepText "status.detecting_environment") -Action {
@@ -6237,6 +6287,7 @@ if ($SmokeTest) {
         "MixingAlphaBox", "MixingBetaBox", "SmearingMethodBox",
         "ElectronicTemperatureBox", "KpointsSchemeBox", "KpointsGridBox",
         "KpointsWavefunctionsBox",
+        "BandFileNameBox", "BandAddedMosBox", "BandNpointsBox", "BandKpointUnitsBox",
         "FallbackPeriodicBox", "FallbackCellABox", "FallbackCellBBox", "FallbackCellCBox"
     )
     $templateSectionGroupNames = @(
@@ -6280,6 +6331,7 @@ if ($SmokeTest) {
     $report["template_kpoints_grid_hidden_when_none"] = ($window.FindName("KpointsGridBox").Visibility -eq [System.Windows.Visibility]::Collapsed)
     $report["template_kpoints_wavefunctions_hidden_when_none"] = ($window.FindName("KpointsWavefunctionsBox").Visibility -eq [System.Windows.Visibility]::Collapsed)
     $report["template_print_group_dimmed_when_none"] = ([double]$window.FindName("TemplateDftPrintGroup").Opacity -lt 1.0)
+    $report["template_band_details_hidden_when_disabled"] = ($window.FindName("BandFileNameBox").Visibility -eq [System.Windows.Visibility]::Collapsed)
     $report["template_print_hint_text"] = [string]$window.FindName("DftPrintHintText").Text
     $report["template_combo_fields_loaded"] = $templateComboNames.Where({ $window.FindName($_) -is [System.Windows.Controls.ComboBox] }).Count
     $report["template_combo_fields_editable"] = $templateComboNames.Where({ [bool]$window.FindName($_).IsEditable }).Count
@@ -6290,6 +6342,7 @@ if ($SmokeTest) {
     $report["template_fixed_atom_components_options"] = @($window.FindName("FixedAtomComponentsBox").Items | ForEach-Object { [string]$_.Content })
     $report["template_optimizer_options"] = @($window.FindName("GeoOptimizerBox").Items | ForEach-Object { [string]$_.Content })
     $report["template_cell_opt_type_options"] = @($window.FindName("CellOptTypeBox").Items | ForEach-Object { [string]$_.Content })
+    $report["template_band_kpoint_units_options"] = @($window.FindName("BandKpointUnitsBox").Items | ForEach-Object { [string]$_.Content })
     $report["template_project_name"] = [string]$window.FindName("TemplateProjectBox").Text
     $report["template_run_type"] = [string]$window.FindName("TemplateRunTypeBox").Text
     $report["template_print_level"] = [string]$window.FindName("PrintLevelBox").Text
@@ -6327,6 +6380,12 @@ if ($SmokeTest) {
     $report["template_print_pdos"] = [bool]$window.FindName("PrintPdosBox").IsChecked
     $report["template_print_e_density_cube"] = [bool]$window.FindName("PrintEDensityCubeBox").IsChecked
     $report["template_print_v_hartree_cube"] = [bool]$window.FindName("PrintVHartreeCubeBox").IsChecked
+    $report["template_print_band_structure"] = [bool]$window.FindName("PrintBandStructureBox").IsChecked
+    $report["template_band_file_name"] = [string]$window.FindName("BandFileNameBox").Text
+    $report["template_band_added_mos"] = [string]$window.FindName("BandAddedMosBox").Text
+    $report["template_band_npoints"] = [string]$window.FindName("BandNpointsBox").Text
+    $report["template_band_kpoint_units"] = [string]$window.FindName("BandKpointUnitsBox").Text
+    $report["template_band_special_points"] = [string]$window.FindName("BandSpecialPointsBox").Text
     $report["template_fixed_atoms"] = [string]$window.FindName("FixedAtomsBox").Text
     $report["template_fixed_atom_components"] = [string]$window.FindName("FixedAtomComponentsBox").Text
     $report["template_fallback_periodic"] = [string]$window.FindName("FallbackPeriodicBox").Text

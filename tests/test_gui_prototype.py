@@ -38,6 +38,16 @@ class GuiPrototypeTests(unittest.TestCase):
             return " ".join(parts)
         return str(value)
 
+    @staticmethod
+    def _template_list_text(value: object) -> str:
+        if value is None:
+            return ""
+        if isinstance(value, str):
+            return value
+        if isinstance(value, (list, tuple)):
+            return "\r\n".join(str(item) for item in value)
+        return str(value)
+
     @classmethod
     def _example_template_expectations(cls) -> dict[str, object]:
         template = cls._example_template()
@@ -96,6 +106,12 @@ class GuiPrototypeTests(unittest.TestCase):
             "template_print_pdos": bool(dft.get("print_pdos", False)),
             "template_print_e_density_cube": bool(dft.get("print_e_density_cube", False)),
             "template_print_v_hartree_cube": bool(dft.get("print_v_hartree_cube", False)),
+            "template_print_band_structure": bool(dft.get("print_band_structure", False)),
+            "template_band_file_name": str(dft.get("band_file_name", "")),
+            "template_band_added_mos": str(dft.get("band_added_mos", "")),
+            "template_band_npoints": str(dft.get("band_npoints", "")),
+            "template_band_kpoint_units": str(dft.get("band_kpoint_units", "")),
+            "template_band_special_points": cls._template_list_text(dft.get("band_special_points")),
             "template_fixed_atoms": cls._template_vector_text(motion.get("fixed_atoms")),
             "template_fixed_atom_components": str(motion.get("fixed_atom_components", "XYZ")),
             "template_fallback_periodic": str(fallback_cell.get("periodic", "")),
@@ -382,10 +398,14 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn('"label.print_pdos": "PDOS"', english_text)
         self.assertIn('"label.print_e_density_cube": "Electron Density Cube"', english_text)
         self.assertIn('"label.print_v_hartree_cube": "Hartree Potential Cube"', english_text)
+        self.assertIn('"label.print_band_structure": "Band Structure"', english_text)
         self.assertIn('x:Name="PrintPdosBox"', xaml_text)
+        self.assertIn('x:Name="PrintBandStructureBox"', xaml_text)
+        self.assertIn('x:Name="BandSpecialPointsBox"', xaml_text)
         self.assertIn("generated_artifacts", script_text)
         self.assertIn("template_print_e_density_cube", script_text)
         self.assertIn("template_print_v_hartree_cube", script_text)
+        self.assertIn("template_print_band_structure", script_text)
         self.assertIn('"button.preview": "预览"', chinese_text)
         self.assertIn("[System.Windows.Threading.DispatcherTimer]::new()", script_text)
         self.assertIn("Start-WinQStepPythonProcess", helper_text)
@@ -661,9 +681,10 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertTrue(report["template_kpoints_grid_hidden_when_none"])
         self.assertTrue(report["template_kpoints_wavefunctions_hidden_when_none"])
         self.assertTrue(report["template_print_group_dimmed_when_none"])
+        self.assertTrue(report["template_band_details_hidden_when_disabled"])
         self.assertEqual(report["template_print_hint_text"], "No DFT PRINT outputs are selected.")
-        self.assertEqual(report["template_combo_fields_loaded"], 46)
-        self.assertEqual(report["template_combo_fields_editable"], 46)
+        self.assertEqual(report["template_combo_fields_loaded"], 50)
+        self.assertEqual(report["template_combo_fields_editable"], 50)
         self.assertEqual(report["template_run_type_options"], ["ENERGY", "ENERGY_FORCE", "GEO_OPT", "CELL_OPT"])
         self.assertEqual(report["template_print_level_options"], ["", "SILENT", "LOW", "MEDIUM", "HIGH", "DEBUG"])
         self.assertEqual(
@@ -677,6 +698,7 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertEqual(report["template_fixed_atom_components_options"], ["XYZ", "X", "Y", "Z", "XY", "XZ", "YZ"])
         self.assertEqual(report["template_optimizer_options"], ["BFGS", "LBFGS", "CG"])
         self.assertEqual(report["template_cell_opt_type_options"], ["DIRECT_CELL_OPT"])
+        self.assertEqual(report["template_band_kpoint_units_options"], ["B_VECTOR", "CART_ANGSTROM", "CART_BOHR"])
         expected_template = self._example_template_expectations()
         for key, expected_value in expected_template.items():
             self.assertEqual(report[key], expected_value)

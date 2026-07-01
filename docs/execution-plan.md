@@ -2872,3 +2872,35 @@ Selection rule:
   local virtual environments.
 - Prefer deterministic tests over manual-only verification.
 - Keep CP2K as an external program invoked through WSL.
+
+## Round 82 - QuickStep Band Structure Print Output
+
+Status: completed.
+
+Scope:
+
+- Add typed QuickStep support for `FORCE_EVAL/&DFT/&PRINT/&BAND_STRUCTURE`
+  with one explicit `&KPOINT_SET`.
+- Expose Template fields for enabling Band Structure, output file name,
+  band `ADDED_MOS`, `NPOINTS`, k-point units, and editable `SPECIAL_POINT`
+  lines.
+- Keep high-symmetry path generation out of scope; users can edit the supplied
+  Gamma-X-Gamma starter path.
+- Extend generated-artifact discovery to classify `.bs`, `.band`, and `.bands`
+  files as `band_structure`.
+- Reject enabled band-structure output for nonperiodic cells and require at
+  least two special k-points.
+
+Acceptance:
+
+- Default templates still omit `DFT/&PRINT` unless a print control is enabled.
+- Enabling Band Structure renders `&BAND_STRUCTURE ON` with `FILE_NAME` and
+  `&KPOINT_SET` contents.
+- GUI Template load/save, dependency visibility, and localization include the
+  new Band Structure controls.
+- Unit and GUI prototype tests cover model, template, workflow, runner, and
+  GUI smoke behavior.
+
+Commit boundary:
+
+- One commit for Band Structure model/template/GUI/artifact/docs support.

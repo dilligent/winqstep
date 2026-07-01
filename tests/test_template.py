@@ -27,6 +27,12 @@ class TemplateTests(unittest.TestCase):
         self.assertFalse(template["dft"]["print_pdos"])
         self.assertFalse(template["dft"]["print_e_density_cube"])
         self.assertFalse(template["dft"]["print_v_hartree_cube"])
+        self.assertFalse(template["dft"]["print_band_structure"])
+        self.assertEqual(template["dft"]["band_file_name"], "band_structure.bs")
+        self.assertEqual(template["dft"]["band_added_mos"], 0)
+        self.assertEqual(template["dft"]["band_npoints"], 20)
+        self.assertEqual(template["dft"]["band_kpoint_units"], "B_VECTOR")
+        self.assertEqual(template["dft"]["band_special_points"][0], "GAMMA 0.0 0.0 0.0")
         self.assertEqual(template["dft"]["scf_guess"], "")
         self.assertEqual(template["dft"]["eps_scf"], "1.0E-6")
         self.assertNotIn("motion", template)
@@ -224,6 +230,12 @@ class TemplateTests(unittest.TestCase):
                 "print_pdos": True,
                 "print_e_density_cube": True,
                 "print_v_hartree_cube": "yes",
+                "print_band_structure": True,
+                "band_file_name": "si_band.bs",
+                "band_added_mos": "6",
+                "band_npoints": "16",
+                "band_kpoint_units": "cart_bohr",
+                "band_special_points": "GAMMA 0.0 0.0 0.0; X 0.5 0.0 0.0; GAMMA 0.0 0.0 0.0",
             },
         )
         validation = validate_template(merged)
@@ -235,6 +247,31 @@ class TemplateTests(unittest.TestCase):
         self.assertTrue(dft["print_pdos"])
         self.assertTrue(dft["print_e_density_cube"])
         self.assertTrue(dft["print_v_hartree_cube"])
+        self.assertTrue(dft["print_band_structure"])
+        self.assertEqual(dft["band_file_name"], "si_band.bs")
+        self.assertEqual(dft["band_added_mos"], 6)
+        self.assertEqual(dft["band_npoints"], 16)
+        self.assertEqual(dft["band_kpoint_units"], "CART_BOHR")
+        self.assertEqual(
+            dft["band_special_points"],
+            ["GAMMA 0.0 0.0 0.0", "X 0.5 0.0 0.0", "GAMMA 0.0 0.0 0.0"],
+        )
+
+    def test_validate_rejects_enabled_band_structure_without_path(self) -> None:
+        template = load_template(ENERGY_TEMPLATE)
+        merged = merge_template_fields(
+            template,
+            {
+                "print_band_structure": True,
+                "band_file_name": "",
+                "band_special_points": "GAMMA 0.0 0.0 0.0",
+            },
+        )
+        validation = validate_template(merged)
+
+        self.assertFalse(validation["valid"])
+        self.assertIn("dft.band_file_name", "\n".join(validation["errors"]))
+        self.assertIn("dft.band_special_points", "\n".join(validation["errors"]))
 
     def test_merge_fields_updates_cell_opt_controls(self) -> None:
         template = load_template(ENERGY_TEMPLATE)
@@ -493,6 +530,12 @@ class TemplateTests(unittest.TestCase):
                 "print_pdos",
                 "print_e_density_cube",
                 "print_v_hartree_cube",
+                "print_band_structure",
+                "band_file_name",
+                "band_added_mos",
+                "band_npoints",
+                "band_kpoint_units",
+                "band_special_points",
                 "scf_guess",
                 "eps_scf",
                 "max_scf",

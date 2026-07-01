@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from .quickstep import (
+    BAND_KPOINT_UNITS,
     CELL_OPT_TYPES,
     DIAGONALIZATION_ALGORITHMS,
     KPOINTS_SCHEMES,
@@ -65,6 +66,12 @@ DFT_KEY_ORDER = (
     "print_pdos",
     "print_e_density_cube",
     "print_v_hartree_cube",
+    "print_band_structure",
+    "band_file_name",
+    "band_added_mos",
+    "band_npoints",
+    "band_kpoint_units",
+    "band_special_points",
     "scf_guess",
     "eps_scf",
     "max_scf",
@@ -373,6 +380,34 @@ def _normalize_dft(data: dict[str, Any], errors: list[str]) -> dict[str, Any]:
         "print_v_hartree_cube": _bool_value(
             data.get("print_v_hartree_cube", defaults.print_v_hartree_cube)
         ),
+        "print_band_structure": _bool_value(data.get("print_band_structure", defaults.print_band_structure)),
+        "band_file_name": _string_value(
+            data.get("band_file_name", defaults.band_file_name),
+            "dft.band_file_name",
+            errors,
+        ),
+        "band_added_mos": _int_min_value(
+            data.get("band_added_mos", defaults.band_added_mos),
+            "dft.band_added_mos",
+            0,
+            errors,
+        ),
+        "band_npoints": _positive_int_value(
+            data.get("band_npoints", defaults.band_npoints),
+            "dft.band_npoints",
+            errors,
+        ),
+        "band_kpoint_units": _choice_value(
+            data.get("band_kpoint_units", defaults.band_kpoint_units),
+            "dft.band_kpoint_units",
+            BAND_KPOINT_UNITS,
+            errors,
+        ),
+        "band_special_points": _string_list_value(
+            data.get("band_special_points", defaults.band_special_points),
+            "dft.band_special_points",
+            errors,
+        ),
         "scf_guess": _optional_choice_value(
             data.get("scf_guess"),
             "dft.scf_guess",
@@ -470,6 +505,15 @@ def _normalize_dft(data: dict[str, Any], errors: list[str]) -> dict[str, Any]:
         errors.append("dft.xc_pbe_parametrization requires dft.xc_functional PBE")
     if dft["wfn_restart_file_name"] and dft["scf_guess"] not in {"RESTART", "HISTORY_RESTART"}:
         errors.append("dft.wfn_restart_file_name requires dft.scf_guess RESTART or HISTORY_RESTART")
+    if dft["print_band_structure"]:
+        if not dft["band_file_name"]:
+            errors.append("dft.band_file_name must be a non-empty string")
+        if "\n" in dft["band_file_name"] or "\r" in dft["band_file_name"]:
+            errors.append("dft.band_file_name must be a single-line string")
+        if len(dft["band_special_points"]) < 2:
+            errors.append("dft.band_special_points must contain at least two points")
+        for point in dft["band_special_points"]:
+            _validate_band_special_point(point, errors)
     eps_scf = _float_string_or_none(dft["eps_scf"])
     outer_scf_eps_scf = _float_string_or_none(dft["outer_scf_eps_scf"])
     if (
@@ -712,6 +756,26 @@ def _positive_int_list_value(value: Any, key: str, errors: list[str]) -> list[in
     return parsed
 
 
+def _string_list_value(value: Any, key: str, errors: list[str]) -> list[str]:
+    if value is None:
+        return []
+    if isinstance(value, str):
+        value = [part for part in value.replace(";", "\n").splitlines() if part.strip()]
+    if not isinstance(value, list | tuple):
+        errors.append(f"{key} must be a string list")
+        return []
+
+    parsed: list[str] = []
+    for item in value:
+        if not isinstance(item, str):
+            errors.append(f"{key} must contain string values")
+            return []
+        stripped = item.strip()
+        if stripped:
+            parsed.append(stripped)
+    return parsed
+
+
 def _int_min_value(value: Any, key: str, minimum: int, errors: list[str]) -> int:
     parsed = _int_value(value, key, errors)
     if parsed < minimum:
@@ -781,6 +845,19 @@ def _vector_value(value: Any, key: str, errors: list[str]) -> list[float]:
 
 def _vector_norm(vector: list[float]) -> float:
     return sum(value * value for value in vector) ** 0.5
+
+
+def _validate_band_special_point(point: str, errors: list[str]) -> None:
+    parts = point.split()
+    if len(parts) != 4:
+        errors.append("dft.band_special_points entries must have: label kx ky kz")
+        return
+    try:
+        float(parts[1].replace("D", "E"))
+        float(parts[2].replace("D", "E"))
+        float(parts[3].replace("D", "E"))
+    except ValueError:
+        errors.append("dft.band_special_points coordinates must be numeric")
 
 
 def _normalize_element(value: str, errors: list[str]) -> str:

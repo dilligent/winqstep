@@ -44,6 +44,12 @@ FIELD_ARGS = {
     "print_pdos": "print_pdos",
     "print_e_density_cube": "print_e_density_cube",
     "print_v_hartree_cube": "print_v_hartree_cube",
+    "print_band_structure": "print_band_structure",
+    "band_file_name": "band_file_name",
+    "band_added_mos": "band_added_mos",
+    "band_npoints": "band_npoints",
+    "band_kpoint_units": "band_kpoint_units",
+    "band_special_points": "band_special_points",
     "scf_guess": "scf_guess",
     "eps_scf": "eps_scf",
     "max_scf": "max_scf",
@@ -116,6 +122,12 @@ def main() -> int:
     parser.add_argument("--print-pdos")
     parser.add_argument("--print-e-density-cube")
     parser.add_argument("--print-v-hartree-cube")
+    parser.add_argument("--print-band-structure")
+    parser.add_argument("--band-file-name")
+    parser.add_argument("--band-added-mos")
+    parser.add_argument("--band-npoints")
+    parser.add_argument("--band-kpoint-units")
+    parser.add_argument("--band-special-points")
     parser.add_argument("--scf-guess")
     parser.add_argument("--eps-scf")
     parser.add_argument("--max-scf")

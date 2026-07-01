@@ -37,6 +37,8 @@ function Get-WinQStepGuiControlNames {
         "MixingAlphaLabel", "MixingBetaLabel", "MixingHintText", "SmearingMethodLabel",
         "ElectronicTemperatureLabel", "KpointsSchemeLabel", "KpointsGridLabel",
         "SmearingHintText", "KpointsWavefunctionsLabel", "KpointsHintText", "DftPrintHintText",
+        "BandFileNameLabel", "BandAddedMosLabel", "BandNpointsLabel",
+        "BandKpointUnitsLabel", "BandSpecialPointsLabel",
         "FallbackPeriodicLabel", "FallbackCellALabel", "FallbackCellBLabel", "FallbackCellCLabel",
         "TemplateProjectBox", "TemplateRunTypeBox", "PrintLevelBox", "BasisSetFileBox", "PotentialFileBox",
         "PoissonSolverBox",
@@ -58,7 +60,9 @@ function Get-WinQStepGuiControlNames {
         "KpointsWavefunctionsBox", "OuterScfEnabledBox", "MixingEnabledBox", "SmearingEnabledBox",
         "DispersionEnabledBox",
         "PrintMullikenBox", "PrintLowdinBox", "PrintPdosBox",
-        "PrintEDensityCubeBox", "PrintVHartreeCubeBox",
+        "PrintEDensityCubeBox", "PrintVHartreeCubeBox", "PrintBandStructureBox",
+        "BandFileNameBox", "BandAddedMosBox", "BandNpointsBox",
+        "BandKpointUnitsBox", "BandSpecialPointsBox",
         "UksEnabledBox", "CellOptKeepAnglesBox", "CellOptKeepSymmetryBox",
         "KpointsFullGridBox", "KpointsSymmetryBox",
         "FallbackPeriodicBox", "FallbackCellABox", "FallbackCellBBox", "FallbackCellCBox",
@@ -140,6 +144,7 @@ function Set-WinQStepLocalizedControls {
     PrintPdosBox = "label.print_pdos"
     PrintEDensityCubeBox = "label.print_e_density_cube"
     PrintVHartreeCubeBox = "label.print_v_hartree_cube"
+    PrintBandStructureBox = "label.print_band_structure"
     CenterAtomsBox = "label.center_atoms"
     }
     foreach ($entry in $contentLocalization.GetEnumerator()) {
@@ -219,6 +224,11 @@ function Set-WinQStepLocalizedControls {
     KpointsSchemeLabel = "label.kpoints_scheme"
     KpointsGridLabel = "label.kpoints_grid"
     KpointsWavefunctionsLabel = "label.kpoints_wavefunctions"
+    BandFileNameLabel = "label.band_file_name"
+    BandAddedMosLabel = "label.band_added_mos"
+    BandNpointsLabel = "label.band_npoints"
+    BandKpointUnitsLabel = "label.band_kpoint_units"
+    BandSpecialPointsLabel = "label.band_special_points"
     OptimizerLabel = "label.optimizer"
     GeoMaxIterLabel = "label.geo_max_iter"
     CellOptTypeLabel = "label.cell_opt_type"

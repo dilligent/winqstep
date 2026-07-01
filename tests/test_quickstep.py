@@ -187,6 +187,16 @@ class QuickStepTests(unittest.TestCase):
                 "print_pdos": True,
                 "print_e_density_cube": True,
                 "print_v_hartree_cube": True,
+                "print_band_structure": True,
+                "band_file_name": "water_band.bs",
+                "band_added_mos": 4,
+                "band_npoints": 12,
+                "band_kpoint_units": "b_vector",
+                "band_special_points": [
+                    "GAMMA 0.0 0.0 0.0",
+                    "X 0.5 0.0 0.0",
+                    "GAMMA 0.0 0.0 0.0",
+                ],
             }
         )
 
@@ -204,9 +214,40 @@ class QuickStepTests(unittest.TestCase):
             "      &END E_DENSITY_CUBE\n"
             "      &V_HARTREE_CUBE ON\n"
             "      &END V_HARTREE_CUBE\n"
+            "      &BAND_STRUCTURE ON\n"
+            "        FILE_NAME water_band.bs\n"
+            "        ADDED_MOS 4\n"
+            "        &KPOINT_SET\n"
+            "          UNITS B_VECTOR\n"
+            "          NPOINTS 12\n"
+            "          SPECIAL_POINT GAMMA 0.0 0.0 0.0\n"
+            "          SPECIAL_POINT X 0.5 0.0 0.0\n"
+            "          SPECIAL_POINT GAMMA 0.0 0.0 0.0\n"
+            "        &END KPOINT_SET\n"
+            "      &END BAND_STRUCTURE\n"
             "    &END PRINT\n",
             rendered,
         )
+
+    def test_rejects_band_structure_for_nonperiodic_cell(self) -> None:
+        data = json.loads((ROOT / "examples" / "quickstep_energy.json").read_text(encoding="utf-8"))
+        data["structure"]["cell"]["periodic"] = "NONE"
+        data["dft"]["print_band_structure"] = True
+
+        with self.assertRaisesRegex(QuickStepInputError, "band structure"):
+            quickstep_input_from_dict(data)
+
+    def test_rejects_invalid_band_special_point(self) -> None:
+        data = json.loads((ROOT / "examples" / "quickstep_energy.json").read_text(encoding="utf-8"))
+        data["dft"].update(
+            {
+                "print_band_structure": True,
+                "band_special_points": ["GAMMA 0.0 0.0 0.0", "X not_numeric 0.0 0.0"],
+            }
+        )
+
+        with self.assertRaisesRegex(QuickStepInputError, "coordinates"):
+            quickstep_input_from_dict(data)
 
     def test_rejects_non_quickstep_run_type(self) -> None:
         data = json.loads((ROOT / "examples" / "quickstep_energy.json").read_text(encoding="utf-8"))

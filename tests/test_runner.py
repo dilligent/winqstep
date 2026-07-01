@@ -100,6 +100,7 @@ class RunnerTests(unittest.TestCase):
             job_dir = Path(tmp_dir)
             (job_dir / "old-k1-1.pdos").write_text("old", encoding="utf-8")
             (job_dir / "old-ELECTRON_DENSITY.cube").write_text("old", encoding="utf-8")
+            (job_dir / "old-band.bs").write_text("old", encoding="utf-8")
 
             def fake_executor(argv: list[str]) -> SimpleNamespace:
                 (job_dir / "water_energy.out").write_text(
@@ -111,6 +112,7 @@ class RunnerTests(unittest.TestCase):
                 (job_dir / "water_energy.stderr.log").write_text("", encoding="utf-8")
                 (job_dir / "water_energy-k1-1.pdos").write_text("new", encoding="utf-8")
                 (job_dir / "water_energy-ELECTRON_DENSITY.cube").write_text("new", encoding="utf-8")
+                (job_dir / "water_energy-band.bs").write_text("new", encoding="utf-8")
                 (job_dir / "water_energy-v_hartree.cube").write_text("new", encoding="utf-8")
                 return SimpleNamespace(returncode=0, stdout=b"", stderr=b"")
 
@@ -124,6 +126,7 @@ class RunnerTests(unittest.TestCase):
             self.assertEqual(
                 [item["name"] for item in metadata["files"]["generated"]],
                 [
+                    "water_energy-band.bs",
                     "water_energy-ELECTRON_DENSITY.cube",
                     "water_energy-k1-1.pdos",
                     "water_energy-v_hartree.cube",
@@ -131,7 +134,7 @@ class RunnerTests(unittest.TestCase):
             )
             self.assertEqual(
                 [item["type"] for item in metadata["files"]["generated"]],
-                ["electron_density_cube", "pdos", "hartree_potential_cube"],
+                ["band_structure", "electron_density_cube", "pdos", "hartree_potential_cube"],
             )
 
     def test_energy_force_executor_updates_force_summary(self) -> None:

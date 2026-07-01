@@ -105,6 +105,9 @@ class WorkflowTests(unittest.TestCase):
         template["dft"]["print_pdos"] = True
         template["dft"]["print_e_density_cube"] = True
         template["dft"]["print_v_hartree_cube"] = True
+        template["dft"]["print_band_structure"] = True
+        template["dft"]["band_file_name"] = "water_band.bs"
+        template["dft"]["band_npoints"] = 10
 
         quickstep_data = build_quickstep_data(template, imported, project_name="water_print")
 
@@ -113,6 +116,9 @@ class WorkflowTests(unittest.TestCase):
         self.assertTrue(quickstep_data["dft"]["print_pdos"])
         self.assertTrue(quickstep_data["dft"]["print_e_density_cube"])
         self.assertTrue(quickstep_data["dft"]["print_v_hartree_cube"])
+        self.assertTrue(quickstep_data["dft"]["print_band_structure"])
+        self.assertEqual(quickstep_data["dft"]["band_file_name"], "water_band.bs")
+        self.assertEqual(quickstep_data["dft"]["band_npoints"], 10)
 
     def test_builds_cell_opt_workflow_data(self) -> None:
         imported = import_structure(STRUCTURES / "POSCAR")
@@ -166,6 +172,7 @@ class WorkflowTests(unittest.TestCase):
                 (job_dir / "workflow_run.stdout.log").write_text("", encoding="utf-8")
                 (job_dir / "workflow_run.stderr.log").write_text("", encoding="utf-8")
                 (job_dir / "workflow_run-k1-1.pdos").write_text("pdos", encoding="utf-8")
+                (job_dir / "workflow_run-band.bs").write_text("bands", encoding="utf-8")
                 return SimpleNamespace(returncode=0, stdout=b"", stderr=b"")
 
             metadata = run_quickstep_workflow(
@@ -180,12 +187,18 @@ class WorkflowTests(unittest.TestCase):
             self.assertEqual(metadata["status"], "succeeded")
             self.assertEqual(metadata["cp2k_output"]["status"], "completed")
             self.assertEqual(metadata["cp2k_output"]["warning_count"], 0)
-            self.assertEqual(metadata["files"]["generated"][0]["name"], "workflow_run-k1-1.pdos")
-            self.assertEqual(metadata["files"]["generated"][0]["type"], "pdos")
+            self.assertEqual(
+                [item["name"] for item in metadata["files"]["generated"]],
+                ["workflow_run-band.bs", "workflow_run-k1-1.pdos"],
+            )
+            self.assertEqual(
+                [item["type"] for item in metadata["files"]["generated"]],
+                ["band_structure", "pdos"],
+            )
             saved = json.loads(Path(metadata["files"]["metadata"]["path"]).read_text(encoding="utf-8"))
             self.assertEqual(saved["workflow"]["atom_count"], 3)
             self.assertEqual(saved["cp2k_output"]["status"], "completed")
-            self.assertEqual(saved["files"]["generated"][0]["type"], "pdos")
+            self.assertEqual(saved["files"]["generated"][0]["type"], "band_structure")
 
     def test_missing_kind_reports_template_error(self) -> None:
         imported = import_structure(STRUCTURES / "water.xyz")

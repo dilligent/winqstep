@@ -11,6 +11,7 @@ RUN_TYPES = {"ENERGY", "ENERGY_FORCE", "GEO_OPT", "CELL_OPT"}
 PRINT_LEVELS = {"SILENT", "LOW", "MEDIUM", "HIGH", "DEBUG"}
 PERIODIC_VALUES = {"NONE", "X", "Y", "Z", "XY", "XZ", "YZ", "XYZ"}
 POISSON_SOLVERS = {"ANALYTIC", "IMPLICIT", "MT", "MULTIPOLE", "PERIODIC", "WAVELET"}
+BAND_KPOINT_UNITS = {"B_VECTOR", "CART_ANGSTROM", "CART_BOHR"}
 SCF_METHODS = {"DEFAULT", "OT", "DIAGONALIZATION"}
 SCF_GUESSES = {
     "ATOMIC",
@@ -97,6 +98,16 @@ class DftSettings:
     print_pdos: bool = False
     print_e_density_cube: bool = False
     print_v_hartree_cube: bool = False
+    print_band_structure: bool = False
+    band_file_name: str = "band_structure.bs"
+    band_added_mos: int = 0
+    band_npoints: int = 20
+    band_kpoint_units: str = "B_VECTOR"
+    band_special_points: tuple[str, ...] = (
+        "GAMMA 0.0 0.0 0.0",
+        "X 0.5 0.0 0.0",
+        "GAMMA 0.0 0.0 0.0",
+    )
     scf_guess: str | None = None
     eps_scf: str = "1.0E-6"
     max_scf: int = 50
@@ -245,6 +256,23 @@ def _int_list(value: Any, key: str) -> tuple[int, ...]:
     return tuple(parsed_values)
 
 
+def _string_list(value: Any, key: str, default: tuple[str, ...]) -> tuple[str, ...]:
+    if value is None:
+        return default
+    if isinstance(value, str):
+        value = [part for part in value.replace(";", "\n").splitlines() if part.strip()]
+    if not isinstance(value, list | tuple):
+        raise QuickStepInputError(f"{key} must be a string list")
+    parsed: list[str] = []
+    for item in value:
+        if not isinstance(item, str):
+            raise QuickStepInputError(f"{key} must contain string values")
+        stripped = item.strip()
+        if stripped:
+            parsed.append(stripped)
+    return tuple(parsed)
+
+
 def _vector(value: Any, key: str) -> tuple[float, float, float]:
     if not isinstance(value, list | tuple) or len(value) != 3:
         raise QuickStepInputError(f"{key} must be a 3-vector")
@@ -297,6 +325,16 @@ def _parse_dft(data: dict[str, Any]) -> DftSettings:
         print_pdos=_bool_value(data, "print_pdos", False),
         print_e_density_cube=_bool_value(data, "print_e_density_cube", False),
         print_v_hartree_cube=_bool_value(data, "print_v_hartree_cube", False),
+        print_band_structure=_bool_value(data, "print_band_structure", False),
+        band_file_name=_optional_string(data, "band_file_name", "band_structure.bs"),
+        band_added_mos=_int_value(data, "band_added_mos", 0),
+        band_npoints=_int_value(data, "band_npoints", 20),
+        band_kpoint_units=_optional_string(data, "band_kpoint_units", "B_VECTOR").upper(),
+        band_special_points=_string_list(
+            data.get("band_special_points"),
+            "dft.band_special_points",
+            DftSettings().band_special_points,
+        ),
         scf_guess=_optional_choice(data, "scf_guess"),
         eps_scf=_optional_string(data, "eps_scf", "1.0E-6"),
         max_scf=_int_value(data, "max_scf", 50),
@@ -403,6 +441,23 @@ def validate_quickstep_input(model: QuickStepInput) -> None:
     if model.dft.poisson_solver is not None and model.dft.poisson_solver not in POISSON_SOLVERS:
         raise QuickStepInputError("dft.poisson_solver has an unsupported value")
     _validate_poisson_solver_periodicity(model.dft.poisson_solver, model.cell.periodic)
+    if model.dft.band_kpoint_units not in BAND_KPOINT_UNITS:
+        raise QuickStepInputError("dft.band_kpoint_units has an unsupported value")
+    if model.dft.band_added_mos < 0:
+        raise QuickStepInputError("dft.band_added_mos must be zero or greater")
+    if model.dft.band_npoints <= 0:
+        raise QuickStepInputError("dft.band_npoints must be positive")
+    if model.dft.print_band_structure:
+        if model.cell.periodic == "NONE":
+            raise QuickStepInputError("DFT band structure output requires a periodic cell")
+        if not model.dft.band_file_name.strip():
+            raise QuickStepInputError("dft.band_file_name must be a non-empty string")
+        if "\n" in model.dft.band_file_name or "\r" in model.dft.band_file_name:
+            raise QuickStepInputError("dft.band_file_name must be a single-line string")
+        if len(model.dft.band_special_points) < 2:
+            raise QuickStepInputError("dft.band_special_points must contain at least two points")
+        for point in model.dft.band_special_points:
+            _validate_band_special_point(point)
     if model.dft.scf_guess is not None and model.dft.scf_guess not in SCF_GUESSES:
         raise QuickStepInputError("dft.scf_guess has an unsupported value")
     if model.dft.wfn_restart_file_name is not None and model.dft.scf_guess not in {"RESTART", "HISTORY_RESTART"}:
@@ -646,6 +701,25 @@ def _render_dft_print(dft: DftSettings) -> list[str]:
                 "      &END V_HARTREE_CUBE",
             ]
         )
+    if dft.print_band_structure:
+        lines.extend(
+            [
+                "      &BAND_STRUCTURE ON",
+                f"        FILE_NAME {dft.band_file_name}",
+            ]
+        )
+        if dft.band_added_mos:
+            lines.append(f"        ADDED_MOS {dft.band_added_mos}")
+        lines.extend(
+            [
+                "        &KPOINT_SET",
+                f"          UNITS {dft.band_kpoint_units}",
+                f"          NPOINTS {dft.band_npoints}",
+                *[f"          SPECIAL_POINT {point}" for point in dft.band_special_points],
+                "        &END KPOINT_SET",
+                "      &END BAND_STRUCTURE",
+            ]
+        )
     if not lines:
         return []
     return ["    &PRINT", *lines, "    &END PRINT"]
@@ -822,6 +896,20 @@ def _positive_float(value: str, key: str) -> float:
     if parsed <= 0:
         raise QuickStepInputError(f"{key} must be positive")
     return parsed
+
+
+def _validate_band_special_point(point: str) -> None:
+    parts = point.split()
+    if len(parts) != 4:
+        raise QuickStepInputError("dft.band_special_points entries must have: label kx ky kz")
+    if not parts[0].strip():
+        raise QuickStepInputError("dft.band_special_points labels must be non-empty")
+    try:
+        float(parts[1].replace("D", "E"))
+        float(parts[2].replace("D", "E"))
+        float(parts[3].replace("D", "E"))
+    except ValueError as exc:
+        raise QuickStepInputError("dft.band_special_points coordinates must be numeric") from exc
 
 
 def _validate_poisson_solver_periodicity(poisson_solver: str | None, periodic: str) -> None:

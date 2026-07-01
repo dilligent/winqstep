@@ -38,6 +38,8 @@ The first generator should target:
 - `DFT/&PRINT/&PDOS`
 - `DFT/&PRINT/&E_DENSITY_CUBE`
 - `DFT/&PRINT/&V_HARTREE_CUBE`
+- `DFT/&PRINT/&BAND_STRUCTURE`
+- `DFT/&PRINT/&BAND_STRUCTURE/&KPOINT_SET`
 - `DFT/&XC`
 - `DFT/&XC/&XC_FUNCTIONAL`
 - `DFT/&XC/&VDW_POTENTIAL` with `PAIR_POTENTIAL` DFT-D3
@@ -85,7 +87,7 @@ Top-level fields:
   dispersion, charge, multiplicity, optional UKS spin polarization, MGRID
   cutoff, optional POISSON solver controls, optional wavefunction restart
   controls, SCF controls, optional KPOINTS controls, and optional DFT print
-  controls
+  controls, including a conservative band-structure output path
 - `motion`: optional `MOTION/&CONSTRAINT/&FIXED_ATOMS` controls for geometry
   and cell optimizations
 - `geo_opt`: optimizer and max iteration settings for `GEO_OPT`
@@ -109,11 +111,18 @@ DFT print controls are opt-in. `dft.print_mulliken` renders
 `DFT/&PRINT/&MULLIKEN ON`, `dft.print_lowdin` renders
 `DFT/&PRINT/&LOWDIN ON`, `dft.print_pdos` renders
 `DFT/&PRINT/&PDOS ON`, `dft.print_e_density_cube` renders
-`DFT/&PRINT/&E_DENSITY_CUBE ON`, and `dft.print_v_hartree_cube` renders
-`DFT/&PRINT/&V_HARTREE_CUBE ON`. All default to false so existing generated
-inputs do not add population analysis output, PDOS files, or cube files unless
-users request them. When these file-generating print controls are enabled, the
-runner records generated `.pdos`, `.pdos_raw`, and `.cube` files in metadata
+`DFT/&PRINT/&E_DENSITY_CUBE ON`, `dft.print_v_hartree_cube` renders
+`DFT/&PRINT/&V_HARTREE_CUBE ON`, and `dft.print_band_structure` renders
+`DFT/&PRINT/&BAND_STRUCTURE ON` with one `&KPOINT_SET`. All default to false so
+existing generated inputs do not add population analysis output, PDOS files,
+cube files, or band-structure files unless users request them. Band-structure
+output is deliberately explicit: users provide `band_file_name`,
+`band_added_mos`, `band_npoints`, `band_kpoint_units`, and repeated
+`band_special_points` entries such as `GAMMA 0.0 0.0 0.0`. WinQStep does not
+yet auto-generate high-symmetry paths from the crystal symmetry.
+
+When file-generating print controls are enabled, the runner records generated
+`.pdos`, `.pdos_raw`, `.cube`, `.bs`, `.band`, and `.bands` files in metadata
 under `files.generated` so the GUI can list them with the other job artifacts.
 
 Wavefunction restart is explicit and opt-in. `dft.wfn_restart_file_name` renders
@@ -200,6 +209,8 @@ QuickStep subset with tests.
 - Mixing and smearing are only generated with the diagonalization SCF path.
 - KPOINTS are only generated for explicitly selected periodic calculations.
 - `DFT/&PRINT` renders only when at least one DFT print subsection is enabled.
+- `BAND_STRUCTURE` output is rejected for `PERIODIC NONE` cells and requires at
+  least two special k-points.
 - `MOTION/&CONSTRAINT/&FIXED_ATOMS` renders only when fixed atom indices are
   explicitly set, and only for optimization run types.
 - The renderer should produce stable output order for readable diffs.
