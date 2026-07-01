@@ -718,15 +718,49 @@ function New-WinQStepWindow {
         [System.Windows.Forms.Application]::DoEvents()
     }.GetNewClosure()
 
+    $logTextState = @{
+        Text = $null
+        LastUpdateSkipped = $false
+        AppliedUpdateCount = 0
+        SkippedUpdateCount = 0
+    }
+
+    $SetLogText = {
+        param(
+            [AllowNull()][AllowEmptyString()][string]$Text,
+            [bool]$ScrollToEnd = $false
+        )
+        $normalizedText = if ($null -eq $Text) { "" } else { [string]$Text }
+        $currentText = [string]$controls["LogText"].Text
+        $cachedText = if ($null -ne $logTextState["Text"]) { [string]$logTextState["Text"] } else { $currentText }
+        if ($cachedText -eq $normalizedText -and $currentText -eq $normalizedText) {
+            $logTextState["LastUpdateSkipped"] = $true
+            $logTextState["SkippedUpdateCount"] = [int]$logTextState["SkippedUpdateCount"] + 1
+            return $false
+        }
+
+        $controls["LogText"].Text = $normalizedText
+        $logTextState["Text"] = $normalizedText
+        $logTextState["LastUpdateSkipped"] = $false
+        $logTextState["AppliedUpdateCount"] = [int]$logTextState["AppliedUpdateCount"] + 1
+        if ($ScrollToEnd) {
+            $controls["LogText"].ScrollToEnd()
+        }
+        return $true
+    }.GetNewClosure()
+    $Script:LogTextSmokeState = $logTextState
+    $Script:LogTextSmokeSetLogText = $SetLogText
+
     $AppendLog = {
         param([string]$Text)
-        if ([string]::IsNullOrWhiteSpace($controls["LogText"].Text)) {
-            $controls["LogText"].Text = $Text
+        $currentText = [string]$controls["LogText"].Text
+        $appendText = if ($null -eq $Text) { "" } else { [string]$Text }
+        if ([string]::IsNullOrWhiteSpace($currentText)) {
+            $null = & $SetLogText $appendText $true
         }
         else {
-            $controls["LogText"].AppendText("`r`n$Text")
+            $null = & $SetLogText "$currentText`r`n$appendText" $true
         }
-        $controls["LogText"].ScrollToEnd()
     }.GetNewClosure()
 
     $InvokeGuiAction = {
@@ -2439,7 +2473,7 @@ function New-WinQStepWindow {
         & $SetArtifactsFromBatchSummary $summary
         & $ClearInputPreviewState
         $controls["PreviewText"].Text = $summaryText
-        $controls["LogText"].Text = "Batch item $index action=$Action`r`n`r`n$summaryText"
+        $null = & $SetLogText "Batch item $index action=$Action`r`n`r`n$summaryText" $true
         & $UpdateBatchQueueControls
         return $summary
     }.GetNewClosure()
@@ -2495,7 +2529,7 @@ function New-WinQStepWindow {
                 WrapperStderrPath = $wrapperStderrPath
                 Cancelled = $false
             }
-            $controls["LogText"].Text = (& $BuildAsyncJobLog $jobState["Current"])
+            $null = & $SetLogText (& $BuildAsyncJobLog $jobState["Current"]) $true
             & $SetJobStatusText (& $FormatRunningJobStatus $jobState["Current"])
             & $SetAsyncJobRunning $true (Format-WinQStepText "status.running_cp2k_pid" @($process.Id))
             $jobTimer.Start()
@@ -2558,7 +2592,7 @@ function New-WinQStepWindow {
                 if (-not [string]::IsNullOrWhiteSpace($stderr)) {
                     $logSections += "--- wrapper stderr ---`r`n$stderr"
                 }
-                $controls["LogText"].Text = ($logSections -join "`r`n`r`n")
+                $null = & $SetLogText ($logSections -join "`r`n`r`n") $true
                 & $SetArtifactsFromBatchSummary $summary
             }
             else {
@@ -2569,12 +2603,11 @@ function New-WinQStepWindow {
                 if (-not [string]::IsNullOrWhiteSpace($stderr)) {
                     $parts += "--- wrapper stderr ---`r`n$stderr"
                 }
-                $controls["LogText"].Text = ($parts -join "`r`n`r`n")
+                $null = & $SetLogText ($parts -join "`r`n`r`n") $true
                 $finalStatus = if ([bool]$State["Cancelled"]) { Get-WinQStepText "status.cancelled" } else { Get-WinQStepText "status.finished_with_errors" }
                 & $SetJobStatusText "Batch: status=$finalStatus | summary=$($State["BatchSummaryPath"])"
             }
 
-            $controls["LogText"].ScrollToEnd()
             $jobState["Current"] = $null
             & $SetAsyncJobRunning $false $finalStatus
             return
@@ -2619,7 +2652,7 @@ function New-WinQStepWindow {
             if (-not [string]::IsNullOrWhiteSpace($stderr)) {
                 $logText = "$logText`r`n`r`n--- wrapper stderr ---`r`n$stderr"
             }
-            $controls["LogText"].Text = & $AddMetadataTails $logText $metadata
+            $null = & $SetLogText (& $AddMetadataTails $logText $metadata) $true
             & $SetArtifactsFromMetadata $metadata
         }
         else {
@@ -2630,12 +2663,11 @@ function New-WinQStepWindow {
             if (-not [string]::IsNullOrWhiteSpace($stderr)) {
                 $parts += "--- wrapper stderr ---`r`n$stderr"
             }
-            $controls["LogText"].Text = ($parts -join "`r`n`r`n")
+            $null = & $SetLogText ($parts -join "`r`n`r`n") $true
             $finalStatus = if ([bool]$State["Cancelled"]) { Get-WinQStepText "status.cancelled" } else { Get-WinQStepText "status.finished_with_errors" }
             & $SetJobStatusText "Last job: status=$finalStatus | metadata=$($State["MetadataPath"])"
         }
 
-        $controls["LogText"].ScrollToEnd()
         $jobState["Current"] = $null
         & $SetAsyncJobRunning $false $finalStatus
     }.GetNewClosure()
@@ -2655,7 +2687,7 @@ function New-WinQStepWindow {
         }
 
         & $SetJobStatusText (& $FormatRunningJobStatus $current)
-        $controls["LogText"].Text = & $BuildAsyncJobLog $current
+        $null = & $SetLogText (& $BuildAsyncJobLog $current) $true
         if ([string]$current["Mode"] -eq "existing_input_batch") {
             $selectedIndex = & $GetSelectedBatchItemIndex
             $summary = & $ReadMetadataFile ([string]$current["BatchSummaryPath"])
@@ -2675,7 +2707,6 @@ function New-WinQStepWindow {
                 }
             }
         }
-        $controls["LogText"].ScrollToEnd()
     }.GetNewClosure()
 
     $jobTimer.Add_Tick({
@@ -2749,7 +2780,7 @@ function New-WinQStepWindow {
         $title = if ([string]::IsNullOrWhiteSpace($path)) { "current job" } else { $path }
         $text = [string]$current["result_text"]
         $controls["ArtifactText"].Text = "--- results: $title ---`r`n$text"
-        $controls["LogText"].Text = $text
+        $null = & $SetLogText $text $true
     }.GetNewClosure()
 
     $GetResultSummaryPath = {
@@ -2821,7 +2852,7 @@ function New-WinQStepWindow {
             $artifactState["Current"] = $current
             $controls["ArtifactSummaryText"].Text = & $BuildBatchArtifactSummary $current["batch_summary"]
             $controls["ArtifactText"].Text = "--- batch results: $path ---`r`n$text"
-            $controls["LogText"].Text = "Saved batch result table: $path`r`n`r`n$text"
+            $null = & $SetLogText "Saved batch result table: $path`r`n`r`n$text" $true
             & $UpdateArtifactControls
             return $path
         }
@@ -2836,7 +2867,7 @@ function New-WinQStepWindow {
         $artifactState["Current"] = $current
         $controls["ArtifactSummaryText"].Text = & $BuildArtifactSummary $current
         $controls["ArtifactText"].Text = "--- results: $path ---`r`n$text"
-        $controls["LogText"].Text = "Saved result summary: $path`r`n`r`n$text"
+        $null = & $SetLogText "Saved result summary: $path`r`n`r`n$text" $true
         & $UpdateArtifactControls
         return $path
     }.GetNewClosure()
@@ -2863,7 +2894,7 @@ function New-WinQStepWindow {
             & $UpdateRunTargetStatus
         }
         elseif ($Key -ne "output") {
-            $controls["LogText"].Text = $text
+            $null = & $SetLogText $text $true
         }
     }.GetNewClosure()
 
@@ -2969,7 +3000,7 @@ function New-WinQStepWindow {
         )
         $payload = & $ReadConfigManagerResult $result $true
         if ($WriteLog) {
-            $controls["LogText"].Text = $result.Output
+            $null = & $SetLogText $result.Output $true
         }
         return $payload
     }.GetNewClosure()
@@ -2989,7 +3020,7 @@ function New-WinQStepWindow {
         $result = Invoke-WinQStepPython $arguments
         $payload = & $ReadConfigManagerResult $result $false
         if ($WriteLog) {
-            $controls["LogText"].Text = $result.Output
+            $null = & $SetLogText $result.Output $true
         }
         return $payload
     }.GetNewClosure()
@@ -3556,7 +3587,7 @@ function New-WinQStepWindow {
         )
         $payload = & $ReadTemplateManagerResult $result
         if ($WriteLog) {
-            $controls["LogText"].Text = $result.Output
+            $null = & $SetLogText $result.Output $true
         }
         return $payload
     }.GetNewClosure()
@@ -3572,7 +3603,7 @@ function New-WinQStepWindow {
         )
         $payload = & $ReadTemplateManagerResult $result
         if ($WriteLog) {
-            $controls["LogText"].Text = $result.Output
+            $null = & $SetLogText $result.Output $true
         }
         return $payload
     }.GetNewClosure()
@@ -3619,7 +3650,7 @@ function New-WinQStepWindow {
         $payload = Get-JsonResult $result
         & $SetDataLabelsFromPayload $payload
         if ($WriteLog) {
-            $controls["LogText"].Text = $result.Output
+            $null = & $SetLogText $result.Output $true
         }
         return $payload
     }.GetNewClosure()
@@ -3695,7 +3726,7 @@ function New-WinQStepWindow {
         else {
             & $ClearInputPreviewState
             $controls["PreviewText"].Text = $text
-            $controls["LogText"].Text = $text
+            $null = & $SetLogText $text $true
         }
         return $text
     }.GetNewClosure()
@@ -3862,7 +3893,7 @@ function New-WinQStepWindow {
             throw "Preflight did not return JSON. Raw output:`n$($result.Output)"
         }
         $text = & $FormatPreflightValidation $payload
-        $controls["LogText"].Text = $text
+        $null = & $SetLogText $text $true
         if ($result.ExitCode -ne 0 -or -not [bool]$payload.valid) {
             throw $text
         }
@@ -3938,7 +3969,7 @@ function New-WinQStepWindow {
             $errors = @($history.errors)
         }
         $controls["HistoryGrid"].ItemsSource = $jobs
-        $controls["LogText"].Text = "History jobs: $($jobs.Count), errors: $($errors.Count)`r`n`r`n$($result.Output)"
+        $null = & $SetLogText "History jobs: $($jobs.Count), errors: $($errors.Count)`r`n`r`n$($result.Output)" $true
     }.GetNewClosure()
 
     $OpenSelectedHistory = {
@@ -3950,14 +3981,14 @@ function New-WinQStepWindow {
         & $SetArtifactsFromHistoryItem $item
         $metadataPath = [string]$item.metadata_path
         if (-not [string]::IsNullOrWhiteSpace($metadataPath) -and [System.IO.File]::Exists($metadataPath)) {
-            $controls["LogText"].Text = [System.IO.File]::ReadAllText($metadataPath, [System.Text.Encoding]::UTF8)
+            $null = & $SetLogText ([System.IO.File]::ReadAllText($metadataPath, [System.Text.Encoding]::UTF8)) $true
             $metadata = & $ReadMetadataArtifact $metadataPath
             if ($null -ne $metadata) {
                 & $SetArtifactsFromMetadata $metadata
             }
         }
         else {
-            $controls["LogText"].Text = "Metadata file was not found: $metadataPath"
+            $null = & $SetLogText "Metadata file was not found: $metadataPath" $true
         }
 
         $outputPath = [string]$item.output_path
@@ -3987,7 +4018,7 @@ function New-WinQStepWindow {
             $summaryText = & $FormatBatchSummary $preparedSummary
             & $ClearInputPreviewState
             $controls["PreviewText"].Text = $summaryText
-            $controls["LogText"].Text = $summaryText
+            $null = & $SetLogText $summaryText $true
             & $SetArtifactsFromBatchSummary $preparedSummary
             if ($prepareResult.ExitCode -ne 0 -or (& $GetJsonProperty $preparedSummary "status") -ne "prepared") {
                 throw $summaryText
@@ -4025,7 +4056,7 @@ function New-WinQStepWindow {
                 WrapperStderrPath = $wrapperStderrPath
                 Cancelled = $false
             }
-            $controls["LogText"].Text = ($summaryText, (& $BuildAsyncJobLog $jobState["Current"])) -join "`r`n`r`n"
+            $null = & $SetLogText (($summaryText, (& $BuildAsyncJobLog $jobState["Current"])) -join "`r`n`r`n") $true
             if ($BatchRunSmokeTestEnabled) {
                 $BatchRunSmokeState["Report"] = [ordered]@{
                     prepared_status = (& $GetJsonProperty $preparedSummary "status")
@@ -4045,7 +4076,7 @@ function New-WinQStepWindow {
                 catch {
                 }
                 $jobState["Current"] = $null
-                $controls["LogText"].Text = "$summaryText`r`n`r`nExisting input batch run smoke stopped before starting CP2K."
+                $null = & $SetLogText "$summaryText`r`n`r`nExisting input batch run smoke stopped before starting CP2K." $true
                 & $SetBusy $false (Get-WinQStepText "status.ready")
                 return
             }
@@ -4152,7 +4183,7 @@ function New-WinQStepWindow {
                     prepared_input_text = $preparedInputText
                     run_arguments = $runArguments
                 }
-                $controls["LogText"].Text = "$preflightText`r`n`r`nEdited preview run preparation smoke stopped before starting CP2K."
+                $null = & $SetLogText "$preflightText`r`n`r`nEdited preview run preparation smoke stopped before starting CP2K." $true
                 & $SetBusy $false (Get-WinQStepText "status.ready")
                 return
             }
@@ -4175,7 +4206,7 @@ function New-WinQStepWindow {
                 $logSections += "Edited preview input saved: $editedInputPath"
             }
             $logSections += (& $BuildAsyncJobLog $jobState["Current"])
-            $controls["LogText"].Text = ($logSections -join "`r`n`r`n")
+            $null = & $SetLogText ($logSections -join "`r`n`r`n") $true
             & $SetJobStatusText (& $FormatRunningJobStatus $jobState["Current"])
             & $SetAsyncJobRunning $true (Format-WinQStepText "status.running_cp2k_pid" @($process.Id))
             $jobTimer.Start()
@@ -4380,7 +4411,7 @@ function New-WinQStepWindow {
                 }
             }
             $controls["EnvironmentText"].Text = $environmentText
-            $controls["LogText"].Text = "--- detect_environment.py raw JSON ---`r`n$($result.Output)"
+            $null = & $SetLogText "--- detect_environment.py raw JSON ---`r`n$($result.Output)" $true
             & $AppendLog "detect_environment.py exited with code $($result.ExitCode)"
         }
     }.GetNewClosure())
@@ -4438,7 +4469,7 @@ function New-WinQStepWindow {
                 $summaryText = & $FormatBatchSummary $summary
                 & $ClearInputPreviewState
                 $controls["PreviewText"].Text = $summaryText
-                $controls["LogText"].Text = $summaryText
+                $null = & $SetLogText $summaryText $true
                 & $SetArtifactsFromBatchSummary $summary
                 return
             }
@@ -4457,7 +4488,7 @@ function New-WinQStepWindow {
                 & $ClearInputPreviewState
                 $controls["PreviewText"].Text = "Input file was not written: $inputPath"
             }
-            $controls["LogText"].Text = "$preflightText`r`n`r`n$(& $FormatLogWithSummary $metadata $result.Output)"
+            $null = & $SetLogText "$preflightText`r`n`r`n$(& $FormatLogWithSummary $metadata $result.Output)" $true
             & $SetArtifactsFromMetadata $metadata
         }
     }.GetNewClosure())
@@ -4686,7 +4717,7 @@ function New-WinQStepWindow {
         $controls["EnvironmentText"].Clear()
         $controls["StructureText"].Clear()
         $controls["PreviewText"].Clear()
-        $controls["LogText"].Clear()
+        $null = & $SetLogText "" $false
         $controls["ArtifactSummaryText"].Clear()
         $controls["ArtifactText"].Clear()
         $controls["BatchResultsGrid"].ItemsSource = $null
@@ -6001,6 +6032,14 @@ if ($ButtonSmokeTest) {
     else {
         0
     }
+    $logDedupSkippedBefore = [int]$Script:LogTextSmokeState["SkippedUpdateCount"]
+    $logDedupAppliedBefore = [int]$Script:LogTextSmokeState["AppliedUpdateCount"]
+    $null = & $Script:LogTextSmokeSetLogText "dedup smoke" $false
+    $logDedupSkippedAfterFirst = [int]$Script:LogTextSmokeState["SkippedUpdateCount"]
+    $logDedupAppliedAfterFirst = [int]$Script:LogTextSmokeState["AppliedUpdateCount"]
+    $null = & $Script:LogTextSmokeSetLogText "dedup smoke" $false
+    $logDedupSkippedAfterSecond = [int]$Script:LogTextSmokeState["SkippedUpdateCount"]
+    $logDedupAppliedAfterSecond = [int]$Script:LogTextSmokeState["AppliedUpdateCount"]
 
     $report["button_clicks"] = $buttonReports
     $report["button_live_probes_skipped"] = [bool]$SkipLiveProbes
@@ -6080,6 +6119,14 @@ if ($ButtonSmokeTest) {
     $report["clear_disabled_structure_reset"] = (-not [bool]$window.FindName("StructureResetViewButton").IsEnabled)
     $report["clear_disabled_artifact_buttons"] = $artifactViewButtonsDisabled
     $report["clear_removed_history_items"] = ($null -eq $window.FindName("HistoryGrid").ItemsSource)
+    $report["log_text_dedup_first_update_applied"] = (
+        $logDedupAppliedAfterFirst -gt $logDedupAppliedBefore -and
+        $logDedupSkippedAfterFirst -eq $logDedupSkippedBefore
+    )
+    $report["log_text_dedup_skipped_duplicate"] = (
+        $logDedupSkippedAfterSecond -gt $logDedupSkippedAfterFirst -and
+        $logDedupAppliedAfterSecond -eq $logDedupAppliedAfterFirst
+    )
     $report | ConvertTo-Json -Depth 6
 
     $allButtonsOk = -not @($buttonReports.Values | Where-Object { -not [bool]$_.ok }).Count
@@ -6139,7 +6186,9 @@ if ($ButtonSmokeTest) {
         $report["clear_removed_structure_preview_geometry"] -and
         $report["clear_disabled_structure_reset"] -and
         $report["clear_disabled_artifact_buttons"] -and
-        $report["clear_removed_history_items"]
+        $report["clear_removed_history_items"] -and
+        $report["log_text_dedup_first_update_applied"] -and
+        $report["log_text_dedup_skipped_duplicate"]
     )
     if ($allButtonsOk -and $stateChecksOk) {
         exit 0
