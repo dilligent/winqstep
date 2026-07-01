@@ -2781,9 +2781,40 @@ Commit boundary:
 
 - One commit for Run Target UI, localization, tests, and docs.
 
+## Round 80 - Existing Input Batch Entry Polish
+
+Status: completed.
+
+Scope:
+
+- Replace the single reused batch path entry with explicit GUI fields for a
+  batch directory, one or more `.inp` files, and a UTF-8 input-list file.
+- Keep manual path entry available by making the `.inp` files field editable,
+  with multi-select browsing writing one path per line.
+- Show a localized live count of how many input files will run, deduplicating
+  paths across directory, explicit file, and input-list sources.
+- Translate the explicit GUI selection back to the existing
+  `--input-dir`, repeated `--input`, and `--input-list` batch CLI arguments.
+- Preserve workflow and single existing-input behavior.
+
+Acceptance:
+
+- Existing input batch mode visibly shows the batch input panel and hides the
+  old single existing-input path box.
+- Directory, explicit `.inp`, input-list, and mixed selections update the Run
+  Target line and live count.
+- Batch preview/run smoke tests use the new directory field and continue to
+  prepare two input files.
+- GUI/static tests and fast checks pass.
+
+Commit boundary:
+
+- One commit for batch entry GUI, run-target counting, localization, docs, and
+  tests.
+
 ## QuickStep Feature Backlog
 
-Status: planned queue after Round 76.
+Status: planned queue after Round 80.
 
 Priority order:
 

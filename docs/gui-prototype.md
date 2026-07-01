@@ -132,8 +132,9 @@ The top `Mode` selector supports three paths:
 - `Existing input`: run one user-provided CP2K `.inp` file.
 - `Existing input batch`: scan a selected folder of `.inp` files, prepare a
   serial batch summary, and run the batch through the existing-input runner.
-  The same input path box is reused for a folder path; UTF-8 input-list files
-  can still be typed manually.
+  Batch mode uses separate controls for a directory, one or more explicit
+  `.inp` files, and a UTF-8 input-list file, with a live count of the inputs
+  that will run.
 
 For existing-input batches, `Job Log` shows explicit `current/total` progress
 and succeeded/failed/error counts from `batch.winqstep-batch.json`. The

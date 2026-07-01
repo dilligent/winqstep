@@ -99,7 +99,9 @@ function New-WinQStepWindow {
     $controls["ConfigPathBox"].Text = $defaultConfigPath
     $controls["TemplatePathBox"].Text = $defaultTemplatePath
     $controls["StructurePathBox"].Text = Resolve-WinQStepPath "tests\fixtures\structures\water.xyz"
-    $controls["ExistingInputPathBox"].Text = Resolve-WinQStepPath "tests\fixtures\quickstep_energy.inp"
+    $defaultExistingInputPath = Resolve-WinQStepPath "tests\fixtures\quickstep_energy.inp"
+    $controls["ExistingInputPathBox"].Text = $defaultExistingInputPath
+    $controls["BatchInputFilesBox"].Text = $defaultExistingInputPath
     $controls["JobDirBox"].Text = Resolve-WinQStepPath "outputs\gui-preview"
     $controls["ProjectNameBox"].Text = "gui_preview"
     $controls["CancelJobButton"].IsEnabled = $false
@@ -159,7 +161,9 @@ function New-WinQStepWindow {
         $controls["ViewInputButton"], $controls["ViewOutputButton"], $controls["ViewMetadataButton"],
         $controls["ViewStdoutButton"], $controls["ViewStderrButton"], $controls["BrowseConfigButton"],
         $controls["BrowseTemplateButton"], $controls["BrowseStructureButton"],
-        $controls["BrowseExistingInputButton"], $controls["BrowseJobDirButton"]
+        $controls["BrowseExistingInputButton"], $controls["BrowseBatchInputDirButton"],
+        $controls["BrowseBatchInputFilesButton"], $controls["BrowseBatchInputListButton"],
+        $controls["BrowseJobDirButton"]
     )
 
     $GetUiLanguageSelection = {
@@ -282,6 +286,101 @@ function New-WinQStepWindow {
         }
     }.GetNewClosure()
 
+    $GetBatchInputFilePaths = {
+        $text = [string]$controls["BatchInputFilesBox"].Text
+        return @(
+            foreach ($part in ($text -split '[;\r\n]+')) {
+                $trimmed = ([string]$part).Trim()
+                if (-not [string]::IsNullOrWhiteSpace($trimmed)) {
+                    $trimmed
+                }
+            }
+        )
+    }.GetNewClosure()
+
+    $ClearDefaultBatchInputFilesIfNeeded = {
+        param([AllowEmptyString()][string]$SourceText)
+        if ([string]::IsNullOrWhiteSpace($SourceText)) {
+            return
+        }
+        if ([string]$controls["BatchInputFilesBox"].Text -eq $defaultExistingInputPath) {
+            $controls["BatchInputFilesBox"].Text = ""
+        }
+    }.GetNewClosure()
+
+    $ResolveBatchInputPath = {
+        param(
+            [AllowEmptyString()][string]$PathText,
+            [AllowEmptyString()][string]$BaseDirectory = ""
+        )
+        $trimmed = ([string]$PathText).Trim()
+        if ([string]::IsNullOrWhiteSpace($trimmed)) {
+            return ""
+        }
+        try {
+            if ([System.IO.Path]::IsPathRooted($trimmed)) {
+                return [System.IO.Path]::GetFullPath($trimmed)
+            }
+            if (-not [string]::IsNullOrWhiteSpace($BaseDirectory)) {
+                return [System.IO.Path]::GetFullPath((Join-Path $BaseDirectory $trimmed))
+            }
+            return & $ResolveRunTargetPath $trimmed
+        }
+        catch {
+            return $trimmed
+        }
+    }.GetNewClosure()
+
+    $GetRunTargetBatchInputCountForSources = {
+        param(
+            [string[]]$Directories = @(),
+            [string[]]$Inputs = @(),
+            [string[]]$Lists = @()
+        )
+        $seen = @{}
+        $AddInputPath = {
+            param(
+                [AllowEmptyString()][string]$PathText,
+                [AllowEmptyString()][string]$BaseDirectory = ""
+            )
+            $resolved = & $ResolveBatchInputPath $PathText $BaseDirectory
+            if ([string]::IsNullOrWhiteSpace($resolved)) {
+                return
+            }
+            $key = $resolved.ToLowerInvariant()
+            if (-not $seen.ContainsKey($key)) {
+                $seen[$key] = $true
+            }
+        }
+
+        foreach ($directoryText in @($Directories)) {
+            $directory = & $ResolveRunTargetPath $directoryText
+            if ([System.IO.Directory]::Exists($directory)) {
+                foreach ($inputPath in [System.IO.Directory]::EnumerateFiles($directory, "*.inp")) {
+                    & $AddInputPath $inputPath
+                }
+            }
+        }
+        foreach ($inputText in @($Inputs)) {
+            & $AddInputPath $inputText
+        }
+        foreach ($listText in @($Lists)) {
+            $listPath = & $ResolveRunTargetPath $listText
+            if (-not [System.IO.File]::Exists($listPath)) {
+                continue
+            }
+            $baseDirectory = [System.IO.Path]::GetDirectoryName($listPath)
+            foreach ($line in [System.IO.File]::ReadLines($listPath, [System.Text.Encoding]::UTF8)) {
+                $trimmed = ([string]$line).Trim()
+                if ([string]::IsNullOrWhiteSpace($trimmed) -or $trimmed.StartsWith("#")) {
+                    continue
+                }
+                & $AddInputPath $trimmed $baseDirectory
+            }
+        }
+        return $seen.Count
+    }.GetNewClosure()
+
     $GetRunTargetBatchInputCount = {
         param([Parameter(Mandatory = $true)][string]$PathText)
         $resolved = & $ResolveRunTargetPath $PathText
@@ -289,27 +388,113 @@ function New-WinQStepWindow {
             return 0
         }
         if ([System.IO.Directory]::Exists($resolved)) {
-            return @([System.IO.Directory]::EnumerateFiles($resolved, "*.inp")).Count
+            return (& $GetRunTargetBatchInputCountForSources -Directories @($PathText) -Inputs @() -Lists @())
         }
         if ([System.IO.File]::Exists($resolved)) {
             $extension = [System.IO.Path]::GetExtension($resolved)
             if ($extension.Equals(".inp", [System.StringComparison]::OrdinalIgnoreCase)) {
-                return 1
+                return (& $GetRunTargetBatchInputCountForSources -Directories @() -Inputs @($PathText) -Lists @())
             }
-            $seen = @{}
-            foreach ($line in [System.IO.File]::ReadLines($resolved, [System.Text.Encoding]::UTF8)) {
-                $trimmed = ([string]$line).Trim()
-                if ([string]::IsNullOrWhiteSpace($trimmed) -or $trimmed.StartsWith("#")) {
-                    continue
-                }
-                $key = $trimmed.ToLowerInvariant()
-                if (-not $seen.ContainsKey($key)) {
-                    $seen[$key] = $true
-                }
-            }
-            return $seen.Count
+            return (& $GetRunTargetBatchInputCountForSources -Directories @() -Inputs @() -Lists @($PathText))
         }
-        return 0
+        return (& $GetRunTargetBatchInputCountForSources -Directories @() -Inputs @($PathText) -Lists @())
+    }.GetNewClosure()
+
+    $GetBatchInputSelectionSummary = {
+        $directoryText = ([string]$controls["BatchInputDirBox"].Text).Trim()
+        $inputTexts = @(& $GetBatchInputFilePaths)
+        $listText = ([string]$controls["BatchInputListBox"].Text).Trim()
+        $directoryTexts = @()
+        $listTexts = @()
+        if (-not [string]::IsNullOrWhiteSpace($directoryText)) {
+            $directoryTexts += $directoryText
+        }
+        if (-not [string]::IsNullOrWhiteSpace($listText)) {
+            $listTexts += $listText
+        }
+
+        $sourceKinds = @()
+        if ($directoryTexts.Count -gt 0) {
+            $sourceKinds += "directory"
+        }
+        if ($inputTexts.Count -gt 0) {
+            $sourceKinds += "input"
+        }
+        if ($listTexts.Count -gt 0) {
+            $sourceKinds += "list"
+        }
+
+        if ($sourceKinds.Count -eq 0) {
+            $legacyText = ([string]$controls["ExistingInputPathBox"].Text).Trim()
+            $legacyResolved = & $ResolveRunTargetPath $legacyText
+            $legacyKind = "empty"
+            if (-not [string]::IsNullOrWhiteSpace($legacyText)) {
+                if ([System.IO.Directory]::Exists($legacyResolved)) {
+                    $legacyKind = "directory"
+                }
+                elseif ([System.IO.File]::Exists($legacyResolved)) {
+                    $extension = [System.IO.Path]::GetExtension($legacyResolved)
+                    if ($extension.Equals(".inp", [System.StringComparison]::OrdinalIgnoreCase)) {
+                        $legacyKind = "input"
+                    }
+                    else {
+                        $legacyKind = "list"
+                    }
+                }
+                else {
+                    $legacyKind = "path"
+                }
+            }
+            return [ordered]@{
+                Count = (& $GetRunTargetBatchInputCount $legacyText)
+                SourceKind = $legacyKind
+                Display = if ($legacyKind -eq "input") { & $GetRunTargetDisplayPath $legacyText } else { $legacyText }
+                ToolTip = $legacyResolved
+            }
+        }
+
+        $count = & $GetRunTargetBatchInputCountForSources -Directories $directoryTexts -Inputs $inputTexts -Lists $listTexts
+        $kind = "selection"
+        if ($sourceKinds.Count -eq 1) {
+            if ($sourceKinds[0] -eq "directory") {
+                $kind = "directory"
+            }
+            elseif ($sourceKinds[0] -eq "list") {
+                $kind = "list"
+            }
+            elseif ($sourceKinds[0] -eq "input" -and $inputTexts.Count -eq 1) {
+                $kind = "input"
+            }
+        }
+        $tooltipParts = @()
+        if ($directoryTexts.Count -gt 0) {
+            $tooltipParts += ("Directories: " + ($directoryTexts -join "; "))
+        }
+        if ($inputTexts.Count -gt 0) {
+            $tooltipParts += ("Inputs: " + ($inputTexts -join "; "))
+        }
+        if ($listTexts.Count -gt 0) {
+            $tooltipParts += ("Input lists: " + ($listTexts -join "; "))
+        }
+        return [ordered]@{
+            Count = $count
+            SourceKind = $kind
+            Display = if ($inputTexts.Count -eq 1) { & $GetRunTargetDisplayPath $inputTexts[0] } else { "" }
+            ToolTip = ($tooltipParts -join "`r`n")
+        }
+    }.GetNewClosure()
+
+    $SetBatchInputCountText = {
+        param(
+            [int]$Count,
+            [AllowEmptyString()][string]$ToolTip = ""
+        )
+        if ($null -eq $controls["BatchInputCountText"]) {
+            return
+        }
+        $text = Format-WinQStepText "batch_input_count.files" @($Count)
+        $controls["BatchInputCountText"].Text = $text
+        $controls["BatchInputCountText"].ToolTip = if ([string]::IsNullOrWhiteSpace($ToolTip)) { $text } else { $ToolTip }
     }.GetNewClosure()
 
     $SetRunTargetText = {
@@ -334,23 +519,26 @@ function New-WinQStepWindow {
             return
         }
         if (& $TestIsExistingInputBatchMode) {
-            $pathText = ([string]$controls["ExistingInputPathBox"].Text).Trim()
-            $resolved = & $ResolveRunTargetPath $pathText
-            $count = & $GetRunTargetBatchInputCount $pathText
-            if ([System.IO.Directory]::Exists($resolved)) {
-                & $SetRunTargetText "run_target.batch_directory" @($count) $resolved
-            }
-            elseif ([System.IO.File]::Exists($resolved)) {
-                $extension = [System.IO.Path]::GetExtension($resolved)
-                if ($extension.Equals(".inp", [System.StringComparison]::OrdinalIgnoreCase)) {
-                    & $SetRunTargetText "run_target.batch_input" @((& $GetRunTargetDisplayPath $pathText)) $resolved
+            $summary = & $GetBatchInputSelectionSummary
+            $count = [int]$summary["Count"]
+            $toolTip = [string]$summary["ToolTip"]
+            & $SetBatchInputCountText $count $toolTip
+            switch ([string]$summary["SourceKind"]) {
+                "directory" {
+                    & $SetRunTargetText "run_target.batch_directory" @($count) $toolTip
                 }
-                else {
-                    & $SetRunTargetText "run_target.batch_list" @($count) $resolved
+                "list" {
+                    & $SetRunTargetText "run_target.batch_list" @($count) $toolTip
                 }
-            }
-            else {
-                & $SetRunTargetText "run_target.batch_path" @($pathText) $resolved
+                "input" {
+                    & $SetRunTargetText "run_target.batch_input" @([string]$summary["Display"]) $toolTip
+                }
+                "selection" {
+                    & $SetRunTargetText "run_target.batch_selection" @($count) $toolTip
+                }
+                default {
+                    & $SetRunTargetText "run_target.batch_path" @([string]$summary["Display"]) $toolTip
+                }
             }
             return
         }
@@ -376,11 +564,20 @@ function New-WinQStepWindow {
     $UpdateModeControls = {
         $usesExistingInputPath = & $TestUsesExistingInputPath
         $isBatchMode = & $TestIsExistingInputBatchMode
+        $isExistingInputMode = & $TestIsExistingInputMode
         foreach ($name in @("TemplatePathBox", "BrowseTemplateButton", "StructurePathBox", "BrowseStructureButton", "ProjectNameBox")) {
             $controls[$name].IsEnabled = -not $usesExistingInputPath
         }
+        $existingVisibility = if ($isBatchMode) { [System.Windows.Visibility]::Collapsed } else { [System.Windows.Visibility]::Visible }
+        foreach ($name in @("ExistingInputPathLabel", "ExistingInputPathBox", "BrowseExistingInputButton")) {
+            $controls[$name].Visibility = $existingVisibility
+        }
         foreach ($name in @("ExistingInputPathBox", "BrowseExistingInputButton")) {
-            $controls[$name].IsEnabled = $usesExistingInputPath
+            $controls[$name].IsEnabled = $isExistingInputMode
+        }
+        $controls["BatchInputsPanel"].Visibility = if ($isBatchMode) { [System.Windows.Visibility]::Visible } else { [System.Windows.Visibility]::Collapsed }
+        foreach ($name in @("BatchInputDirBox", "BrowseBatchInputDirButton", "BatchInputFilesBox", "BrowseBatchInputFilesButton", "BatchInputListBox", "BrowseBatchInputListButton")) {
+            $controls[$name].IsEnabled = $isBatchMode
         }
         $controls["BatchStopOnFailureBox"].IsEnabled = $isBatchMode
         $controls["ImportButton"].IsEnabled = -not $usesExistingInputPath
@@ -560,6 +757,20 @@ function New-WinQStepWindow {
         }
     }.GetNewClosure()
 
+    $SelectMultipleFilePaths = {
+        param([Parameter(Mandatory = $true)]$TextBox, [Parameter(Mandatory = $true)][string]$Filter)
+        $dialog = New-Object Microsoft.Win32.OpenFileDialog
+        $dialog.Filter = $Filter
+        $dialog.Multiselect = $true
+        $firstPath = @(& $GetBatchInputFilePaths | Select-Object -First 1)
+        if ($firstPath.Count -gt 0 -and [System.IO.File]::Exists($firstPath[0])) {
+            $dialog.InitialDirectory = Split-Path -Parent $firstPath[0]
+        }
+        if ($dialog.ShowDialog($window)) {
+            $TextBox.Text = ([string[]]$dialog.FileNames) -join "`r`n"
+        }
+    }.GetNewClosure()
+
     $SelectFolderPath = {
         param([Parameter(Mandatory = $true)]$TextBox)
         $dialog = New-Object System.Windows.Forms.FolderBrowserDialog
@@ -610,6 +821,22 @@ function New-WinQStepWindow {
     }.GetNewClosure()
 
     $GetExistingInputBatchSelectionArguments = {
+        $arguments = @()
+        $directoryText = ([string]$controls["BatchInputDirBox"].Text).Trim()
+        $listText = ([string]$controls["BatchInputListBox"].Text).Trim()
+        if (-not [string]::IsNullOrWhiteSpace($directoryText)) {
+            $arguments += @("--input-dir", $directoryText)
+        }
+        foreach ($inputText in @(& $GetBatchInputFilePaths)) {
+            $arguments += @("--input", $inputText)
+        }
+        if (-not [string]::IsNullOrWhiteSpace($listText)) {
+            $arguments += @("--input-list", $listText)
+        }
+        if ($arguments.Count -gt 0) {
+            return $arguments
+        }
+
         $inputText = ([string]$controls["ExistingInputPathBox"].Text).Trim()
         if ([string]::IsNullOrWhiteSpace($inputText)) {
             throw "Batch inputs path is empty."
@@ -3952,18 +4179,25 @@ function New-WinQStepWindow {
     }.GetNewClosure())
     $controls["BrowseStructureButton"].Add_Click({ & $SelectFilePath $controls["StructurePathBox"] "Structures (*.xyz;*.cif;POSCAR;CONTCAR)|*.xyz;*.cif;POSCAR;CONTCAR|All files (*.*)|*.*" }.GetNewClosure())
     $controls["BrowseExistingInputButton"].Add_Click({
-        if (& $TestIsExistingInputBatchMode) {
-            & $SelectFolderPath $controls["ExistingInputPathBox"]
-        }
-        else {
-            & $SelectFilePath $controls["ExistingInputPathBox"] "CP2K input files (*.inp)|*.inp|All files (*.*)|*.*"
-        }
+        & $SelectFilePath $controls["ExistingInputPathBox"] "CP2K input files (*.inp)|*.inp|All files (*.*)|*.*"
     }.GetNewClosure())
+    $controls["BrowseBatchInputDirButton"].Add_Click({ & $SelectFolderPath $controls["BatchInputDirBox"] }.GetNewClosure())
+    $controls["BrowseBatchInputFilesButton"].Add_Click({ & $SelectMultipleFilePaths $controls["BatchInputFilesBox"] "CP2K input files (*.inp)|*.inp|All files (*.*)|*.*" }.GetNewClosure())
+    $controls["BrowseBatchInputListButton"].Add_Click({ & $SelectFilePath $controls["BatchInputListBox"] "Input list files (*.txt;*.lst;*.list)|*.txt;*.lst;*.list|All files (*.*)|*.*" }.GetNewClosure())
     $controls["BrowseJobDirButton"].Add_Click({ & $SelectFolderPath $controls["JobDirBox"] }.GetNewClosure())
     $controls["WorkflowModeRadio"].Add_Checked({ & $UpdateModeControls }.GetNewClosure())
     $controls["ExistingInputModeRadio"].Add_Checked({ & $UpdateModeControls }.GetNewClosure())
     $controls["ExistingInputBatchModeRadio"].Add_Checked({ & $UpdateModeControls }.GetNewClosure())
     $controls["ExistingInputPathBox"].Add_TextChanged({ & $UpdateRunTargetStatus }.GetNewClosure())
+    $controls["BatchInputDirBox"].Add_TextChanged({
+        & $ClearDefaultBatchInputFilesIfNeeded ([string]$controls["BatchInputDirBox"].Text)
+        & $UpdateRunTargetStatus
+    }.GetNewClosure())
+    $controls["BatchInputFilesBox"].Add_TextChanged({ & $UpdateRunTargetStatus }.GetNewClosure())
+    $controls["BatchInputListBox"].Add_TextChanged({
+        & $ClearDefaultBatchInputFilesIfNeeded ([string]$controls["BatchInputListBox"].Text)
+        & $UpdateRunTargetStatus
+    }.GetNewClosure())
     $controls["PreviewText"].Add_TextChanged({ & $UpdateRunTargetStatus }.GetNewClosure())
 
     foreach ($name in @(
@@ -4469,7 +4703,7 @@ if ($BatchSmokeTest) {
 
     $window.FindName("ConfigPathBox").Text = $smokeConfigPath
     $window.FindName("ExistingInputBatchModeRadio").IsChecked = $true
-    $window.FindName("ExistingInputPathBox").Text = $batchInputDir
+    $window.FindName("BatchInputDirBox").Text = $batchInputDir
     $window.FindName("JobDirBox").Text = $batchJobDir
     [System.Windows.Forms.Application]::DoEvents()
 
@@ -4600,7 +4834,9 @@ if ($BatchSmokeTest) {
     $report["save_error"] = $saveError
     $report["batch_mode_loaded"] = ($window.FindName("ExistingInputBatchModeRadio") -is [System.Windows.Controls.RadioButton])
     $report["batch_stop_on_failure_loaded"] = ($window.FindName("BatchStopOnFailureBox") -is [System.Windows.Controls.CheckBox])
-    $report["batch_input_enabled"] = [bool]$window.FindName("ExistingInputPathBox").IsEnabled
+    $report["batch_input_enabled"] = [bool]$window.FindName("BatchInputDirBox").IsEnabled
+    $report["batch_inputs_panel_visible"] = ($window.FindName("BatchInputsPanel").Visibility -eq [System.Windows.Visibility]::Visible)
+    $report["batch_input_count_text"] = [string]$window.FindName("BatchInputCountText").Text
     $report["batch_stop_on_failure_enabled"] = [bool]$window.FindName("BatchStopOnFailureBox").IsEnabled
     $report["batch_import_disabled"] = (-not [bool]$window.FindName("ImportButton").IsEnabled)
     $report["batch_input_label"] = [string]$window.FindName("ExistingInputPathLabel").Text
@@ -4632,6 +4868,8 @@ if ($BatchSmokeTest) {
         $report["batch_mode_loaded"] -and
         $report["batch_stop_on_failure_loaded"] -and
         $report["batch_input_enabled"] -and
+        $report["batch_inputs_panel_visible"] -and
+        $report["batch_input_count_text"].Contains("2") -and
         $report["batch_stop_on_failure_enabled"] -and
         $report["batch_import_disabled"] -and
         $report["preview_text_has_summary"] -and
@@ -4673,7 +4911,7 @@ if ($BatchRunSmokeTest) {
 
     $window.FindName("ConfigPathBox").Text = $smokeConfigPath
     $window.FindName("ExistingInputBatchModeRadio").IsChecked = $true
-    $window.FindName("ExistingInputPathBox").Text = $batchInputDir
+    $window.FindName("BatchInputDirBox").Text = $batchInputDir
     $window.FindName("JobDirBox").Text = $batchJobDir
     [System.Windows.Forms.Application]::DoEvents()
 
@@ -5237,7 +5475,7 @@ if ($ButtonSmokeTest) {
     [System.IO.File]::Copy((Resolve-WinQStepPath "tests\fixtures\quickstep_energy.inp"), (Join-Path $batchInputDir "button_batch_one.inp"), $true)
     [System.IO.File]::Copy((Resolve-WinQStepPath "tests\fixtures\quickstep_energy.inp"), (Join-Path $batchInputDir "button_batch_two.inp"), $true)
     $window.FindName("ExistingInputBatchModeRadio").IsChecked = $true
-    $window.FindName("ExistingInputPathBox").Text = $batchInputDir
+    $window.FindName("BatchInputDirBox").Text = $batchInputDir
     $window.FindName("JobDirBox").Text = $batchJobDir
     [System.Windows.Forms.Application]::DoEvents()
     $batchModeImportDisabled = (-not [bool]$window.FindName("ImportButton").IsEnabled)
@@ -5573,6 +5811,14 @@ if ($SmokeTest) {
         (($historyMetadata | ConvertTo-Json -Depth 8) + "`n"),
         $Script:Utf8NoBomEncoding
     )
+    $batchSelectorDir = Join-Path $historySmokeDir "batch-selector"
+    [System.IO.Directory]::CreateDirectory($batchSelectorDir) | Out-Null
+    $batchSelectorOne = Join-Path $batchSelectorDir "selector_one.inp"
+    $batchSelectorTwo = Join-Path $batchSelectorDir "selector_two.inp"
+    $batchSelectorList = Join-Path $batchSelectorDir "selector-list.txt"
+    [System.IO.File]::Copy((Resolve-WinQStepPath "tests\fixtures\quickstep_energy.inp"), $batchSelectorOne, $true)
+    [System.IO.File]::Copy((Resolve-WinQStepPath "tests\fixtures\quickstep_energy.inp"), $batchSelectorTwo, $true)
+    [System.IO.File]::WriteAllText($batchSelectorList, "# selector smoke`nselector_two.inp`n", $Script:Utf8NoBomEncoding)
     $historyResult = Invoke-WinQStepPython @(
         "scripts\list_job_history.py",
         "--workspace", $historySmokeDir,
@@ -5589,8 +5835,14 @@ if ($SmokeTest) {
     $existingModeImportEnabled = [bool]$window.FindName("ImportButton").IsEnabled
     $existingRunTargetText = [string]$window.FindName("RunTargetText").Text
     $window.FindName("ExistingInputBatchModeRadio").IsChecked = $true
+    $window.FindName("BatchInputDirBox").Text = ""
+    $window.FindName("BatchInputFilesBox").Text = $batchSelectorOne
+    $window.FindName("BatchInputListBox").Text = $batchSelectorList
     [System.Windows.Forms.Application]::DoEvents()
-    $batchModeInputEnabled = [bool]$window.FindName("ExistingInputPathBox").IsEnabled
+    $batchModeInputEnabled = [bool]$window.FindName("BatchInputDirBox").IsEnabled
+    $batchInputsPanelVisible = ($window.FindName("BatchInputsPanel").Visibility -eq [System.Windows.Visibility]::Visible)
+    $existingInputPathCollapsedInBatch = ($window.FindName("ExistingInputPathBox").Visibility -eq [System.Windows.Visibility]::Collapsed)
+    $batchInputCountText = [string]$window.FindName("BatchInputCountText").Text
     $batchModeImportEnabled = [bool]$window.FindName("ImportButton").IsEnabled
     $batchModeStopOnFailureEnabled = [bool]$window.FindName("BatchStopOnFailureBox").IsEnabled
     $batchModeLabelText = [string]$window.FindName("ExistingInputPathLabel").Text
@@ -5828,6 +6080,9 @@ if ($SmokeTest) {
     $report["existing_input_batch_mode_loaded"] = ($window.FindName("ExistingInputBatchModeRadio") -is [System.Windows.Controls.RadioButton])
     $report["batch_stop_on_failure_loaded"] = ($window.FindName("BatchStopOnFailureBox") -is [System.Windows.Controls.CheckBox])
     $report["batch_mode_input_enabled"] = $batchModeInputEnabled
+    $report["batch_inputs_panel_visible"] = $batchInputsPanelVisible
+    $report["existing_input_path_collapsed_in_batch"] = $existingInputPathCollapsedInBatch
+    $report["batch_input_count_text"] = $batchInputCountText
     $report["batch_mode_import_enabled"] = $batchModeImportEnabled
     $report["batch_mode_stop_on_failure_enabled"] = $batchModeStopOnFailureEnabled
     $report["batch_mode_label_text"] = $batchModeLabelText

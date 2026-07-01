@@ -4,9 +4,11 @@ function Get-WinQStepGuiControlNames {
         "WorkflowModeRadio", "ExistingInputModeRadio", "ExistingInputBatchModeRadio", "BatchStopOnFailureBox",
         "JobInputsGroup",
         "ModeLabel", "ConfigPathLabel", "TemplatePathLabel", "StructurePathLabel",
-        "ExistingInputPathLabel", "JobFolderLabel", "ProjectLabel",
-        "RunTargetLabel", "RunTargetText",
+        "ExistingInputPathLabel", "BatchInputDirLabel", "BatchInputFilesLabel", "BatchInputListLabel",
+        "JobFolderLabel", "ProjectLabel",
+        "RunTargetLabel", "RunTargetText", "BatchInputCountText",
         "ConfigPathBox", "TemplatePathBox", "StructurePathBox", "ExistingInputPathBox",
+        "BatchInputsPanel", "BatchInputDirBox", "BatchInputFilesBox", "BatchInputListBox",
         "JobDirBox", "ProjectNameBox",
         "ConfigTab", "TemplateTab", "EnvironmentTab", "StructureTab",
         "InputPreviewTab", "JobLogTab", "ArtifactsTab", "HistoryTab",
@@ -72,7 +74,8 @@ function Get-WinQStepGuiControlNames {
         "ViewInputButton", "ViewOutputButton", "ViewMetadataButton", "ViewStdoutButton", "ViewStderrButton",
         "ResumeBatchButton", "SkipBatchItemButton", "RerunBatchItemButton", "CancelBatchItemButton",
         "BrowseConfigButton", "BrowseTemplateButton", "BrowseStructureButton",
-        "BrowseExistingInputButton", "BrowseJobDirButton"
+        "BrowseExistingInputButton", "BrowseBatchInputDirButton", "BrowseBatchInputFilesButton",
+        "BrowseBatchInputListButton", "BrowseJobDirButton"
     )
 }
 
@@ -104,6 +107,9 @@ function Set-WinQStepLocalizedControls {
     BrowseTemplateButton = "button.browse"
     BrowseStructureButton = "button.browse"
     BrowseExistingInputButton = "button.browse"
+    BrowseBatchInputDirButton = "button.browse"
+    BrowseBatchInputFilesButton = "button.browse"
+    BrowseBatchInputListButton = "button.browse"
     BrowseJobDirButton = "button.browse"
     ViewResultsButton = "button.results"
     SaveResultsButton = "button.save_results"
@@ -165,6 +171,9 @@ function Set-WinQStepLocalizedControls {
     TemplatePathLabel = "label.template"
     StructurePathLabel = "label.structure"
     ExistingInputPathLabel = "label.existing_input"
+    BatchInputDirLabel = "label.batch_input_dir"
+    BatchInputFilesLabel = "label.batch_input_files"
+    BatchInputListLabel = "label.batch_input_list"
     JobFolderLabel = "label.job_folder"
     ProjectLabel = "label.project"
     RunTargetLabel = "label.run_target"

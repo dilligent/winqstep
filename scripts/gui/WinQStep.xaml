@@ -108,6 +108,37 @@
         <TextBox x:Name="ExistingInputPathBox" Grid.Row="4" Grid.Column="1"/>
         <Button x:Name="BrowseExistingInputButton" Grid.Row="4" Grid.Column="2" Content="Browse"/>
 
+        <Grid x:Name="BatchInputsPanel" Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="3" Visibility="Collapsed">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="110"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+          </Grid.ColumnDefinitions>
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+          </Grid.RowDefinitions>
+
+          <TextBlock x:Name="BatchInputDirLabel" Grid.Row="0" Grid.Column="0" Text="Batch Directory"/>
+          <TextBox x:Name="BatchInputDirBox" Grid.Row="0" Grid.Column="1"/>
+          <Button x:Name="BrowseBatchInputDirButton" Grid.Row="0" Grid.Column="2" Content="Browse"/>
+
+          <TextBlock x:Name="BatchInputFilesLabel" Grid.Row="1" Grid.Column="0" Text=".inp Files"/>
+          <TextBox x:Name="BatchInputFilesBox" Grid.Row="1" Grid.Column="1" Height="54"
+                   AcceptsReturn="True" TextWrapping="NoWrap" VerticalContentAlignment="Top"
+                   HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"/>
+          <Button x:Name="BrowseBatchInputFilesButton" Grid.Row="1" Grid.Column="2" Content="Browse"/>
+
+          <TextBlock x:Name="BatchInputListLabel" Grid.Row="2" Grid.Column="0" Text="Input List"/>
+          <TextBox x:Name="BatchInputListBox" Grid.Row="2" Grid.Column="1"/>
+          <Button x:Name="BrowseBatchInputListButton" Grid.Row="2" Grid.Column="2" Content="Browse"/>
+
+          <TextBlock x:Name="BatchInputCountText" Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2"
+                     Margin="6,2,6,4" TextWrapping="Wrap" Foreground="#44515F"/>
+        </Grid>
+
         <TextBlock x:Name="JobFolderLabel" Grid.Row="5" Grid.Column="0" Text="Job Folder"/>
         <TextBox x:Name="JobDirBox" Grid.Row="5" Grid.Column="1"/>
         <Button x:Name="BrowseJobDirButton" Grid.Row="5" Grid.Column="2" Content="Browse"/>

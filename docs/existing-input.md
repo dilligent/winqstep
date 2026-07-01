@@ -95,8 +95,9 @@ file while still writing the batch index to `--job-dir`.
 ## GUI Batch Mode
 
 The GUI has an `Existing input batch` mode in the top `Mode` selector. In this
-mode the `Existing Input` path box is relabeled as `Batch Inputs`; the `Browse`
-button selects a folder, and `Preview` runs
+mode the batch inputs panel has separate fields for a directory, one or more
+explicit `.inp` files, and an input-list file. Each field has its own browse
+button, and the panel shows the number of input files that will run. `Preview` runs
 `scripts/run_existing_input_batch.py --prepare-only` to write and display
 `batch.winqstep-batch.json`.
 
@@ -115,8 +116,9 @@ batch result table, then use `Skip Item`, `Rerun Item`, or `Cancel Item` to
 update that item in `batch.winqstep-batch.json`. Use `Resume Batch` to continue
 queued or stale running items after an interruption, or after queueing a rerun.
 
-For input-list files, type the list file path directly into `Batch Inputs`;
-folder browsing is the default shortcut for the common case.
+The `.inp Files` field remains editable after multi-select browsing, so users
+can paste or adjust paths manually. Input-list files should be UTF-8 text files
+with one input path per line.
 
 Batch execution is intentionally serial. WinQStep does not try to schedule true
 parallel CP2K work; users who need parallel numerical execution should configure
