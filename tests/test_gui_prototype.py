@@ -467,6 +467,9 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn("ViewOutputButton", xaml_text)
         self.assertIn("ViewArtifactTailButton", xaml_text)
         self.assertIn("ViewArtifactFullButton", xaml_text)
+        self.assertIn("OpenArtifactFolderButton", xaml_text)
+        self.assertIn("CopyArtifactPathButton", xaml_text)
+        self.assertIn("OpenArtifactExternalButton", xaml_text)
         self.assertIn("SetArtifactsFromMetadata", script_text)
         self.assertIn("SetArtifactsFromHistoryItem", script_text)
         self.assertIn("BuildResultSummaryFromMetadata", script_text)
@@ -480,6 +483,9 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn("ApplyHistoryFilter", script_text)
         self.assertIn("TestHistoryItemMatchesFilter", script_text)
         self.assertIn("TestHistoryItemHasReviewSignal", script_text)
+        self.assertIn("OpenCurrentArtifactFolder", script_text)
+        self.assertIn("CopyCurrentArtifactPath", script_text)
+        self.assertIn("OpenCurrentArtifactExternally", script_text)
         self.assertIn("largeArtifactPreviewThresholdBytes", script_text)
         self.assertIn("Get-WinQStepFileTail $path $artifactTailLineCount", script_text)
         self.assertIn('if ($Key -eq "input")', script_text)
@@ -489,6 +495,9 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn('"button.full_text": "Full Text"', english_text)
         self.assertIn('"button.find_previous": "Previous"', english_text)
         self.assertIn('"button.find_next": "Next"', english_text)
+        self.assertIn('"button.open_folder": "Open Folder"', english_text)
+        self.assertIn('"button.copy_path": "Copy Path"', english_text)
+        self.assertIn('"button.open_externally": "Open Externally"', english_text)
         self.assertIn('"label.find": "Find"', english_text)
         self.assertIn('"button.clear_filter": "Clear Filter"', english_text)
         self.assertIn('"label.history_review_only": "Warnings/errors only"', english_text)
@@ -727,6 +736,8 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertTrue(report["artifact_view_buttons_initially_disabled"])
         self.assertEqual(report["artifact_text_mode_buttons_loaded"], 2)
         self.assertTrue(report["artifact_text_mode_buttons_initially_disabled"])
+        self.assertEqual(report["artifact_file_action_buttons_loaded"], 3)
+        self.assertTrue(report["artifact_file_action_buttons_initially_disabled"])
         self.assertEqual(report["text_search_controls_loaded"], 10)
         self.assertTrue(report["text_search_status_initially_empty"])
         self.assertTrue(report["datagrid_virtualization_enabled"])
@@ -992,6 +1003,9 @@ class GuiPrototypeTests(unittest.TestCase):
             "ViewOutputButton",
             "ViewArtifactFullButton",
             "ViewArtifactTailButton",
+            "OpenArtifactFolderButton",
+            "CopyArtifactPathButton",
+            "OpenArtifactExternalButton",
             "ArtifactFindNextButton",
             "ArtifactFindPreviousButton",
             "ViewMetadataButton",
@@ -1062,8 +1076,12 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertTrue(report["artifact_output_text_has_program_end"])
         self.assertTrue(report["artifact_output_default_uses_tail"])
         self.assertTrue(report["artifact_output_tail_buttons_enabled"])
+        self.assertTrue(report["artifact_file_action_buttons_enabled"])
         self.assertTrue(report["artifact_output_full_has_start"])
         self.assertTrue(report["artifact_output_tail_restored"])
+        self.assertTrue(report["artifact_open_folder_suppressed"])
+        self.assertTrue(report["artifact_copy_path_suppressed"])
+        self.assertTrue(report["artifact_open_external_suppressed"])
         self.assertTrue(report["artifact_search_found_program_end"])
         self.assertTrue(report["artifact_output_preserved_input_preview"])
         self.assertTrue(report["artifact_text_has_stderr"])

@@ -1073,6 +1073,10 @@
             <Button x:Name="ViewArtifactTailButton" Content="Tail"/>
             <Button x:Name="ViewArtifactFullButton" Content="Full Text"/>
             <Separator Width="8" Opacity="0"/>
+            <Button x:Name="OpenArtifactFolderButton" Content="Open Folder"/>
+            <Button x:Name="CopyArtifactPathButton" Content="Copy Path"/>
+            <Button x:Name="OpenArtifactExternalButton" Content="Open Externally"/>
+            <Separator Width="8" Opacity="0"/>
             <TextBlock x:Name="ArtifactSearchLabel" Text="Find" Margin="0,4,6,4"/>
             <TextBox x:Name="ArtifactSearchBox" Width="220"/>
             <Button x:Name="ArtifactFindPreviousButton" Content="Previous"/>

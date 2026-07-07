@@ -122,6 +122,11 @@ function New-WinQStepWindow {
         $controls["ViewArtifactTailButton"],
         $controls["ViewArtifactFullButton"]
     )
+    $artifactFileActionButtons = @(
+        $controls["OpenArtifactFolderButton"],
+        $controls["CopyArtifactPathButton"],
+        $controls["OpenArtifactExternalButton"]
+    )
     $batchQueueButtons = @(
         $controls["ResumeBatchButton"],
         $controls["SkipBatchItemButton"],
@@ -134,6 +139,9 @@ function New-WinQStepWindow {
     foreach ($button in $artifactTextModeButtons) {
         $button.IsEnabled = $false
     }
+    foreach ($button in $artifactFileActionButtons) {
+        $button.IsEnabled = $false
+    }
     $batchQueueSelectionOverride = @{ Index = 0 }
     $artifactState = @{ Current = $null }
     $artifactViewState = @{
@@ -141,6 +149,13 @@ function New-WinQStepWindow {
         Path = ""
         TailCapable = $false
     }
+    $artifactFileActionState = @{
+        LastAction = ""
+        LastPath = ""
+        LastFolder = ""
+        LastSuppressed = $false
+    }
+    $Script:ArtifactFileActionSmokeState = $artifactFileActionState
     $previewState = @{ Current = $null }
     $jobState = @{ Current = $null }
     $historyState = @{
@@ -179,7 +194,9 @@ function New-WinQStepWindow {
         $controls["ViewResultsButton"], $controls["SaveResultsButton"],
         $controls["ViewInputButton"], $controls["ViewOutputButton"], $controls["ViewMetadataButton"],
         $controls["ViewStdoutButton"], $controls["ViewStderrButton"],
-        $controls["ViewArtifactTailButton"], $controls["ViewArtifactFullButton"], $controls["BrowseConfigButton"],
+        $controls["ViewArtifactTailButton"], $controls["ViewArtifactFullButton"],
+        $controls["OpenArtifactFolderButton"], $controls["CopyArtifactPathButton"], $controls["OpenArtifactExternalButton"],
+        $controls["BrowseConfigButton"],
         $controls["BrowseTemplateButton"], $controls["BrowseStructureButton"],
         $controls["BrowseExistingInputButton"], $controls["BrowseBatchInputDirButton"],
         $controls["BrowseBatchInputFilesButton"], $controls["BrowseBatchInputListButton"],
@@ -646,11 +663,22 @@ function New-WinQStepWindow {
         }
     }.GetNewClosure()
 
+    $UpdateArtifactFileActionControls = {
+        $enabled = (
+            -not [string]::IsNullOrWhiteSpace([string]$artifactViewState["Path"]) -and
+            [System.IO.File]::Exists([string]$artifactViewState["Path"])
+        )
+        foreach ($button in $artifactFileActionButtons) {
+            $button.IsEnabled = $enabled
+        }
+    }.GetNewClosure()
+
     $ClearArtifactViewState = {
         $artifactViewState["Key"] = ""
         $artifactViewState["Path"] = ""
         $artifactViewState["TailCapable"] = $false
         & $UpdateArtifactTextModeControls
+        & $UpdateArtifactFileActionControls
     }.GetNewClosure()
 
     $UpdateArtifactControls = {
@@ -675,6 +703,7 @@ function New-WinQStepWindow {
             & $UpdateBatchQueueControls
         }
         & $UpdateArtifactTextModeControls
+        & $UpdateArtifactFileActionControls
     }.GetNewClosure()
 
     $GetCurrentBatchSummaryPath = {
@@ -3082,6 +3111,16 @@ function New-WinQStepWindow {
         $title = if ([string]::IsNullOrWhiteSpace($path)) { "current job" } else { $path }
         $text = [string]$current["result_text"]
         $controls["ArtifactText"].Text = "--- results: $title ---`r`n$text"
+        if (-not [string]::IsNullOrWhiteSpace($path) -and [System.IO.File]::Exists($path)) {
+            $artifactViewState["Key"] = "results"
+            $artifactViewState["Path"] = $path
+            $artifactViewState["TailCapable"] = $false
+            & $UpdateArtifactTextModeControls
+            & $UpdateArtifactFileActionControls
+        }
+        else {
+            & $ClearArtifactViewState
+        }
         $null = & $SetLogText $text $true
     }.GetNewClosure()
 
@@ -3154,6 +3193,9 @@ function New-WinQStepWindow {
             $artifactState["Current"] = $current
             $controls["ArtifactSummaryText"].Text = & $BuildBatchArtifactSummary $current["batch_summary"]
             $controls["ArtifactText"].Text = "--- batch results: $path ---`r`n$text"
+            $artifactViewState["Key"] = "results"
+            $artifactViewState["Path"] = $path
+            $artifactViewState["TailCapable"] = $false
             $null = & $SetLogText "Saved batch result table: $path`r`n`r`n$text" $true
             & $UpdateArtifactControls
             return $path
@@ -3169,9 +3211,87 @@ function New-WinQStepWindow {
         $artifactState["Current"] = $current
         $controls["ArtifactSummaryText"].Text = & $BuildArtifactSummary $current
         $controls["ArtifactText"].Text = "--- results: $path ---`r`n$text"
+        $artifactViewState["Key"] = "results"
+        $artifactViewState["Path"] = $path
+        $artifactViewState["TailCapable"] = $false
         $null = & $SetLogText "Saved result summary: $path`r`n`r`n$text" $true
         & $UpdateArtifactControls
         return $path
+    }.GetNewClosure()
+
+    $GetCurrentArtifactFilePath = {
+        $path = [string]$artifactViewState["Path"]
+        if ([string]::IsNullOrWhiteSpace($path) -or -not [System.IO.File]::Exists($path)) {
+            throw "No artifact file is selected. View an artifact file first."
+        }
+        return $path
+    }.GetNewClosure()
+
+    $RecordArtifactFileAction = {
+        param(
+            [Parameter(Mandatory = $true)][string]$Action,
+            [Parameter(Mandatory = $true)][string]$Path,
+            [string]$Folder = "",
+            [bool]$Suppressed = $false
+        )
+        $artifactFileActionState["LastAction"] = $Action
+        $artifactFileActionState["LastPath"] = $Path
+        $artifactFileActionState["LastFolder"] = $Folder
+        $artifactFileActionState["LastSuppressed"] = $Suppressed
+    }.GetNewClosure()
+
+    $StartArtifactShellProcess = {
+        param(
+            [Parameter(Mandatory = $true)][string]$Action,
+            [Parameter(Mandatory = $true)][string]$Path,
+            [string]$Folder = ""
+        )
+        $target = if ($Action -eq "open_folder") { $Folder } else { $Path }
+        if ([string]::IsNullOrWhiteSpace($target)) {
+            throw "Artifact action target is empty."
+        }
+        if ($SuppressGuiMessageBoxes) {
+            & $RecordArtifactFileAction $Action $Path $Folder $true
+            & $AppendLog "Suppressed artifact file action during smoke test: $Action $target"
+            return
+        }
+        $startInfo = [System.Diagnostics.ProcessStartInfo]::new()
+        $startInfo.FileName = $target
+        $startInfo.UseShellExecute = $true
+        $process = [System.Diagnostics.Process]::Start($startInfo)
+        if ($null -ne $process) {
+            $process.Dispose()
+        }
+        & $RecordArtifactFileAction $Action $Path $Folder $false
+    }.GetNewClosure()
+
+    $OpenCurrentArtifactFolder = {
+        $path = & $GetCurrentArtifactFilePath
+        $folder = Split-Path -Parent $path
+        if ([string]::IsNullOrWhiteSpace($folder) -or -not [System.IO.Directory]::Exists($folder)) {
+            throw "Artifact folder is not available: $path"
+        }
+        & $StartArtifactShellProcess "open_folder" $path $folder
+        & $AppendLog "Opened artifact folder: $folder"
+    }.GetNewClosure()
+
+    $CopyCurrentArtifactPath = {
+        $path = & $GetCurrentArtifactFilePath
+        if ($SuppressGuiMessageBoxes) {
+            & $RecordArtifactFileAction "copy_path" $path (Split-Path -Parent $path) $true
+            & $AppendLog "Suppressed artifact path copy during smoke test: $path"
+            return $path
+        }
+        [System.Windows.Clipboard]::SetText($path)
+        & $RecordArtifactFileAction "copy_path" $path (Split-Path -Parent $path) $false
+        & $AppendLog "Copied artifact path: $path"
+        return $path
+    }.GetNewClosure()
+
+    $OpenCurrentArtifactExternally = {
+        $path = & $GetCurrentArtifactFilePath
+        & $StartArtifactShellProcess "open_external" $path (Split-Path -Parent $path)
+        & $AppendLog "Opened artifact externally: $path"
     }.GetNewClosure()
 
     $ViewArtifact = {
@@ -4994,6 +5114,24 @@ function New-WinQStepWindow {
         }
     }.GetNewClosure())
 
+    $controls["OpenArtifactFolderButton"].Add_Click({
+        & $InvokeGuiAction -Status (Get-WinQStepText "status.opening_artifact_folder") -Action {
+            & $OpenCurrentArtifactFolder
+        }
+    }.GetNewClosure())
+
+    $controls["CopyArtifactPathButton"].Add_Click({
+        & $InvokeGuiAction -Status (Get-WinQStepText "status.copying_artifact_path") -Action {
+            $null = & $CopyCurrentArtifactPath
+        }
+    }.GetNewClosure())
+
+    $controls["OpenArtifactExternalButton"].Add_Click({
+        & $InvokeGuiAction -Status (Get-WinQStepText "status.opening_artifact_external") -Action {
+            & $OpenCurrentArtifactExternally
+        }
+    }.GetNewClosure())
+
     $controls["HistoryButton"].Add_Click({
         & $InvokeGuiAction -Status (Get-WinQStepText "status.loading_job_history") -Action {
             & $LoadHistory
@@ -6491,10 +6629,26 @@ if ($ButtonSmokeTest) {
     $artifactTextAfterViewOutput = [string]$window.FindName("ArtifactText").Text
     $artifactTailButtonEnabledAfterOutput = [bool]$window.FindName("ViewArtifactTailButton").IsEnabled
     $artifactFullButtonEnabledAfterOutput = [bool]$window.FindName("ViewArtifactFullButton").IsEnabled
+    $artifactFileActionButtonsEnabledAfterOutput = @(
+        "OpenArtifactFolderButton", "CopyArtifactPathButton", "OpenArtifactExternalButton"
+    ).Where({ [bool]$window.FindName($_).IsEnabled }).Count -eq 3
     & $RecordButtonSmokeClick "ViewArtifactFullButton"
     $artifactTextAfterViewOutputFull = [string]$window.FindName("ArtifactText").Text
     & $RecordButtonSmokeClick "ViewArtifactTailButton"
     $artifactTextAfterViewOutputTailAgain = [string]$window.FindName("ArtifactText").Text
+    & $RecordButtonSmokeClick "OpenArtifactFolderButton"
+    $artifactOpenFolderAction = [string]$Script:ArtifactFileActionSmokeState["LastAction"]
+    $artifactOpenFolderPath = [string]$Script:ArtifactFileActionSmokeState["LastPath"]
+    $artifactOpenFolderFolder = [string]$Script:ArtifactFileActionSmokeState["LastFolder"]
+    $artifactOpenFolderSuppressed = [bool]$Script:ArtifactFileActionSmokeState["LastSuppressed"]
+    & $RecordButtonSmokeClick "CopyArtifactPathButton"
+    $artifactCopyPathAction = [string]$Script:ArtifactFileActionSmokeState["LastAction"]
+    $artifactCopyPathPath = [string]$Script:ArtifactFileActionSmokeState["LastPath"]
+    $artifactCopyPathSuppressed = [bool]$Script:ArtifactFileActionSmokeState["LastSuppressed"]
+    & $RecordButtonSmokeClick "OpenArtifactExternalButton"
+    $artifactOpenExternalAction = [string]$Script:ArtifactFileActionSmokeState["LastAction"]
+    $artifactOpenExternalPath = [string]$Script:ArtifactFileActionSmokeState["LastPath"]
+    $artifactOpenExternalSuppressed = [bool]$Script:ArtifactFileActionSmokeState["LastSuppressed"]
     $window.FindName("ArtifactSearchBox").Text = "PROGRAM ENDED"
     [System.Windows.Forms.Application]::DoEvents()
     & $RecordButtonSmokeClick "ArtifactFindNextButton"
@@ -6520,7 +6674,8 @@ if ($ButtonSmokeTest) {
     $artifactViewButtonsDisabled = @(
         "ViewResultsButton", "SaveResultsButton",
         "ViewInputButton", "ViewOutputButton", "ViewMetadataButton", "ViewStdoutButton", "ViewStderrButton",
-        "ViewArtifactTailButton", "ViewArtifactFullButton"
+        "ViewArtifactTailButton", "ViewArtifactFullButton",
+        "OpenArtifactFolderButton", "CopyArtifactPathButton", "OpenArtifactExternalButton"
     ).Where({ [bool]$window.FindName($_).IsEnabled }).Count -eq 0
     $textFieldsCleared = @(
         "EnvironmentText", "StructureText", "PreviewText", "LogText", "ArtifactSummaryText", "ArtifactText"
@@ -6620,6 +6775,7 @@ if ($ButtonSmokeTest) {
         -not $artifactTextAfterViewOutput.Contains("OUTPUT START SHOULD NOT BE IN TAIL")
     )
     $report["artifact_output_tail_buttons_enabled"] = ($artifactTailButtonEnabledAfterOutput -and $artifactFullButtonEnabledAfterOutput)
+    $report["artifact_file_action_buttons_enabled"] = $artifactFileActionButtonsEnabledAfterOutput
     $report["artifact_output_full_has_start"] = (
         $artifactTextAfterViewOutputFull.Contains("OUTPUT START SHOULD NOT BE IN TAIL") -and
         $artifactTextAfterViewOutputFull.Contains("--- output:")
@@ -6627,6 +6783,22 @@ if ($ButtonSmokeTest) {
     $report["artifact_output_tail_restored"] = (
         $artifactTextAfterViewOutputTailAgain.Contains("output tail (last 500 lines") -and
         -not $artifactTextAfterViewOutputTailAgain.Contains("OUTPUT START SHOULD NOT BE IN TAIL")
+    )
+    $report["artifact_open_folder_suppressed"] = (
+        $artifactOpenFolderAction -eq "open_folder" -and
+        $artifactOpenFolderPath -eq $historyOutputPath -and
+        $artifactOpenFolderFolder -eq (Split-Path -Parent $historyOutputPath) -and
+        $artifactOpenFolderSuppressed
+    )
+    $report["artifact_copy_path_suppressed"] = (
+        $artifactCopyPathAction -eq "copy_path" -and
+        $artifactCopyPathPath -eq $historyOutputPath -and
+        $artifactCopyPathSuppressed
+    )
+    $report["artifact_open_external_suppressed"] = (
+        $artifactOpenExternalAction -eq "open_external" -and
+        $artifactOpenExternalPath -eq $historyOutputPath -and
+        $artifactOpenExternalSuppressed
     )
     $report["artifact_search_found_program_end"] = (
         $artifactSearchStatusAfterNext -eq "1/1" -and
@@ -6714,8 +6886,12 @@ if ($ButtonSmokeTest) {
         $report["artifact_output_text_has_program_end"] -and
         $report["artifact_output_default_uses_tail"] -and
         $report["artifact_output_tail_buttons_enabled"] -and
+        $report["artifact_file_action_buttons_enabled"] -and
         $report["artifact_output_full_has_start"] -and
         $report["artifact_output_tail_restored"] -and
+        $report["artifact_open_folder_suppressed"] -and
+        $report["artifact_copy_path_suppressed"] -and
+        $report["artifact_open_external_suppressed"] -and
         $report["artifact_search_found_program_end"] -and
         $report["artifact_output_preserved_input_preview"] -and
         $report["artifact_text_has_stderr"] -and
@@ -6934,6 +7110,12 @@ if ($SmokeTest) {
     ).Where({ $window.FindName($_) -is [System.Windows.Controls.Button] }).Count
     $report["artifact_text_mode_buttons_initially_disabled"] = @(
         "ViewArtifactTailButton", "ViewArtifactFullButton"
+    ).Where({ [bool]$window.FindName($_).IsEnabled }).Count -eq 0
+    $report["artifact_file_action_buttons_loaded"] = @(
+        "OpenArtifactFolderButton", "CopyArtifactPathButton", "OpenArtifactExternalButton"
+    ).Where({ $window.FindName($_) -is [System.Windows.Controls.Button] }).Count
+    $report["artifact_file_action_buttons_initially_disabled"] = @(
+        "OpenArtifactFolderButton", "CopyArtifactPathButton", "OpenArtifactExternalButton"
     ).Where({ [bool]$window.FindName($_).IsEnabled }).Count -eq 0
     $report["text_search_controls_loaded"] = @(
         "LogSearchLabel", "LogSearchBox", "LogFindPreviousButton", "LogFindNextButton", "LogSearchStatusText",

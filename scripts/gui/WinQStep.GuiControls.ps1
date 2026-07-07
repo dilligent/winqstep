@@ -74,6 +74,7 @@ function Get-WinQStepGuiControlNames {
         "LogFindPreviousButton", "LogFindNextButton", "LogSearchStatusText", "LogText",
         "ArtifactSummaryText", "ArtifactSearchLabel", "ArtifactSearchBox",
         "ArtifactFindPreviousButton", "ArtifactFindNextButton", "ArtifactSearchStatusText",
+        "OpenArtifactFolderButton", "CopyArtifactPathButton", "OpenArtifactExternalButton",
         "ArtifactText", "BatchResultsGrid",
         "HistoryStatusFilterLabel", "HistoryStatusFilterBox", "HistoryTextFilterLabel", "HistoryTextFilterBox",
         "HistoryReviewOnlyBox", "HistoryClearFilterButton", "HistoryFilterCountText", "HistoryGrid",
@@ -133,6 +134,9 @@ function Set-WinQStepLocalizedControls {
     ViewStderrButton = "button.stderr"
     ViewArtifactTailButton = "button.tail"
     ViewArtifactFullButton = "button.full_text"
+    OpenArtifactFolderButton = "button.open_folder"
+    CopyArtifactPathButton = "button.copy_path"
+    OpenArtifactExternalButton = "button.open_externally"
     LogFindPreviousButton = "button.find_previous"
     LogFindNextButton = "button.find_next"
     ArtifactFindPreviousButton = "button.find_previous"

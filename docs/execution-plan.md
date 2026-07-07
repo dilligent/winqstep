@@ -2877,7 +2877,7 @@ Priority order:
 2. Done: History filtering. Add lightweight filters for status, project/input text,
    and warning/error-oriented review. Keep filtering read-only and preserve the
    selected history row behavior.
-3. Artifacts file operations. Add `Open Folder`, `Copy Path`, and `Open
+3. Done: Artifacts file operations. Add `Open Folder`, `Copy Path`, and `Open
    Externally` actions for selected/current artifact files such as input,
    output, metadata, stdout, and stderr. This should complement, not replace,
    the internal tail/full text viewer.
