@@ -2874,7 +2874,7 @@ Priority order:
    panes, especially Job Log and Artifacts, with current-match visibility and
    next/previous navigation. Keep it local to displayed text first so it works
    for both tail and full artifact views.
-2. History filtering. Add lightweight filters for status, project/input text,
+2. Done: History filtering. Add lightweight filters for status, project/input text,
    and warning/error-oriented review. Keep filtering read-only and preserve the
    selected history row behavior.
 3. Artifacts file operations. Add `Open Folder`, `Copy Path`, and `Open

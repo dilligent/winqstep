@@ -444,6 +444,10 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn("ArtifactFindNextButton", xaml_text)
         self.assertIn("ArtifactText", xaml_text)
         self.assertIn("BatchResultsGrid", xaml_text)
+        self.assertIn("HistoryStatusFilterBox", xaml_text)
+        self.assertIn("HistoryTextFilterBox", xaml_text)
+        self.assertIn("HistoryReviewOnlyBox", xaml_text)
+        self.assertIn("HistoryClearFilterButton", xaml_text)
         self.assertIn("ResumeBatchButton", xaml_text)
         self.assertIn("SkipBatchItemButton", xaml_text)
         self.assertIn("RerunBatchItemButton", xaml_text)
@@ -473,6 +477,9 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn("InvokeTextSearch", script_text)
         self.assertIn("CountTextSearchMatches", script_text)
         self.assertIn("SelectTextSearchMatch", script_text)
+        self.assertIn("ApplyHistoryFilter", script_text)
+        self.assertIn("TestHistoryItemMatchesFilter", script_text)
+        self.assertIn("TestHistoryItemHasReviewSignal", script_text)
         self.assertIn("largeArtifactPreviewThresholdBytes", script_text)
         self.assertIn("Get-WinQStepFileTail $path $artifactTailLineCount", script_text)
         self.assertIn('if ($Key -eq "input")', script_text)
@@ -483,6 +490,9 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn('"button.find_previous": "Previous"', english_text)
         self.assertIn('"button.find_next": "Next"', english_text)
         self.assertIn('"label.find": "Find"', english_text)
+        self.assertIn('"button.clear_filter": "Clear Filter"', english_text)
+        self.assertIn('"label.history_review_only": "Warnings/errors only"', english_text)
+        self.assertIn('"history.filter_count": "Showing {0} of {1}"', english_text)
         self.assertIn("status.viewing_artifact_tail", english_text)
         self.assertIn('"button.results": "结果"', chinese_text)
         self.assertIn("scripts\\validate_job_inputs.py", script_text)
@@ -818,6 +828,9 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertTrue(report["data_labels_grid_loaded"])
         self.assertTrue(report["data_labels_grid_initially_collapsed"])
         self.assertTrue(report["history_grid_loaded"])
+        self.assertEqual(report["history_filter_controls_loaded"], 7)
+        self.assertEqual(report["history_status_filter_options"], ["All", "Succeeded", "Failed", "Cancelled", "Prepared"])
+        self.assertTrue(report["history_filter_count_initially_empty"])
         self.assertEqual(
             report["tab_order"],
             [
@@ -969,6 +982,7 @@ class GuiPrototypeTests(unittest.TestCase):
             "PreviewExistingInputButton",
             "PreviewExistingInputBatchButton",
             "HistoryButton",
+            "HistoryClearFilterButton",
             "LogFindNextButton",
             "LogFindPreviousButton",
             "HistoryGridDoubleClick",
@@ -1016,6 +1030,13 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertGreaterEqual(report["history_grid_count"], 1)
         self.assertEqual(report["history_selected_project"], "button_history")
         self.assertTrue(report["history_log_has_jobs"])
+        self.assertEqual(report["history_text_filter_count"], 1)
+        self.assertEqual(report["history_text_filter_project"], "button_history")
+        self.assertEqual(report["history_clear_filter_restored_count"], report["history_grid_count"])
+        self.assertEqual(report["history_failed_filter_count"], 1)
+        self.assertEqual(report["history_failed_filter_project"], "button_warning_failed")
+        self.assertEqual(report["history_review_filter_count"], 1)
+        self.assertEqual(report["history_review_filter_project"], "button_warning_failed")
         self.assertTrue(report["log_search_found_history"])
         self.assertTrue(report["existing_mode_import_disabled"])
         self.assertTrue(report["batch_mode_import_disabled"])

@@ -143,6 +143,12 @@ function New-WinQStepWindow {
     }
     $previewState = @{ Current = $null }
     $jobState = @{ Current = $null }
+    $historyState = @{
+        Jobs = @()
+        FilteredJobs = @()
+        Errors = @()
+    }
+    $ApplyHistoryFilter = $null
     $structurePreviewState = @{
         Current = $null
         Radius = 5.0
@@ -169,7 +175,7 @@ function New-WinQStepWindow {
         $controls["LoadTemplateButton"], $controls["SaveTemplateButton"],
         $controls["InspectDataButton"], $controls["DetectButton"], $controls["ImportButton"],
         $controls["PreviewButton"], $controls["RunButton"],
-        $controls["HistoryButton"], $controls["ClearButton"],
+        $controls["HistoryButton"], $controls["ClearButton"], $controls["HistoryClearFilterButton"],
         $controls["ViewResultsButton"], $controls["SaveResultsButton"],
         $controls["ViewInputButton"], $controls["ViewOutputButton"], $controls["ViewMetadataButton"],
         $controls["ViewStdoutButton"], $controls["ViewStderrButton"],
@@ -216,6 +222,9 @@ function New-WinQStepWindow {
         if ($null -ne $SyncTemplateDependencyState) {
             & $SyncTemplateDependencyState
         }
+        if ($null -ne $ApplyHistoryFilter) {
+            & $ApplyHistoryFilter
+        }
     }.GetNewClosure()
 
     $ApplySelectedLanguage = {
@@ -234,6 +243,9 @@ function New-WinQStepWindow {
         }
         if ($null -ne $SyncTemplateDependencyState) {
             & $SyncTemplateDependencyState
+        }
+        if ($null -ne $ApplyHistoryFilter) {
+            & $ApplyHistoryFilter
         }
     }.GetNewClosure()
 
@@ -1315,6 +1327,108 @@ function New-WinQStepWindow {
             return $Default
         }
         return [string]$property.Value
+    }.GetNewClosure()
+
+    $GetHistoryStatusFilter = {
+        $item = $controls["HistoryStatusFilterBox"].SelectedItem
+        if ($null -eq $item -or $null -eq $item.Tag) {
+            return ""
+        }
+        return ([string]$item.Tag).Trim().ToLowerInvariant()
+    }.GetNewClosure()
+
+    $TestHistoryItemHasReviewSignal = {
+        param($Item)
+        $status = (& $GetJsonProperty $Item "status").ToLowerInvariant()
+        $outputStatus = (& $GetJsonProperty $Item "output_status").ToLowerInvariant()
+        $returncodeText = & $GetJsonProperty $Item "returncode"
+        $warningText = & $GetJsonProperty $Item "warning_count"
+        $warningCount = 0
+        $hasWarnings = ([int]::TryParse($warningText, [ref]$warningCount) -and $warningCount -gt 0)
+        $hasNonZeroReturnCode = $false
+        if (-not [string]::IsNullOrWhiteSpace($returncodeText)) {
+            $returncode = 0
+            $hasNonZeroReturnCode = ([int]::TryParse($returncodeText, [ref]$returncode) -and $returncode -ne 0)
+        }
+        return (
+            $hasWarnings -or
+            $hasNonZeroReturnCode -or
+            $status -in @("failed", "error", "cancelled") -or
+            $outputStatus -eq "incomplete"
+        )
+    }.GetNewClosure()
+
+    $TestHistoryItemMatchesFilter = {
+        param(
+            $Item,
+            [string]$StatusFilter,
+            [string]$Query,
+            [bool]$ReviewOnly
+        )
+        if (-not [string]::IsNullOrWhiteSpace($StatusFilter)) {
+            $itemStatus = (& $GetJsonProperty $Item "status").ToLowerInvariant()
+            if ($itemStatus -ne $StatusFilter) {
+                return $false
+            }
+        }
+        if ($ReviewOnly -and -not (& $TestHistoryItemHasReviewSignal $Item)) {
+            return $false
+        }
+        if (-not [string]::IsNullOrWhiteSpace($Query)) {
+            $queryText = $Query.Trim()
+            $historyText = @(
+                (& $GetJsonProperty $Item "project_name"),
+                (& $GetJsonProperty $Item "input_path"),
+                (& $GetJsonProperty $Item "mode"),
+                (& $GetJsonProperty $Item "output_path"),
+                (& $GetJsonProperty $Item "metadata_path")
+            ) -join "`n"
+            if ($historyText.IndexOf($queryText, [System.StringComparison]::OrdinalIgnoreCase) -lt 0) {
+                return $false
+            }
+        }
+        return $true
+    }.GetNewClosure()
+
+    $UpdateHistoryFilterCount = {
+        param([int]$VisibleCount, [int]$TotalCount)
+        $controls["HistoryFilterCountText"].Text = Format-WinQStepText "history.filter_count" @($VisibleCount, $TotalCount)
+    }.GetNewClosure()
+
+    $ApplyHistoryFilter = {
+        $jobs = @($historyState["Jobs"])
+        $statusFilter = & $GetHistoryStatusFilter
+        $query = [string]$controls["HistoryTextFilterBox"].Text
+        $reviewOnly = [bool]$controls["HistoryReviewOnlyBox"].IsChecked
+        $previousMetadataPath = ""
+        if ($null -ne $controls["HistoryGrid"].SelectedItem) {
+            $previousMetadataPath = & $GetJsonProperty $controls["HistoryGrid"].SelectedItem "metadata_path"
+        }
+
+        $filtered = @()
+        foreach ($job in $jobs) {
+            if (& $TestHistoryItemMatchesFilter $job $statusFilter $query $reviewOnly) {
+                $filtered += $job
+            }
+        }
+        $historyState["FilteredJobs"] = $filtered
+        $controls["HistoryGrid"].ItemsSource = $filtered
+        if (-not [string]::IsNullOrWhiteSpace($previousMetadataPath)) {
+            foreach ($job in $filtered) {
+                if ((& $GetJsonProperty $job "metadata_path") -eq $previousMetadataPath) {
+                    $controls["HistoryGrid"].SelectedItem = $job
+                    break
+                }
+            }
+        }
+        & $UpdateHistoryFilterCount $filtered.Count $jobs.Count
+    }.GetNewClosure()
+
+    $ClearHistoryFilters = {
+        $controls["HistoryStatusFilterBox"].SelectedIndex = 0
+        $controls["HistoryTextFilterBox"].Clear()
+        $controls["HistoryReviewOnlyBox"].IsChecked = $false
+        & $ApplyHistoryFilter
     }.GetNewClosure()
 
     $GetJsonVectorText = {
@@ -4189,7 +4303,9 @@ function New-WinQStepWindow {
         if ($null -ne $history.errors) {
             $errors = @($history.errors)
         }
-        $controls["HistoryGrid"].ItemsSource = $jobs
+        $historyState["Jobs"] = $jobs
+        $historyState["Errors"] = $errors
+        & $ApplyHistoryFilter
         $null = & $SetLogText "History jobs: $($jobs.Count), errors: $($errors.Count)`r`n`r`n$($result.Output)" $true
     }.GetNewClosure()
 
@@ -4616,6 +4732,18 @@ function New-WinQStepWindow {
             $eventArgs.Handled = $true
         }
     }.GetNewClosure())
+    $controls["HistoryStatusFilterBox"].Add_SelectionChanged({
+        & $ApplyHistoryFilter
+    }.GetNewClosure())
+    $controls["HistoryTextFilterBox"].Add_TextChanged({
+        & $ApplyHistoryFilter
+    }.GetNewClosure())
+    $controls["HistoryReviewOnlyBox"].Add_Checked({
+        & $ApplyHistoryFilter
+    }.GetNewClosure())
+    $controls["HistoryReviewOnlyBox"].Add_Unchecked({
+        & $ApplyHistoryFilter
+    }.GetNewClosure())
 
     foreach ($name in @(
         "DispersionEnabledBox", "OuterScfEnabledBox", "MixingEnabledBox", "SmearingEnabledBox",
@@ -4764,6 +4892,10 @@ function New-WinQStepWindow {
 
     $controls["ArtifactFindNextButton"].Add_Click({
         & $InvokeTextSearch $controls["ArtifactText"] $controls["ArtifactSearchBox"] $controls["ArtifactSearchStatusText"] $artifactSearchState "next"
+    }.GetNewClosure())
+
+    $controls["HistoryClearFilterButton"].Add_Click({
+        & $ClearHistoryFilters
     }.GetNewClosure())
 
     $controls["BatchResultsGrid"].Add_SelectionChanged({
@@ -4994,6 +5126,13 @@ function New-WinQStepWindow {
         $controls["PreviewText"].Clear()
         $controls["LogSearchBox"].Clear()
         $controls["ArtifactSearchBox"].Clear()
+        $historyState["Jobs"] = @()
+        $historyState["FilteredJobs"] = @()
+        $historyState["Errors"] = @()
+        $controls["HistoryStatusFilterBox"].SelectedIndex = 0
+        $controls["HistoryTextFilterBox"].Clear()
+        $controls["HistoryReviewOnlyBox"].IsChecked = $false
+        $controls["HistoryFilterCountText"].Text = ""
         $null = & $SetLogText "" $false
         $controls["ArtifactSummaryText"].Clear()
         $controls["ArtifactText"].Clear()
@@ -6012,6 +6151,11 @@ if ($ButtonSmokeTest) {
     $historyStdoutPath = Join-Path $historySmokeDir "button_history.stdout.log"
     $historyStderrPath = Join-Path $historySmokeDir "button_history.stderr.log"
     $historyResultsPath = Join-Path $historySmokeDir "button_history.results.txt"
+    $warningMetadataPath = Join-Path $historySmokeDir "button_warning_failed.winqstep.json"
+    $warningInputPath = Join-Path $historySmokeDir "button_warning_failed.inp"
+    $warningOutputPath = Join-Path $historySmokeDir "button_warning_failed.out"
+    $warningStdoutPath = Join-Path $historySmokeDir "button_warning_failed.stdout.log"
+    $warningStderrPath = Join-Path $historySmokeDir "button_warning_failed.stderr.log"
     if ([System.IO.File]::Exists($historyResultsPath)) {
         [System.IO.File]::Delete($historyResultsPath)
     }
@@ -6069,6 +6213,37 @@ if ($ButtonSmokeTest) {
     [System.IO.File]::WriteAllText(
         $historyMetadataPath,
         (($historyMetadata | ConvertTo-Json -Depth 8) + "`n"),
+        $Script:Utf8NoBomEncoding
+    )
+    $warningMetadata = [ordered]@{
+        status = "failed"
+        created_at = "2026-06-29T00:02:00Z"
+        completed_at = "2026-06-29T00:03:00Z"
+        returncode = 7
+        job = [ordered]@{
+            mode = "existing_input"
+            input_stem = "button_warning_failed"
+        }
+        files = [ordered]@{
+            input = [ordered]@{ path = $warningInputPath }
+            output = [ordered]@{ path = $warningOutputPath }
+            stdout = [ordered]@{ path = $warningStdoutPath }
+            stderr = [ordered]@{ path = $warningStderrPath }
+            metadata = [ordered]@{ path = $warningMetadataPath }
+        }
+        cp2k_output = [ordered]@{
+            status = "incomplete"
+            warning_count = 2
+            program_ended = $false
+        }
+    }
+    [System.IO.File]::WriteAllText($warningInputPath, "&GLOBAL`n  PROJECT button_warning_failed`n&END GLOBAL`n", $Script:Utf8NoBomEncoding)
+    [System.IO.File]::WriteAllText($warningOutputPath, "The number of warnings for this run is : 2`n", $Script:Utf8NoBomEncoding)
+    [System.IO.File]::WriteAllText($warningStdoutPath, "stdout failed smoke`n", $Script:Utf8NoBomEncoding)
+    [System.IO.File]::WriteAllText($warningStderrPath, "stderr failed smoke`n", $Script:Utf8NoBomEncoding)
+    [System.IO.File]::WriteAllText(
+        $warningMetadataPath,
+        (($warningMetadata | ConvertTo-Json -Depth 8) + "`n"),
         $Script:Utf8NoBomEncoding
     )
     $window.FindName("ConfigPathBox").Text = $smokeConfigPath
@@ -6228,6 +6403,28 @@ if ($ButtonSmokeTest) {
 
     & $RecordButtonSmokeClick "HistoryButton"
     $historyLogText = [string]$window.FindName("LogText").Text
+    $historyGrid = $window.FindName("HistoryGrid")
+    $historyItems = @($historyGrid.ItemsSource)
+    $historyInitialFilterCountText = [string]$window.FindName("HistoryFilterCountText").Text
+    $window.FindName("HistoryTextFilterBox").Text = "button_history"
+    [System.Windows.Forms.Application]::DoEvents()
+    $historyTextFilterItems = @($historyGrid.ItemsSource)
+    $historyTextFilterCountText = [string]$window.FindName("HistoryFilterCountText").Text
+    & $RecordButtonSmokeClick "HistoryClearFilterButton"
+    $historyClearFilterItems = @($historyGrid.ItemsSource)
+    $historyClearFilterCountText = [string]$window.FindName("HistoryFilterCountText").Text
+    $window.FindName("HistoryStatusFilterBox").SelectedIndex = 2
+    [System.Windows.Forms.Application]::DoEvents()
+    $historyFailedFilterItems = @($historyGrid.ItemsSource)
+    $window.FindName("HistoryStatusFilterBox").SelectedIndex = 0
+    $window.FindName("HistoryReviewOnlyBox").IsChecked = $true
+    [System.Windows.Forms.Application]::DoEvents()
+    $historyReviewFilterItems = @($historyGrid.ItemsSource)
+    $window.FindName("HistoryReviewOnlyBox").IsChecked = $false
+    $window.FindName("HistoryTextFilterBox").Clear()
+    $window.FindName("HistoryStatusFilterBox").SelectedIndex = 0
+    [System.Windows.Forms.Application]::DoEvents()
+    $historyItems = @($historyGrid.ItemsSource)
     $window.FindName("LogSearchBox").Text = "History jobs"
     [System.Windows.Forms.Application]::DoEvents()
     & $RecordButtonSmokeClick "LogFindNextButton"
@@ -6235,8 +6432,6 @@ if ($ButtonSmokeTest) {
     & $RecordButtonSmokeClick "LogFindPreviousButton"
     $logSearchStatusAfterPrevious = [string]$window.FindName("LogSearchStatusText").Text
 
-    $historyGrid = $window.FindName("HistoryGrid")
-    $historyItems = @($historyGrid.ItemsSource)
     $selectedHistoryItem = $null
     foreach ($item in $historyItems) {
         if ([string]$item.metadata_path -eq [string]$historyMetadataPath) {
@@ -6387,6 +6582,16 @@ if ($ButtonSmokeTest) {
     $report["history_grid_count"] = $historyItems.Count
     $report["history_selected_project"] = if ($null -ne $selectedHistoryItem) { [string]$selectedHistoryItem.project_name } else { "" }
     $report["history_log_has_jobs"] = $historyLogText.Contains("History jobs:")
+    $report["history_filter_initial_count_text"] = $historyInitialFilterCountText
+    $report["history_text_filter_count"] = $historyTextFilterItems.Count
+    $report["history_text_filter_project"] = if ($historyTextFilterItems.Count -gt 0) { [string]$historyTextFilterItems[0].project_name } else { "" }
+    $report["history_text_filter_count_text"] = $historyTextFilterCountText
+    $report["history_clear_filter_restored_count"] = $historyClearFilterItems.Count
+    $report["history_clear_filter_count_text"] = $historyClearFilterCountText
+    $report["history_failed_filter_count"] = $historyFailedFilterItems.Count
+    $report["history_failed_filter_project"] = if ($historyFailedFilterItems.Count -gt 0) { [string]$historyFailedFilterItems[0].project_name } else { "" }
+    $report["history_review_filter_count"] = $historyReviewFilterItems.Count
+    $report["history_review_filter_project"] = if ($historyReviewFilterItems.Count -gt 0) { [string]$historyReviewFilterItems[0].project_name } else { "" }
     $report["log_search_found_history"] = ($logSearchStatusAfterNext -eq "1/1" -and $logSearchStatusAfterPrevious -eq "1/1")
     $report["existing_mode_import_disabled"] = $existingModeImportDisabled
     $report["batch_mode_import_disabled"] = $batchModeImportDisabled
@@ -6477,6 +6682,13 @@ if ($ButtonSmokeTest) {
         $report["history_grid_count"] -gt 0 -and
         $report["history_selected_project"] -eq "button_history" -and
         $report["history_log_has_jobs"] -and
+        $report["history_text_filter_count"] -eq 1 -and
+        $report["history_text_filter_project"] -eq "button_history" -and
+        $report["history_clear_filter_restored_count"] -eq $report["history_grid_count"] -and
+        $report["history_failed_filter_count"] -eq 1 -and
+        $report["history_failed_filter_project"] -eq "button_warning_failed" -and
+        $report["history_review_filter_count"] -eq 1 -and
+        $report["history_review_filter_project"] -eq "button_warning_failed" -and
         $report["log_search_found_history"] -and
         $report["existing_mode_import_disabled"] -and
         $report["batch_mode_import_disabled"] -and
@@ -6927,6 +7139,12 @@ if ($SmokeTest) {
     $report["data_labels_grid_loaded"] = ($window.FindName("DataLabelsGrid") -is [System.Windows.Controls.DataGrid])
     $report["data_labels_grid_initially_collapsed"] = ($window.FindName("DataLabelsGrid").Visibility -eq [System.Windows.Visibility]::Collapsed)
     $report["history_grid_loaded"] = ($window.FindName("HistoryGrid") -is [System.Windows.Controls.DataGrid])
+    $report["history_filter_controls_loaded"] = @(
+        "HistoryStatusFilterLabel", "HistoryStatusFilterBox", "HistoryTextFilterLabel", "HistoryTextFilterBox",
+        "HistoryReviewOnlyBox", "HistoryClearFilterButton", "HistoryFilterCountText"
+    ).Where({ $null -ne $window.FindName($_) }).Count
+    $report["history_status_filter_options"] = @($window.FindName("HistoryStatusFilterBox").Items | ForEach-Object { [string]$_.Content })
+    $report["history_filter_count_initially_empty"] = [string]::IsNullOrWhiteSpace([string]$window.FindName("HistoryFilterCountText").Text)
     $mainTabs = $window.FindName("MainTabs")
     $tabOrder = @($mainTabs.Items | ForEach-Object { [string]$_.Name })
     $report["tab_order"] = $tabOrder

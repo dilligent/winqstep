@@ -1115,22 +1115,43 @@
         </Grid>
       </TabItem>
       <TabItem x:Name="HistoryTab" Header="History">
-        <DataGrid x:Name="HistoryGrid" AutoGenerateColumns="False" IsReadOnly="True"
-                  SelectionMode="Single" HeadersVisibility="Column" GridLinesVisibility="Horizontal"
-                  FontSize="12"
-                  EnableRowVirtualization="True" EnableColumnVirtualization="True"
-                  VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
-                  ScrollViewer.CanContentScroll="True">
-          <DataGrid.Columns>
-            <DataGridTextColumn Header="Completed" Binding="{Binding completed_at}" Width="155"/>
-            <DataGridTextColumn Header="Mode" Binding="{Binding mode}" Width="115"/>
-            <DataGridTextColumn Header="Status" Binding="{Binding status}" Width="90"/>
-            <DataGridTextColumn Header="Code" Binding="{Binding returncode}" Width="55"/>
-            <DataGridTextColumn Header="Warnings" Binding="{Binding warning_count}" Width="75"/>
-            <DataGridTextColumn Header="Project/Input" Binding="{Binding project_name}" Width="160"/>
-            <DataGridTextColumn Header="Output" Binding="{Binding output_path}" Width="*"/>
-          </DataGrid.Columns>
-        </DataGrid>
+        <Grid Margin="8">
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+          </Grid.RowDefinitions>
+          <WrapPanel Grid.Row="0" Margin="0,0,0,6">
+            <TextBlock x:Name="HistoryStatusFilterLabel" Text="Status" Margin="0,4,6,4"/>
+            <ComboBox x:Name="HistoryStatusFilterBox" Width="125" SelectedIndex="0">
+              <ComboBoxItem Content="All" Tag=""/>
+              <ComboBoxItem Content="Succeeded" Tag="succeeded"/>
+              <ComboBoxItem Content="Failed" Tag="failed"/>
+              <ComboBoxItem Content="Cancelled" Tag="cancelled"/>
+              <ComboBoxItem Content="Prepared" Tag="prepared"/>
+            </ComboBox>
+            <TextBlock x:Name="HistoryTextFilterLabel" Text="Project/Input" Margin="10,4,6,4"/>
+            <TextBox x:Name="HistoryTextFilterBox" Width="240"/>
+            <CheckBox x:Name="HistoryReviewOnlyBox" Content="Warnings/errors only" Margin="10,4,6,4"/>
+            <Button x:Name="HistoryClearFilterButton" Content="Clear Filter"/>
+            <TextBlock x:Name="HistoryFilterCountText" Margin="8,4,6,4"/>
+          </WrapPanel>
+          <DataGrid x:Name="HistoryGrid" Grid.Row="1" AutoGenerateColumns="False" IsReadOnly="True"
+                    SelectionMode="Single" HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                    FontSize="12"
+                    EnableRowVirtualization="True" EnableColumnVirtualization="True"
+                    VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
+                    ScrollViewer.CanContentScroll="True">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Completed" Binding="{Binding completed_at}" Width="155"/>
+              <DataGridTextColumn Header="Mode" Binding="{Binding mode}" Width="115"/>
+              <DataGridTextColumn Header="Status" Binding="{Binding status}" Width="90"/>
+              <DataGridTextColumn Header="Code" Binding="{Binding returncode}" Width="55"/>
+              <DataGridTextColumn Header="Warnings" Binding="{Binding warning_count}" Width="75"/>
+              <DataGridTextColumn Header="Project/Input" Binding="{Binding project_name}" Width="160"/>
+              <DataGridTextColumn Header="Output" Binding="{Binding output_path}" Width="*"/>
+            </DataGrid.Columns>
+          </DataGrid>
+        </Grid>
       </TabItem>
     </TabControl>
 

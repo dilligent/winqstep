@@ -74,7 +74,10 @@ function Get-WinQStepGuiControlNames {
         "LogFindPreviousButton", "LogFindNextButton", "LogSearchStatusText", "LogText",
         "ArtifactSummaryText", "ArtifactSearchLabel", "ArtifactSearchBox",
         "ArtifactFindPreviousButton", "ArtifactFindNextButton", "ArtifactSearchStatusText",
-        "ArtifactText", "BatchResultsGrid", "HistoryGrid", "StatusText", "JobStatusText",
+        "ArtifactText", "BatchResultsGrid",
+        "HistoryStatusFilterLabel", "HistoryStatusFilterBox", "HistoryTextFilterLabel", "HistoryTextFilterBox",
+        "HistoryReviewOnlyBox", "HistoryClearFilterButton", "HistoryFilterCountText", "HistoryGrid",
+        "StatusText", "JobStatusText",
         "LoadConfigButton", "SaveConfigButton", "ApplyLanguageButton", "LoadTemplateButton", "SaveTemplateButton",
         "InspectDataButton", "DetectButton", "ImportButton",
         "StructureResetViewButton", "StructureApplyFixedAtomsButton", "StructureClearSelectionButton",
@@ -134,6 +137,7 @@ function Set-WinQStepLocalizedControls {
     LogFindNextButton = "button.find_next"
     ArtifactFindPreviousButton = "button.find_previous"
     ArtifactFindNextButton = "button.find_next"
+    HistoryClearFilterButton = "button.clear_filter"
     ResumeBatchButton = "button.resume_batch"
     SkipBatchItemButton = "button.skip_item"
     RerunBatchItemButton = "button.rerun_item"
@@ -142,6 +146,7 @@ function Set-WinQStepLocalizedControls {
     ExistingInputModeRadio = "mode.existing_input"
     ExistingInputBatchModeRadio = "mode.existing_input_batch"
     BatchStopOnFailureBox = "label.batch_stop_on_failure"
+    HistoryReviewOnlyBox = "label.history_review_only"
     MixingEnabledBox = "label.mixing_enabled"
     SmearingEnabledBox = "label.smearing_enabled"
     UksEnabledBox = "label.uks_enabled"
@@ -186,6 +191,8 @@ function Set-WinQStepLocalizedControls {
     ModeLabel = "label.mode"
     LogSearchLabel = "label.find"
     ArtifactSearchLabel = "label.find"
+    HistoryStatusFilterLabel = "label.status_filter"
+    HistoryTextFilterLabel = "label.history_text_filter"
     ConfigPathLabel = "label.config"
     TemplatePathLabel = "label.template"
     StructurePathLabel = "label.structure"
@@ -269,6 +276,18 @@ function Set-WinQStepLocalizedControls {
         $Controls["UiLanguageBox"].Items[1].Tag = "en-US"
         $Controls["UiLanguageBox"].Items[2].Content = Get-WinQStepText "language.zh_cn"
         $Controls["UiLanguageBox"].Items[2].Tag = "zh-CN"
+    }
+    if ($Controls["HistoryStatusFilterBox"].Items.Count -ge 5) {
+        $Controls["HistoryStatusFilterBox"].Items[0].Content = Get-WinQStepText "history.status_filter.all"
+        $Controls["HistoryStatusFilterBox"].Items[0].Tag = ""
+        $Controls["HistoryStatusFilterBox"].Items[1].Content = Get-WinQStepText "history.status_filter.succeeded"
+        $Controls["HistoryStatusFilterBox"].Items[1].Tag = "succeeded"
+        $Controls["HistoryStatusFilterBox"].Items[2].Content = Get-WinQStepText "history.status_filter.failed"
+        $Controls["HistoryStatusFilterBox"].Items[2].Tag = "failed"
+        $Controls["HistoryStatusFilterBox"].Items[3].Content = Get-WinQStepText "history.status_filter.cancelled"
+        $Controls["HistoryStatusFilterBox"].Items[3].Tag = "cancelled"
+        $Controls["HistoryStatusFilterBox"].Items[4].Content = Get-WinQStepText "history.status_filter.prepared"
+        $Controls["HistoryStatusFilterBox"].Items[4].Tag = "prepared"
     }
 
     if ($Controls["DataLabelsGrid"].Columns.Count -ge 3) {
