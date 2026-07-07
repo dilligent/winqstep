@@ -70,8 +70,11 @@ function Get-WinQStepGuiControlNames {
         "FallbackPeriodicBox", "FallbackCellABox", "FallbackCellBBox", "FallbackCellCBox",
         "CenterAtomsBox", "KindsText",
         "KindEntriesGrid", "DataLabelsGrid", "TemplateValidationText",
-        "EnvironmentText", "StructureText", "PreviewText", "LogText",
-        "ArtifactSummaryText", "ArtifactText", "BatchResultsGrid", "HistoryGrid", "StatusText", "JobStatusText",
+        "EnvironmentText", "StructureText", "PreviewText", "LogSearchLabel", "LogSearchBox",
+        "LogFindPreviousButton", "LogFindNextButton", "LogSearchStatusText", "LogText",
+        "ArtifactSummaryText", "ArtifactSearchLabel", "ArtifactSearchBox",
+        "ArtifactFindPreviousButton", "ArtifactFindNextButton", "ArtifactSearchStatusText",
+        "ArtifactText", "BatchResultsGrid", "HistoryGrid", "StatusText", "JobStatusText",
         "LoadConfigButton", "SaveConfigButton", "ApplyLanguageButton", "LoadTemplateButton", "SaveTemplateButton",
         "InspectDataButton", "DetectButton", "ImportButton",
         "StructureResetViewButton", "StructureApplyFixedAtomsButton", "StructureClearSelectionButton",
@@ -127,6 +130,10 @@ function Set-WinQStepLocalizedControls {
     ViewStderrButton = "button.stderr"
     ViewArtifactTailButton = "button.tail"
     ViewArtifactFullButton = "button.full_text"
+    LogFindPreviousButton = "button.find_previous"
+    LogFindNextButton = "button.find_next"
+    ArtifactFindPreviousButton = "button.find_previous"
+    ArtifactFindNextButton = "button.find_next"
     ResumeBatchButton = "button.resume_batch"
     SkipBatchItemButton = "button.skip_item"
     RerunBatchItemButton = "button.rerun_item"
@@ -177,6 +184,8 @@ function Set-WinQStepLocalizedControls {
 
     $textLocalization = @{
     ModeLabel = "label.mode"
+    LogSearchLabel = "label.find"
+    ArtifactSearchLabel = "label.find"
     ConfigPathLabel = "label.config"
     TemplatePathLabel = "label.template"
     StructurePathLabel = "label.structure"

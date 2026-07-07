@@ -435,7 +435,13 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn("energy_hartree", helper_text)
         self.assertIn("total_atomic_force", helper_text)
         self.assertIn("JobStatusText", xaml_text)
+        self.assertIn("LogSearchBox", xaml_text)
+        self.assertIn("LogFindPreviousButton", xaml_text)
+        self.assertIn("LogFindNextButton", xaml_text)
         self.assertIn("ArtifactSummaryText", xaml_text)
+        self.assertIn("ArtifactSearchBox", xaml_text)
+        self.assertIn("ArtifactFindPreviousButton", xaml_text)
+        self.assertIn("ArtifactFindNextButton", xaml_text)
         self.assertIn("ArtifactText", xaml_text)
         self.assertIn("BatchResultsGrid", xaml_text)
         self.assertIn("ResumeBatchButton", xaml_text)
@@ -464,6 +470,9 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn("SaveResultSummary", script_text)
         self.assertIn("ViewArtifact", script_text)
         self.assertIn("ViewCurrentArtifactText", script_text)
+        self.assertIn("InvokeTextSearch", script_text)
+        self.assertIn("CountTextSearchMatches", script_text)
+        self.assertIn("SelectTextSearchMatch", script_text)
         self.assertIn("largeArtifactPreviewThresholdBytes", script_text)
         self.assertIn("Get-WinQStepFileTail $path $artifactTailLineCount", script_text)
         self.assertIn('if ($Key -eq "input")', script_text)
@@ -471,6 +480,9 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertIn('"button.results": "Results"', english_text)
         self.assertIn('"button.tail": "Tail"', english_text)
         self.assertIn('"button.full_text": "Full Text"', english_text)
+        self.assertIn('"button.find_previous": "Previous"', english_text)
+        self.assertIn('"button.find_next": "Next"', english_text)
+        self.assertIn('"label.find": "Find"', english_text)
         self.assertIn("status.viewing_artifact_tail", english_text)
         self.assertIn('"button.results": "结果"', chinese_text)
         self.assertIn("scripts\\validate_job_inputs.py", script_text)
@@ -705,6 +717,8 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertTrue(report["artifact_view_buttons_initially_disabled"])
         self.assertEqual(report["artifact_text_mode_buttons_loaded"], 2)
         self.assertTrue(report["artifact_text_mode_buttons_initially_disabled"])
+        self.assertEqual(report["text_search_controls_loaded"], 10)
+        self.assertTrue(report["text_search_status_initially_empty"])
         self.assertTrue(report["datagrid_virtualization_enabled"])
         self.assertEqual(
             sorted(report["datagrid_virtualization_names"]),
@@ -955,6 +969,8 @@ class GuiPrototypeTests(unittest.TestCase):
             "PreviewExistingInputButton",
             "PreviewExistingInputBatchButton",
             "HistoryButton",
+            "LogFindNextButton",
+            "LogFindPreviousButton",
             "HistoryGridDoubleClick",
             "ViewResultsButton",
             "SaveResultsButton",
@@ -962,6 +978,8 @@ class GuiPrototypeTests(unittest.TestCase):
             "ViewOutputButton",
             "ViewArtifactFullButton",
             "ViewArtifactTailButton",
+            "ArtifactFindNextButton",
+            "ArtifactFindPreviousButton",
             "ViewMetadataButton",
             "ViewStdoutButton",
             "ViewStderrButton",
@@ -998,6 +1016,7 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertGreaterEqual(report["history_grid_count"], 1)
         self.assertEqual(report["history_selected_project"], "button_history")
         self.assertTrue(report["history_log_has_jobs"])
+        self.assertTrue(report["log_search_found_history"])
         self.assertTrue(report["existing_mode_import_disabled"])
         self.assertTrue(report["batch_mode_import_disabled"])
         self.assertTrue(report["batch_mode_stop_on_failure_enabled"])
@@ -1024,6 +1043,7 @@ class GuiPrototypeTests(unittest.TestCase):
         self.assertTrue(report["artifact_output_tail_buttons_enabled"])
         self.assertTrue(report["artifact_output_full_has_start"])
         self.assertTrue(report["artifact_output_tail_restored"])
+        self.assertTrue(report["artifact_search_found_program_end"])
         self.assertTrue(report["artifact_output_preserved_input_preview"])
         self.assertTrue(report["artifact_text_has_stderr"])
         self.assertTrue(report["artifact_log_has_stderr"])

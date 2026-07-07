@@ -2866,11 +2866,11 @@ Selection rule:
 
 ## GUI Usability Feature Backlog
 
-Status: planned queue after the 0.3.0 release and GUI performance polish.
+Status: active queue after the 0.3.0 release and GUI performance polish.
 
 Priority order:
 
-1. Job Log / Artifacts text search. Add a focused find workflow for large text
+1. Done: Job Log / Artifacts text search. Add a focused find workflow for large text
    panes, especially Job Log and Artifacts, with current-match visibility and
    next/previous navigation. Keep it local to displayed text first so it works
    for both tail and full artifact views.

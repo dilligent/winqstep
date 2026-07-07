@@ -1035,9 +1035,23 @@
                  HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"/>
       </TabItem>
       <TabItem x:Name="JobLogTab" Header="Job Log">
-        <TextBox x:Name="LogText" FontFamily="Cascadia Mono, Consolas, Microsoft YaHei UI, Microsoft YaHei, SimSun" FontSize="12"
-                 AcceptsReturn="True" AcceptsTab="True" TextWrapping="Wrap"
-                 HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"/>
+        <Grid Margin="8">
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+          </Grid.RowDefinitions>
+          <WrapPanel Grid.Row="0" Margin="0,0,0,6">
+            <TextBlock x:Name="LogSearchLabel" Text="Find" Margin="0,4,6,4"/>
+            <TextBox x:Name="LogSearchBox" Width="240"/>
+            <Button x:Name="LogFindPreviousButton" Content="Previous"/>
+            <Button x:Name="LogFindNextButton" Content="Next"/>
+            <TextBlock x:Name="LogSearchStatusText" Margin="8,4,6,4"/>
+          </WrapPanel>
+          <TextBox x:Name="LogText" Grid.Row="1"
+                   FontFamily="Cascadia Mono, Consolas, Microsoft YaHei UI, Microsoft YaHei, SimSun" FontSize="12"
+                   AcceptsReturn="True" AcceptsTab="True" TextWrapping="Wrap"
+                   HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"/>
+        </Grid>
       </TabItem>
       <TabItem x:Name="ArtifactsTab" Header="Artifacts">
         <Grid Margin="8">
@@ -1058,6 +1072,12 @@
             <Separator Width="8" Opacity="0"/>
             <Button x:Name="ViewArtifactTailButton" Content="Tail"/>
             <Button x:Name="ViewArtifactFullButton" Content="Full Text"/>
+            <Separator Width="8" Opacity="0"/>
+            <TextBlock x:Name="ArtifactSearchLabel" Text="Find" Margin="0,4,6,4"/>
+            <TextBox x:Name="ArtifactSearchBox" Width="220"/>
+            <Button x:Name="ArtifactFindPreviousButton" Content="Previous"/>
+            <Button x:Name="ArtifactFindNextButton" Content="Next"/>
+            <TextBlock x:Name="ArtifactSearchStatusText" Margin="8,4,6,4"/>
             <Separator Width="8" Opacity="0"/>
             <Button x:Name="ResumeBatchButton" Content="Resume Batch"/>
             <Button x:Name="SkipBatchItemButton" Content="Skip Item"/>

@@ -808,6 +808,146 @@ function New-WinQStepWindow {
         }
     }.GetNewClosure()
 
+    $NewTextSearchState = {
+        return @{
+            LastQuery = ""
+            LastIndex = -1
+        }
+    }.GetNewClosure()
+    $logSearchState = & $NewTextSearchState
+    $artifactSearchState = & $NewTextSearchState
+
+    $ResetTextSearchState = {
+        param(
+            [Parameter(Mandatory = $true)][hashtable]$State,
+            [Parameter(Mandatory = $true)][System.Windows.Controls.TextBlock]$StatusText
+        )
+        $State["LastQuery"] = ""
+        $State["LastIndex"] = -1
+        $StatusText.Text = ""
+    }.GetNewClosure()
+
+    $CountTextSearchMatches = {
+        param([string]$Text, [string]$Query)
+        if ([string]::IsNullOrWhiteSpace($Query) -or [string]::IsNullOrEmpty($Text)) {
+            return 0
+        }
+        $count = 0
+        $position = 0
+        while ($position -lt $Text.Length) {
+            $matchIndex = $Text.IndexOf($Query, $position, [System.StringComparison]::OrdinalIgnoreCase)
+            if ($matchIndex -lt 0) {
+                break
+            }
+            $count += 1
+            $position = $matchIndex + [Math]::Max(1, $Query.Length)
+        }
+        return $count
+    }.GetNewClosure()
+
+    $GetTextSearchOrdinal = {
+        param([string]$Text, [string]$Query, [int]$SelectedIndex)
+        if ([string]::IsNullOrWhiteSpace($Query) -or $SelectedIndex -lt 0) {
+            return 0
+        }
+        $count = 0
+        $position = 0
+        while ($position -lt $Text.Length) {
+            $matchIndex = $Text.IndexOf($Query, $position, [System.StringComparison]::OrdinalIgnoreCase)
+            if ($matchIndex -lt 0) {
+                break
+            }
+            $count += 1
+            if ($matchIndex -eq $SelectedIndex) {
+                return $count
+            }
+            $position = $matchIndex + [Math]::Max(1, $Query.Length)
+        }
+        return $count
+    }.GetNewClosure()
+
+    $SelectTextSearchMatch = {
+        param(
+            [Parameter(Mandatory = $true)][System.Windows.Controls.TextBox]$TextBox,
+            [int]$Index,
+            [int]$Length
+        )
+        if ($Index -lt 0 -or $Length -le 0) {
+            return
+        }
+        $TextBox.Focus() | Out-Null
+        $TextBox.Select($Index, $Length)
+        try {
+            $lineIndex = $TextBox.GetLineIndexFromCharacterIndex($Index)
+            if ($lineIndex -ge 0) {
+                $TextBox.ScrollToLine($lineIndex)
+            }
+        }
+        catch {
+        }
+    }.GetNewClosure()
+
+    $InvokeTextSearch = {
+        param(
+            [Parameter(Mandatory = $true)][System.Windows.Controls.TextBox]$TextBox,
+            [Parameter(Mandatory = $true)][System.Windows.Controls.TextBox]$QueryBox,
+            [Parameter(Mandatory = $true)][System.Windows.Controls.TextBlock]$StatusText,
+            [Parameter(Mandatory = $true)][hashtable]$State,
+            [ValidateSet("next", "previous")][string]$Direction
+        )
+        $query = [string]$QueryBox.Text
+        $text = [string]$TextBox.Text
+        if ([string]::IsNullOrWhiteSpace($query)) {
+            & $ResetTextSearchState $State $StatusText
+            return
+        }
+
+        $total = & $CountTextSearchMatches $text $query
+        if ($total -le 0) {
+            $State["LastQuery"] = $query
+            $State["LastIndex"] = -1
+            $StatusText.Text = "0/0"
+            return
+        }
+
+        $lastIndex = [int]$State["LastIndex"]
+        $lastQuery = [string]$State["LastQuery"]
+        $sameQuery = ($lastQuery -eq $query -and $lastIndex -ge 0)
+        if ($Direction -eq "next") {
+            $startIndex = if ($sameQuery) { $lastIndex + [Math]::Max(1, $query.Length) } else { 0 }
+            $matchIndex = if ($startIndex -lt $text.Length) {
+                $text.IndexOf($query, $startIndex, [System.StringComparison]::OrdinalIgnoreCase)
+            }
+            else {
+                -1
+            }
+            if ($matchIndex -lt 0) {
+                $matchIndex = $text.IndexOf($query, 0, [System.StringComparison]::OrdinalIgnoreCase)
+            }
+        }
+        else {
+            $startIndex = if ($sameQuery) { $lastIndex - 1 } else { $text.Length - 1 }
+            if ($startIndex -ge $text.Length) {
+                $startIndex = $text.Length - 1
+            }
+            $matchIndex = if ($startIndex -ge 0) {
+                $text.LastIndexOf($query, $startIndex, [System.StringComparison]::OrdinalIgnoreCase)
+            }
+            else {
+                -1
+            }
+            if ($matchIndex -lt 0) {
+                $matchIndex = $text.LastIndexOf($query, $text.Length - 1, [System.StringComparison]::OrdinalIgnoreCase)
+            }
+        }
+
+        $State["LastQuery"] = $query
+        $State["LastIndex"] = $matchIndex
+        $ordinal = & $GetTextSearchOrdinal $text $query $matchIndex
+        $StatusText.Text = "$ordinal/$total"
+        & $SelectTextSearchMatch $TextBox $matchIndex $query.Length
+    }.GetNewClosure()
+
     $InvokeGuiAction = {
         param(
             [Parameter(Mandatory = $true)][string]$Status,
@@ -4450,6 +4590,32 @@ function New-WinQStepWindow {
         & $UpdateRunTargetStatus
     }.GetNewClosure())
     $controls["PreviewText"].Add_TextChanged({ & $UpdateRunTargetStatus }.GetNewClosure())
+    $controls["LogText"].Add_TextChanged({
+        & $ResetTextSearchState $logSearchState $controls["LogSearchStatusText"]
+    }.GetNewClosure())
+    $controls["LogSearchBox"].Add_TextChanged({
+        & $ResetTextSearchState $logSearchState $controls["LogSearchStatusText"]
+    }.GetNewClosure())
+    $controls["ArtifactText"].Add_TextChanged({
+        & $ResetTextSearchState $artifactSearchState $controls["ArtifactSearchStatusText"]
+    }.GetNewClosure())
+    $controls["ArtifactSearchBox"].Add_TextChanged({
+        & $ResetTextSearchState $artifactSearchState $controls["ArtifactSearchStatusText"]
+    }.GetNewClosure())
+    $controls["LogSearchBox"].Add_KeyDown({
+        param($sender, $eventArgs)
+        if ($eventArgs.Key -eq [System.Windows.Input.Key]::Return) {
+            & $InvokeTextSearch $controls["LogText"] $controls["LogSearchBox"] $controls["LogSearchStatusText"] $logSearchState "next"
+            $eventArgs.Handled = $true
+        }
+    }.GetNewClosure())
+    $controls["ArtifactSearchBox"].Add_KeyDown({
+        param($sender, $eventArgs)
+        if ($eventArgs.Key -eq [System.Windows.Input.Key]::Return) {
+            & $InvokeTextSearch $controls["ArtifactText"] $controls["ArtifactSearchBox"] $controls["ArtifactSearchStatusText"] $artifactSearchState "next"
+            $eventArgs.Handled = $true
+        }
+    }.GetNewClosure())
 
     foreach ($name in @(
         "DispersionEnabledBox", "OuterScfEnabledBox", "MixingEnabledBox", "SmearingEnabledBox",
@@ -4582,6 +4748,22 @@ function New-WinQStepWindow {
 
     $controls["CancelJobButton"].Add_Click({
         & $CancelAsyncJob
+    }.GetNewClosure())
+
+    $controls["LogFindPreviousButton"].Add_Click({
+        & $InvokeTextSearch $controls["LogText"] $controls["LogSearchBox"] $controls["LogSearchStatusText"] $logSearchState "previous"
+    }.GetNewClosure())
+
+    $controls["LogFindNextButton"].Add_Click({
+        & $InvokeTextSearch $controls["LogText"] $controls["LogSearchBox"] $controls["LogSearchStatusText"] $logSearchState "next"
+    }.GetNewClosure())
+
+    $controls["ArtifactFindPreviousButton"].Add_Click({
+        & $InvokeTextSearch $controls["ArtifactText"] $controls["ArtifactSearchBox"] $controls["ArtifactSearchStatusText"] $artifactSearchState "previous"
+    }.GetNewClosure())
+
+    $controls["ArtifactFindNextButton"].Add_Click({
+        & $InvokeTextSearch $controls["ArtifactText"] $controls["ArtifactSearchBox"] $controls["ArtifactSearchStatusText"] $artifactSearchState "next"
     }.GetNewClosure())
 
     $controls["BatchResultsGrid"].Add_SelectionChanged({
@@ -4810,6 +4992,8 @@ function New-WinQStepWindow {
         $controls["EnvironmentText"].Clear()
         $controls["StructureText"].Clear()
         $controls["PreviewText"].Clear()
+        $controls["LogSearchBox"].Clear()
+        $controls["ArtifactSearchBox"].Clear()
         $null = & $SetLogText "" $false
         $controls["ArtifactSummaryText"].Clear()
         $controls["ArtifactText"].Clear()
@@ -4820,6 +5004,8 @@ function New-WinQStepWindow {
         $controls["DataLabelsGrid"].ItemsSource = $null
         $controls["DataLabelsGrid"].Visibility = [System.Windows.Visibility]::Collapsed
         & $ClearInputPreviewState
+        & $ResetTextSearchState $logSearchState $controls["LogSearchStatusText"]
+        & $ResetTextSearchState $artifactSearchState $controls["ArtifactSearchStatusText"]
         & $ClearArtifactViewState
         & $ClearStructurePreview
         $artifactState["Current"] = $null
@@ -6042,6 +6228,12 @@ if ($ButtonSmokeTest) {
 
     & $RecordButtonSmokeClick "HistoryButton"
     $historyLogText = [string]$window.FindName("LogText").Text
+    $window.FindName("LogSearchBox").Text = "History jobs"
+    [System.Windows.Forms.Application]::DoEvents()
+    & $RecordButtonSmokeClick "LogFindNextButton"
+    $logSearchStatusAfterNext = [string]$window.FindName("LogSearchStatusText").Text
+    & $RecordButtonSmokeClick "LogFindPreviousButton"
+    $logSearchStatusAfterPrevious = [string]$window.FindName("LogSearchStatusText").Text
 
     $historyGrid = $window.FindName("HistoryGrid")
     $historyItems = @($historyGrid.ItemsSource)
@@ -6108,6 +6300,12 @@ if ($ButtonSmokeTest) {
     $artifactTextAfterViewOutputFull = [string]$window.FindName("ArtifactText").Text
     & $RecordButtonSmokeClick "ViewArtifactTailButton"
     $artifactTextAfterViewOutputTailAgain = [string]$window.FindName("ArtifactText").Text
+    $window.FindName("ArtifactSearchBox").Text = "PROGRAM ENDED"
+    [System.Windows.Forms.Application]::DoEvents()
+    & $RecordButtonSmokeClick "ArtifactFindNextButton"
+    $artifactSearchStatusAfterNext = [string]$window.FindName("ArtifactSearchStatusText").Text
+    & $RecordButtonSmokeClick "ArtifactFindPreviousButton"
+    $artifactSearchStatusAfterPrevious = [string]$window.FindName("ArtifactSearchStatusText").Text
     foreach ($buttonName in @("ViewMetadataButton", "ViewStdoutButton", "ViewStderrButton")) {
         & $RecordButtonSmokeClick $buttonName
     }
@@ -6189,6 +6387,7 @@ if ($ButtonSmokeTest) {
     $report["history_grid_count"] = $historyItems.Count
     $report["history_selected_project"] = if ($null -ne $selectedHistoryItem) { [string]$selectedHistoryItem.project_name } else { "" }
     $report["history_log_has_jobs"] = $historyLogText.Contains("History jobs:")
+    $report["log_search_found_history"] = ($logSearchStatusAfterNext -eq "1/1" -and $logSearchStatusAfterPrevious -eq "1/1")
     $report["existing_mode_import_disabled"] = $existingModeImportDisabled
     $report["batch_mode_import_disabled"] = $batchModeImportDisabled
     $report["batch_mode_stop_on_failure_enabled"] = $batchModeStopOnFailureEnabled
@@ -6223,6 +6422,10 @@ if ($ButtonSmokeTest) {
     $report["artifact_output_tail_restored"] = (
         $artifactTextAfterViewOutputTailAgain.Contains("output tail (last 500 lines") -and
         -not $artifactTextAfterViewOutputTailAgain.Contains("OUTPUT START SHOULD NOT BE IN TAIL")
+    )
+    $report["artifact_search_found_program_end"] = (
+        $artifactSearchStatusAfterNext -eq "1/1" -and
+        $artifactSearchStatusAfterPrevious -eq "1/1"
     )
     $report["artifact_output_preserved_input_preview"] = (
         $previewTextAfterViewOutput -eq $previewTextAfterViewInput -and
@@ -6274,6 +6477,7 @@ if ($ButtonSmokeTest) {
         $report["history_grid_count"] -gt 0 -and
         $report["history_selected_project"] -eq "button_history" -and
         $report["history_log_has_jobs"] -and
+        $report["log_search_found_history"] -and
         $report["existing_mode_import_disabled"] -and
         $report["batch_mode_import_disabled"] -and
         $report["batch_mode_stop_on_failure_enabled"] -and
@@ -6300,6 +6504,7 @@ if ($ButtonSmokeTest) {
         $report["artifact_output_tail_buttons_enabled"] -and
         $report["artifact_output_full_has_start"] -and
         $report["artifact_output_tail_restored"] -and
+        $report["artifact_search_found_program_end"] -and
         $report["artifact_output_preserved_input_preview"] -and
         $report["artifact_text_has_stderr"] -and
         $report["artifact_log_has_stderr"] -and
@@ -6518,6 +6723,14 @@ if ($SmokeTest) {
     $report["artifact_text_mode_buttons_initially_disabled"] = @(
         "ViewArtifactTailButton", "ViewArtifactFullButton"
     ).Where({ [bool]$window.FindName($_).IsEnabled }).Count -eq 0
+    $report["text_search_controls_loaded"] = @(
+        "LogSearchLabel", "LogSearchBox", "LogFindPreviousButton", "LogFindNextButton", "LogSearchStatusText",
+        "ArtifactSearchLabel", "ArtifactSearchBox", "ArtifactFindPreviousButton", "ArtifactFindNextButton", "ArtifactSearchStatusText"
+    ).Where({ $null -ne $window.FindName($_) }).Count
+    $report["text_search_status_initially_empty"] = (
+        [string]::IsNullOrWhiteSpace([string]$window.FindName("LogSearchStatusText").Text) -and
+        [string]::IsNullOrWhiteSpace([string]$window.FindName("ArtifactSearchStatusText").Text)
+    )
     $report["datagrid_virtualization_enabled"] = ($virtualizedDataGridNames.Count -eq $dataGridNames.Count)
     $report["datagrid_virtualization_names"] = $virtualizedDataGridNames
     $report["config_tab_loaded"] = ($window.FindName("DistroBox") -is [System.Windows.Controls.TextBox])
