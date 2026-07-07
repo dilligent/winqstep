@@ -43,8 +43,8 @@ Each round should end with a focused commit.
   pre-run generated-artifact snapshots for stable PDOS discovery, and isolated
   GUI button-smoke scratch workspaces, and artifact output views that no longer
   overwrite the editable `Input Preview` pane.
-- Next active round: Round 71, choose the next conservative QuickStep
-  expansion slice or continue low-risk GUI modularization.
+- Next active round: start the GUI usability backlog with Job Log / Artifacts
+  text search, unless redirected.
 - Known local facts:
   - WSL2 is available.
   - Default distro is `Ubuntu`.
@@ -2863,6 +2863,36 @@ Selection rule:
 - Prefer features that map cleanly to typed JSON fields, deterministic renderer
   output, preflight checks, and GUI controls. Avoid adding raw CP2K text blocks
   unless they are clearly marked as user overrides and do not weaken validation.
+
+## GUI Usability Feature Backlog
+
+Status: planned queue after the 0.3.0 release and GUI performance polish.
+
+Priority order:
+
+1. Job Log / Artifacts text search. Add a focused find workflow for large text
+   panes, especially Job Log and Artifacts, with current-match visibility and
+   next/previous navigation. Keep it local to displayed text first so it works
+   for both tail and full artifact views.
+2. History filtering. Add lightweight filters for status, project/input text,
+   and warning/error-oriented review. Keep filtering read-only and preserve the
+   selected history row behavior.
+3. Artifacts file operations. Add `Open Folder`, `Copy Path`, and `Open
+   Externally` actions for selected/current artifact files such as input,
+   output, metadata, stdout, and stderr. This should complement, not replace,
+   the internal tail/full text viewer.
+4. Output summary enhancement. Extend the compact CP2K output summary only with
+   stable, high-value fields such as SCF convergence, SCF step count, wall time,
+   and final cell information when parsing is reliable. Preserve raw output as
+   the source of truth.
+5. Batch rerun failed only. Add a serial batch queue action that marks only
+   failed/error items for rerun and then uses the existing resume path. Do not
+   introduce parallel scheduling.
+
+Selection rule:
+
+- Prefer one focused GUI workflow per round, with smoke coverage for disabled
+  states, recovery from missing files, and unchanged existing workflow behavior.
 
 ## Working Rules
 
