@@ -1729,6 +1729,112 @@ function New-WinQStepWindow {
         return $text
     }.GetNewClosure()
 
+    $GetResultValue = {
+        param($Object, [Parameter(Mandatory = $true)][string[]]$Names)
+        $current = $Object
+        foreach ($name in $Names) {
+            if ($null -eq $current) {
+                return $null
+            }
+            if ($current -is [System.Collections.IDictionary]) {
+                if (-not $current.Contains($name) -or $null -eq $current[$name]) {
+                    return $null
+                }
+                $current = $current[$name]
+                continue
+            }
+            $property = $current.PSObject.Properties[$name]
+            if ($null -eq $property -or $null -eq $property.Value) {
+                return $null
+            }
+            $current = $property.Value
+        }
+        return $current
+    }.GetNewClosure()
+
+    $FormatResultVector = {
+        param($Value)
+        if ($null -eq $Value) {
+            return ""
+        }
+        $items = @($Value)
+        if ($items.Count -eq 0) {
+            return ""
+        }
+        return (($items | ForEach-Object { & $FormatResultValue $_ "" }) -join " ")
+    }.GetNewClosure()
+
+    $FormatScfCompact = {
+        param($Scf)
+        if ($null -eq $Scf) {
+            return ""
+        }
+        $convergedText = (& $FormatResultValue (& $GetResultValue $Scf @("converged")) "unknown").ToLowerInvariant()
+        $state = switch ($convergedText) {
+            "true" { "converged"; break }
+            "false" { "not_converged"; break }
+            default { "unknown" }
+        }
+        $parts = @("scf=$state")
+        $steps = & $FormatResultValue (& $GetResultValue $Scf @("step_count")) ""
+        if (-not [string]::IsNullOrWhiteSpace($steps)) {
+            $parts += "steps=$steps"
+        }
+        $finalConvergence = & $FormatResultValue (& $GetResultValue $Scf @("final_convergence")) ""
+        if (-not [string]::IsNullOrWhiteSpace($finalConvergence)) {
+            $parts += "final_convergence=$finalConvergence"
+        }
+        return ($parts -join ", ")
+    }.GetNewClosure()
+
+    $FormatCellCompact = {
+        param($Cell)
+        if ($null -eq $Cell) {
+            return ""
+        }
+        $periodicity = & $FormatResultValue (& $GetResultValue $Cell @("periodicity")) ""
+        $volume = & $FormatResultValue (& $GetResultValue $Cell @("volume_angstrom3")) ""
+        $parts = @()
+        if (-not [string]::IsNullOrWhiteSpace($periodicity)) {
+            $parts += "periodicity=$periodicity"
+        }
+        if (-not [string]::IsNullOrWhiteSpace($volume)) {
+            $parts += "volume_angstrom3=$volume"
+        }
+        if ($parts.Count -eq 0) {
+            return ""
+        }
+        $joinedParts = $parts -join ", "
+        return "cell=$joinedParts"
+    }.GetNewClosure()
+
+    $GetCp2kSummaryExtraLines = {
+        param($Summary)
+        $lines = @()
+        $walltime = & $FormatResultValue (& $GetResultValue $Summary @("walltime_seconds")) ""
+        if (-not [string]::IsNullOrWhiteSpace($walltime)) {
+            $lines += "walltime_seconds=$walltime"
+        }
+
+        $scf = & $GetResultValue $Summary @("scf")
+        if ($null -ne $scf) {
+            $lines += "scf.converged=$(& $FormatResultValue (& $GetResultValue $scf @("converged")))"
+            $lines += "scf.steps=$(& $FormatResultValue (& $GetResultValue $scf @("step_count")))"
+            $lines += "scf.final_convergence=$(& $FormatResultValue (& $GetResultValue $scf @("final_convergence")))"
+            $lines += "scf.final_total_energy_hartree=$(& $FormatResultValue (& $GetResultValue $scf @("final_total_energy_hartree")))"
+        }
+
+        $cell = & $GetResultValue $Summary @("cell")
+        if ($null -ne $cell) {
+            $lines += "cell.periodicity=$(& $FormatResultValue (& $GetResultValue $cell @("periodicity")))"
+            $lines += "cell.volume_angstrom3=$(& $FormatResultValue (& $GetResultValue $cell @("volume_angstrom3")))"
+            $lines += "cell.a=$(& $FormatResultVector (& $GetResultValue $cell @("a")))"
+            $lines += "cell.b=$(& $FormatResultVector (& $GetResultValue $cell @("b")))"
+            $lines += "cell.c=$(& $FormatResultVector (& $GetResultValue $cell @("c")))"
+        }
+        return $lines
+    }.GetNewClosure()
+
     $FormatStructureScalar = {
         param($Value, [string]$Default = "")
         if ($null -eq $Value) {
@@ -2525,6 +2631,17 @@ function New-WinQStepWindow {
             $suffix = if ([string]::IsNullOrWhiteSpace($forceUnit)) { "" } else { " $forceUnit" }
             $lines += "total_atomic_force=$($Artifacts["total_atomic_force"])$suffix"
         }
+        if (-not [string]::IsNullOrWhiteSpace([string]$Artifacts["walltime_seconds"])) {
+            $lines += "walltime_seconds=$($Artifacts["walltime_seconds"])"
+        }
+        $scfLine = & $FormatScfCompact $Artifacts["scf"]
+        if (-not [string]::IsNullOrWhiteSpace($scfLine)) {
+            $lines += $scfLine
+        }
+        $cellLine = & $FormatCellCompact $Artifacts["cell"]
+        if (-not [string]::IsNullOrWhiteSpace($cellLine)) {
+            $lines += $cellLine
+        }
         foreach ($key in @("input", "output", "metadata", "stdout", "stderr")) {
             $path = [string]$Artifacts["paths"][$key]
             $exists = if (-not [string]::IsNullOrWhiteSpace($path) -and [System.IO.File]::Exists($path)) { "exists" } else { "missing" }
@@ -2601,7 +2718,10 @@ function New-WinQStepWindow {
             "program_ended=$(& $FormatResultValue (& $GetNestedValue $summary @("program_ended")))",
             "ended_at=$(& $FormatResultValue (& $GetNestedValue $summary @("ended_at")))",
             "stopped_in=$(& $FormatResultValue (& $GetNestedValue $summary @("stopped_in")))",
-            "total_energy_hartree=$(& $FormatResultValue (& $GetNestedValue $summary @("total_energy_hartree")))",
+            "total_energy_hartree=$(& $FormatResultValue (& $GetNestedValue $summary @("total_energy_hartree")))"
+        )
+        $lines += @(& $GetCp2kSummaryExtraLines $summary)
+        $lines += @(
             "input=$(& $FormatResultValue (& $GetMetadataFilePath $Metadata "input"))",
             "output=$(& $FormatResultValue (& $GetMetadataFilePath $Metadata "output"))",
             "metadata=$(& $FormatResultValue (& $GetMetadataFilePath $Metadata "metadata"))"
@@ -2684,7 +2804,10 @@ function New-WinQStepWindow {
             "warnings=$($Artifacts["warning_count"])",
             "program_ended=$($Artifacts["program_ended"])",
             "total_energy_hartree=$energyText",
-            "total_atomic_force=$forceText",
+            "total_atomic_force=$forceText"
+        )
+        $lines += @(& $GetCp2kSummaryExtraLines $Artifacts)
+        $lines += @(
             "input=$($Artifacts["paths"]["input"])",
             "output=$($Artifacts["paths"]["output"])",
             "metadata=$($Artifacts["paths"]["metadata"])"
@@ -2718,6 +2841,9 @@ function New-WinQStepWindow {
             total_energy_hartree = (& $FormatResultValue (& $GetNestedValue $summary @("total_energy_hartree")) "")
             total_atomic_force = $totalAtomicForce
             force_unit = $forceUnit
+            walltime_seconds = (& $FormatResultValue (& $GetNestedValue $summary @("walltime_seconds")) "")
+            scf = (& $GetNestedValue $summary @("scf"))
+            cell = (& $GetNestedValue $summary @("cell"))
             paths = @{
                 input = (& $GetMetadataFilePath $Metadata "input")
                 output = (& $GetMetadataFilePath $Metadata "output")
@@ -2761,6 +2887,9 @@ function New-WinQStepWindow {
             total_energy_hartree = ""
             total_atomic_force = ""
             force_unit = ""
+            walltime_seconds = ""
+            scf = $null
+            cell = $null
             paths = @{
                 input = ""
                 output = ""
@@ -3067,6 +3196,9 @@ function New-WinQStepWindow {
             total_energy_hartree = (& $GetJsonProperty $Item "total_energy_hartree" "")
             total_atomic_force = (& $GetJsonProperty $Item "total_atomic_force" "")
             force_unit = (& $GetJsonProperty $Item "force_unit" "")
+            walltime_seconds = (& $GetJsonProperty $Item "walltime_seconds" "")
+            scf = (& $GetNestedValue $Item @("scf"))
+            cell = (& $GetNestedValue $Item @("cell"))
             paths = @{
                 input = (& $GetJsonProperty $Item "input_path" "")
                 output = (& $GetJsonProperty $Item "output_path" "")
@@ -6318,6 +6450,35 @@ if ($ButtonSmokeTest) {
             warning_count = 0
             program_ended = $true
             total_energy_hartree = -17.219350325303314
+            walltime_seconds = 7.086
+            scf = [ordered]@{
+                converged = $true
+                step_count = 11
+                final_step = 11
+                final_time_seconds = 0.3
+                final_convergence = 0.00000021
+                final_total_energy_hartree = -17.2193503253
+                final_energy_change_hartree = -0.00000000000268
+            }
+            cell = [ordered]@{
+                unit = "angstrom"
+                volume_angstrom3 = 1000.0
+                a = @(10.0, 0.0, 0.0)
+                b = @(0.0, 10.0, 0.0)
+                c = @(0.0, 0.0, 10.0)
+                lengths = [ordered]@{
+                    a = 10.0
+                    b = 10.0
+                    c = 10.0
+                }
+                angles_degrees = [ordered]@{
+                    alpha = 90.0
+                    beta = 90.0
+                    gamma = 90.0
+                }
+                orthorhombic = $true
+                periodicity = "XYZ"
+            }
             forces = [ordered]@{
                 unit = "hartree/bohr"
                 atoms = @(
@@ -6764,10 +6925,18 @@ if ($ButtonSmokeTest) {
     $report["existing_preview_has_global"] = $existingPreviewText.Contains("&GLOBAL")
     $report["artifact_summary_has_history"] = $artifactSummaryBeforeClear.Contains("button_history")
     $report["artifact_summary_has_energy"] = $artifactSummaryBeforeClear.Contains("energy_hartree=-17.2193503253033")
+    $report["artifact_summary_has_scf"] = $artifactSummaryBeforeClear.Contains("scf=converged") -and $artifactSummaryBeforeClear.Contains("steps=11")
+    $report["artifact_summary_has_cell"] = $artifactSummaryBeforeClear.Contains("cell=periodicity=XYZ") -and $artifactSummaryBeforeClear.Contains("volume_angstrom3=1000")
+    $report["artifact_summary_has_walltime"] = $artifactSummaryBeforeClear.Contains("walltime_seconds=7.086")
     $report["artifact_results_has_force_table"] = ($artifactResultsTextBeforeClear.Contains("Forces (hartree/bohr)") -and $artifactResultsTextBeforeClear.Contains("total_atomic_force=0.00148299452 hartree/bohr"))
+    $report["artifact_results_has_scf"] = ($artifactResultsTextBeforeClear.Contains("scf.converged=True") -and $artifactResultsTextBeforeClear.Contains("scf.steps=11"))
+    $report["artifact_results_has_cell"] = ($artifactResultsTextBeforeClear.Contains("cell.periodicity=XYZ") -and $artifactResultsTextBeforeClear.Contains("cell.a=10 0 0"))
+    $report["artifact_results_has_walltime"] = $artifactResultsTextBeforeClear.Contains("walltime_seconds=7.086")
     $report["result_summary_saved"] = [System.IO.File]::Exists($savedResultsPath)
     $report["result_summary_path_in_summary"] = $artifactSummaryAfterSave.Contains("results=[exists] $savedResultsPath")
     $report["result_summary_file_has_force"] = $savedResultsText.Contains("total_atomic_force=0.00148299452 hartree/bohr")
+    $report["result_summary_file_has_scf"] = $savedResultsText.Contains("scf.final_convergence=2.1E-07")
+    $report["result_summary_file_has_cell"] = $savedResultsText.Contains("cell.volume_angstrom3=1000")
     $report["artifact_input_synced_preview"] = $previewTextAfterViewInput.Contains("&GLOBAL")
     $report["artifact_output_text_has_program_end"] = $artifactTextAfterViewOutput.Contains("PROGRAM ENDED")
     $report["artifact_output_default_uses_tail"] = (

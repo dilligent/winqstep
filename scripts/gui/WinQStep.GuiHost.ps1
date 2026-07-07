@@ -507,6 +507,25 @@ function Format-Cp2kSummary {
         $suffix = if ([string]::IsNullOrWhiteSpace($unit)) { "" } else { " $unit" }
         $parts += "total_atomic_force=$($summary.forces.total_atomic_force)$suffix"
     }
+    if ($null -ne $summary.PSObject.Properties["walltime_seconds"] -and $null -ne $summary.walltime_seconds) {
+        $parts += "walltime_seconds=$($summary.walltime_seconds)"
+    }
+    if ($null -ne $summary.PSObject.Properties["scf"] -and $null -ne $summary.scf) {
+        if ($null -ne $summary.scf.PSObject.Properties["converged"] -and $null -ne $summary.scf.converged) {
+            $parts += "scf_converged=$($summary.scf.converged)"
+        }
+        if ($null -ne $summary.scf.PSObject.Properties["step_count"] -and $null -ne $summary.scf.step_count) {
+            $parts += "scf_steps=$($summary.scf.step_count)"
+        }
+    }
+    if ($null -ne $summary.PSObject.Properties["cell"] -and $null -ne $summary.cell) {
+        if ($null -ne $summary.cell.PSObject.Properties["periodicity"] -and $null -ne $summary.cell.periodicity) {
+            $parts += "cell_periodicity=$($summary.cell.periodicity)"
+        }
+        if ($null -ne $summary.cell.PSObject.Properties["volume_angstrom3"] -and $null -ne $summary.cell.volume_angstrom3) {
+            $parts += "cell_volume_angstrom3=$($summary.cell.volume_angstrom3)"
+        }
+    }
     return ($parts -join ", ")
 }
 

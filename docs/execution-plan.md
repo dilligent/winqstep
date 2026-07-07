@@ -2881,10 +2881,11 @@ Priority order:
    Externally` actions for selected/current artifact files such as input,
    output, metadata, stdout, and stderr. This should complement, not replace,
    the internal tail/full text viewer.
-4. Output summary enhancement. Extend the compact CP2K output summary only with
-   stable, high-value fields such as SCF convergence, SCF step count, wall time,
-   and final cell information when parsing is reliable. Preserve raw output as
-   the source of truth.
+4. Done: Output summary enhancement. Extend the compact CP2K output summary
+   with stable, high-value fields: SCF convergence, SCF step count, final SCF
+   convergence/energy, timing wall time, and final `CELL|` periodicity, volume,
+   and lattice vectors. History rows and GUI Artifacts/Results summaries now
+   preserve these fields while keeping raw output as the source of truth.
 5. Batch rerun failed only. Add a serial batch queue action that marks only
    failed/error items for rerun and then uses the existing resume path. Do not
    introduce parallel scheduling.

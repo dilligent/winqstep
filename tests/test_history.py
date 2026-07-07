@@ -80,6 +80,21 @@ class JobHistoryTests(unittest.TestCase):
                             "warning_count": 1,
                             "program_ended": True,
                             "total_energy_hartree": -17.219350325303314,
+                            "walltime_seconds": 7.086,
+                            "scf": {
+                                "converged": True,
+                                "step_count": 11,
+                                "final_convergence": 0.00000021,
+                                "final_total_energy_hartree": -17.2193503253,
+                            },
+                            "cell": {
+                                "unit": "angstrom",
+                                "volume_angstrom3": 1000.0,
+                                "a": [10.0, 0.0, 0.0],
+                                "b": [0.0, 10.0, 0.0],
+                                "c": [0.0, 0.0, 10.0],
+                                "periodicity": "XYZ",
+                            },
                             "forces": {
                                 "unit": "hartree/bohr",
                                 "atoms": [
@@ -102,6 +117,13 @@ class JobHistoryTests(unittest.TestCase):
             self.assertAlmostEqual(job["total_energy_hartree"], -17.219350325303314)
             self.assertAlmostEqual(job["total_atomic_force"], 0.00148299452)
             self.assertEqual(job["force_unit"], "hartree/bohr")
+            self.assertAlmostEqual(job["walltime_seconds"], 7.086)
+            self.assertTrue(job["scf"]["converged"])
+            self.assertEqual(job["scf"]["step_count"], 11)
+            self.assertAlmostEqual(job["scf"]["final_convergence"], 0.00000021)
+            self.assertEqual(job["cell"]["periodicity"], "XYZ")
+            self.assertAlmostEqual(job["cell"]["volume_angstrom3"], 1000.0)
+            self.assertEqual(job["cell"]["a"], [10.0, 0.0, 0.0])
             self.assertEqual(job["generated_artifact_count"], 2)
             self.assertEqual(job["generated_artifacts"][0]["type"], "pdos")
             self.assertEqual(job["generated_artifacts"][1]["type"], "electron_density_cube")

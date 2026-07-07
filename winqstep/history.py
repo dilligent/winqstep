@@ -88,6 +88,9 @@ def _history_item(metadata_path: Path) -> dict[str, Any]:
         "total_energy_hartree": cp2k_output.get("total_energy_hartree"),
         "total_atomic_force": forces.get("total_atomic_force"),
         "force_unit": _optional_text(forces.get("unit")),
+        "walltime_seconds": cp2k_output.get("walltime_seconds"),
+        "scf": cp2k_output.get("scf"),
+        "cell": cp2k_output.get("cell"),
         "generated_artifacts": generated_artifacts,
         "generated_artifact_count": len(generated_artifacts),
     }
